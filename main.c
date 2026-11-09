@@ -1856,7 +1856,11 @@ static void loop_handler(void* arg)
         }
         else
         {
-          if(ctx->now > ctx->nextframe_ms)
+          // SDL_Quit()/SDL_Init() (changement de mode vidéo) remet SDL_GetTicks() à 0 :
+          // l'échéance de la prochaine image serait alors loin dans le futur et
+          // SDL_Delay() bloquerait l'application pendant des secondes. On resynchronise
+          // dès que l'attente dépasse nettement la durée d'une image.
+          if((ctx->now > ctx->nextframe_ms) || (ctx->nextframe_ms - ctx->now > 100))
           {
             ctx->nextframe_ms = ctx->now;
             ctx->nextframe_us = ((Uint64)ctx->nextframe_ms) * 1000;
