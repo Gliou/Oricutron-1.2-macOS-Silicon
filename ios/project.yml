@@ -1,0 +1,92 @@
+# project.yml — description du projet Xcode iOS d'Oricutron, pour XcodeGen.
+# Ne pas lancer à la main : ios/prepare_ios.command s'en charge (il définit
+# ORIC_IOS_DEPS, ORIC_BUNDLE_ID et ORIC_TEAM_ID puis génère Oricutron.xcodeproj).
+
+name: Oricutron
+options:
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+  developmentLanguage: fr
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+
+targets:
+  Oricutron:
+    type: application
+    platform: iOS
+    sources:
+      # --- Cœur d'émulation (C, inchangé) ---
+      - path: ../6502.c
+      - path: ../6551.c
+      - path: ../6551_com.c
+      - path: ../6551_loopback.c
+      - path: ../6551_modem.c
+      - path: ../8912.c
+      - path: ../avi.c
+      - path: ../disk.c
+      - path: ../disk_pravetz.c
+      - path: ../font.c
+      - path: ../gui.c
+      - path: ../joystick.c
+      - path: ../keyboard.c
+      - path: ../machine.c
+      - path: ../main.c
+        compilerFlags: ["-Dmain=oricutron_main"]
+      - path: ../monitor.c
+      - path: ../render_null.c
+      - path: ../render_sw.c
+      - path: ../render_sw8.c
+      - path: ../snapshot.c
+      - path: ../system_sdl.c
+      - path: ../tape.c
+      - path: ../ula.c
+      - path: ../via.c
+      - path: ../plugins/ch376/ch376.c
+      - path: ../plugins/ch376/oric_ch376_plugin.c
+      - path: ../plugins/twilighte_board/oric_twilighte_board_plugin.c
+      # --- Code partagé avec la version Mac ---
+      - path: ../macos/Sources/clipboard_shim.c
+      - path: ../macos/Sources/macos_glue.c
+      # --- Couche iOS en Swift ---
+      - path: Sources
+      # --- Ressources (préparées par prepare_ios.sh, hors iCloud) ---
+      - path: ${ORIC_IOS_DEPS}/OricData
+        type: folder
+        buildPhase: resources
+      - path: ${ORIC_IOS_DEPS}/Assets.xcassets
+    dependencies:
+      - framework: ${ORIC_IOS_DEPS}/SDL2.framework
+        embed: true
+        codeSign: true
+    settings:
+      base:
+        PRODUCT_NAME: Oricutron
+        PRODUCT_BUNDLE_IDENTIFIER: ${ORIC_BUNDLE_ID}
+        DEVELOPMENT_TEAM: ${ORIC_TEAM_ID}
+        CODE_SIGN_STYLE: Automatic
+        INFOPLIST_FILE: Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/Bridge-iOS.h
+        GCC_PREFIX_HEADER: Prefix.h
+        GCC_PRECOMPILE_PREFIX_HEADER: NO
+        GCC_C_LANGUAGE_STANDARD: gnu99
+        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        HEADER_SEARCH_PATHS:
+          - "$(SRCROOT)/.."
+          - "$(SRCROOT)/../plugins/ch376"
+          - "$(SRCROOT)/../plugins/twilighte_board"
+          - "${ORIC_IOS_DEPS}/SDL2.framework/Headers"
+        FRAMEWORK_SEARCH_PATHS:
+          - "${ORIC_IOS_DEPS}"
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/Frameworks"

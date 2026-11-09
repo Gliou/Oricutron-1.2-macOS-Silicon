@@ -1,0 +1,60 @@
+ORICUTRON POUR iPHONE / iPAD — compilation et installation
+==========================================================
+
+Il faut : un Mac avec l'application Xcode, un iPhone (iOS 15 ou plus récent),
+un câble USB-C et ton identifiant Apple (gratuit).
+
+
+1. PRÉPARER LE PROJET (une fois, puis après chaque mise à jour du code)
+-----------------------------------------------------------------------
+Double-clique sur  ios/prepare_ios.command
+Le script télécharge et compile SDL2 pour iPhone, génère le projet
+Oricutron.xcodeproj et l'ouvre dans Xcode. (Premier lancement : quelques minutes.)
+
+
+2. RÉGLAGES DANS XCODE (la première fois)
+-----------------------------------------
+  • Xcode > Réglages > Comptes > « + » > Apple ID : connecte ton identifiant Apple.
+  • Dans le projet : cible « Oricutron » > onglet « Signing & Capabilities » >
+    « Team » : choisis ton nom (Personal Team).
+
+
+3. PRÉPARER L'iPHONE (la première fois)
+---------------------------------------
+  • Branche l'iPhone au Mac, déverrouille-le et touche « Se fier à cet ordinateur ».
+  • Active le mode développeur :
+    Réglages > Confidentialité et sécurité > Mode développeur > activer,
+    puis redémarre l'iPhone et confirme.
+    (L'option n'apparaît qu'après avoir branché l'iPhone avec Xcode ouvert.)
+
+
+4. INSTALLER
+------------
+  • En haut de la fenêtre Xcode, choisis ton iPhone comme destination.
+  • Clique sur le bouton ▶ (ou ⌘R).
+  • Au premier lancement, l'iPhone refuse d'ouvrir l'app (« développeur non fiable ») :
+    Réglages > Général > VPN et gestion de l'appareil > ton Apple ID > Faire confiance.
+  • Relance l'app depuis l'écran d'accueil.
+
+Avec un identifiant Apple gratuit, l'app expire au bout de 7 jours :
+rebranche l'iPhone et clique à nouveau sur ▶ dans Xcode. Tes ROMs et fichiers sont conservés.
+
+
+5. LES ROMs
+-----------
+Au premier lancement, une fenêtre liste les ROMs manquantes.
+« Importer des ROMs… » ouvre l'app Fichiers : choisis tes fichiers .rom
+(iCloud Drive, AirDrop depuis le Mac…). On peut aussi les copier dans
+Fichiers > Sur mon iPhone > Oricutron > roms.
+
+
+6. UTILISATION
+--------------
+  • Le clavier de l'Oric est affiché sous l'écran : touche les touches du doigt.
+    SHIFT, CTRL et FUNCT restent enfoncées jusqu'à la touche suivante.
+  • Barre du bas : Cassette, Disquette, CLOAD (tape CLOAD"" + Entrée), Reset,
+    et « Plus » : menu Oricutron (comme F1), ouvrir un fichier, lecteur 1, changer de machine, coller du texte,
+    ROMs, À propos.
+  • Tes cassettes, disquettes et sauvegardes sont dans
+    Fichiers > Sur mon iPhone > Oricutron.
+  • Pas de son ? Vérifie le bouton silence (Action) de l'iPhone.
