@@ -133,6 +133,19 @@ void macos_menu_command(struct machine *oric, int code)
   }
 }
 
+/* oricutron.cfg placé à côté d'Oricutron.app (comportement d'origine d'Oricutron).
+   Vide = celui du dossier de données (~/Library/Application Support/Oricutron). */
+static char config_override[4096];
+
+void macos_set_config_path(const char *path)
+{
+  if (!path) { config_override[0] = 0; return; }
+  strncpy(config_override, path, sizeof(config_override) - 1);
+  config_override[sizeof(config_override) - 1] = 0;
+}
+
+const char *macos_config_path(void) { return config_override; }
+
 /* Appelée depuis Swift (Fichier > Ouvrir…) : poste le fichier comme un glisser-déposer. */
 void macos_push_open_file(const char *path)
 {

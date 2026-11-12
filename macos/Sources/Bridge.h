@@ -21,4 +21,7 @@ int macos_keyboard_positional(void);
 /// macos_glue.c : ouvre un fichier (.tap/.ort/.wav/.dsk/.sna) comme s'il était déposé sur la fenêtre
 void macos_push_open_file(const char *path);
 
+/// macos_glue.c : oricutron.cfg à utiliser à la place de celui du dossier de données
+void macos_set_config_path(const char *path);
+
 #endif

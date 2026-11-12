@@ -44,6 +44,15 @@ Copie les fichiers .rom d'une distribution officielle d'Oricutron dans :
 Menu Fichier > Vérifier les ROMs… pour revoir la liste à tout moment.
 
 
+   CONFIGURATION (oricutron.cfg)
+   Au lancement, Oricutron lit oricutron.cfg (machine, mode vidéo,
+   clavier virtuel, joysticks…) :
+     • en priorité celui placé à côté de l'app, comme l'Oricutron
+       d'origine (ex. /Applications/oricutron.cfg) ;
+     • sinon celui du dossier de données :
+       ~/Library/Application Support/Oricutron/oricutron.cfg
+
+
 3. UTILISATION
 --------------
   Fichier > Ouvrir…                         ⌘O   (tout type de fichier)

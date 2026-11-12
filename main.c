@@ -79,6 +79,9 @@
 void macos_open_file(struct machine *oric, const char *file);
 void macos_menu_command(struct machine *oric, int code);
 SDL_Keycode macos_map_key(struct machine *oric, SDL_Scancode sc, SDL_Keycode sym);
+#ifndef __IPHONEOS__
+const char *macos_config_path(void);
+#endif
 #endif
 
 #define FRAMES_TO_AVERAGE 8
@@ -527,8 +530,21 @@ static void load_config(struct start_opts *sto, struct machine *oric)
   char tbtmp[32];
   char config_path[4096];
 
-  strcpy(config_path, "oricutron.cfg");
-  add_fileprefix(config_path, 4096);
+#if defined(ORICUTRON_SWIFT_HOST) && !defined(__IPHONEOS__)
+  // macOS : comme l'Oricutron d'origine, un oricutron.cfg placé à côté
+  // d'Oricutron.app est prioritaire (sinon celui du dossier de données).
+  if(macos_config_path()[0])
+  {
+    strncpy(config_path, macos_config_path(), sizeof(config_path) - 1);
+    config_path[sizeof(config_path) - 1] = 0;
+  }
+  else
+#endif
+  {
+    strcpy(config_path, "oricutron.cfg");
+    add_fileprefix(config_path, 4096);
+  }
+  printf("Configuration : %s\n", config_path);
   f = fopen(config_path, "r");
   if(!f) return;
 

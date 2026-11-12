@@ -63,6 +63,14 @@ let cfg = dataDir.appendingPathComponent("oricutron.cfg")
 if !fm.fileExists(atPath: cfg.path) {
     fm.createFile(atPath: cfg.path, contents: Data())
 }
+// Comme l'Oricutron d'origine : un oricutron.cfg placé dans le même dossier
+// qu'Oricutron.app (ex. /Applications/oricutron.cfg) est prioritaire.
+let cfgBesideApp = Bundle.main.bundleURL.deletingLastPathComponent()
+    .appendingPathComponent("oricutron.cfg")
+if fm.isReadableFile(atPath: cfgBesideApp.path) {
+    macos_set_config_path(cfgBesideApp.path)
+}
+
 var args = CommandLine.arguments
 args[0] = cfg.path
 // macOS ajoute parfois -psn_XXX au lancement depuis le Finder : on l'ignore.
