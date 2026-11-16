@@ -4,7 +4,7 @@ Compilé avec ClaudeAI
 =====================
 
 Émulateur Oric-1 / Oric Atmos / Telestrat / Pravetz 8D.
-Cœur d'émulation : Oricutron (Peter Gordon, licence GPL v2).
+Cœur d'émulation : Oricutron (Peter Gordon https://github.com/pete-gordon/oricutron , licence GPL v2).
 Couche macOS réécrite en Swift.
 
 Compatible macOS 11 (Big Sur) ou plus récent, Mac Apple Silicon (M1, M2, M3, M4…) uniquement.
