@@ -1,14 +1,37 @@
-ORICUTRON pour macOS — version de test
-======================================
+ORICUTRON pour Mac Apple Silicon, iPhone et iPad
+================================================
 Compilé avec ClaudeAI
 =====================
 
 Émulateur Oric-1 / Oric Atmos / Telestrat / Pravetz 8D.
 Cœur d'émulation : Oricutron (Peter Gordon https://github.com/pete-gordon/oricutron , licence GPL v2).
-Couche macOS réécrite en Swift.
+Couches macOS et iOS réécrites en Swift.
 
-Compatible macOS 11 (Big Sur) ou plus récent, Mac Apple Silicon (M1, M2, M3, M4…) uniquement.
-Cette version ne fonctionne pas sur les Mac Intel.
+- **Mac** : macOS 11 (Big Sur) ou plus récent, Mac Apple Silicon (M1, M2, M3, M4…).
+  L'application compilée de `releases/` ne fonctionne pas sur les Mac Intel.
+- **iPhone / iPad** : iOS / iPadOS 15 ou plus récent (voir « Sur iPhone / iPad » plus bas).
+
+Page de présentation : https://gliou.github.io/Oricutron-1.2-macOS-Silicon/
+
+![Oricutron sur Mac : écran de l'Oric Atmos et clavier virtuel](docs/screenshot-mac.jpg)
+
+
+IN ENGLISH
+----------
+**Oricutron 1.2 for Apple Silicon Macs, iPhone and iPad** — a native port of
+Peter Gordon's Oricutron, the Oric-1 / Oric Atmos / Telestrat / Pravetz 8D emulator.
+
+- Native macOS app (Swift + SDL2) for M1, M2, M3, M4… Macs: native menus, drag and
+  drop of `.tap` / `.dsk` / `.sna` files, positional keyboard mapping for non-QWERTY
+  keyboards, on-screen Oric keyboard.
+- iPhone / iPad app (iOS 15+) with a touch Oric keyboard and import of ROMs and
+  tapes/disks from the Files app.
+- Downloads: `releases/Oricutron-macOS-arm64.zip` (Mac) and
+  `releases/Oricutron-iOS-unsigned.ipa` (iPhone / iPad, to be signed with your own
+  Apple ID, e.g. with Sideloadly or AltStore, or built with Xcode from `ios/`).
+- Oric ROMs are copyrighted and **not included** (`basic11b.rom` must be added).
+- Licence: GNU GPL v2, like the original Oricutron. All credit for the emulator
+  goes to Peter Gordon and the Oricutron contributors.
 
 
 ORIGINE ET CRÉDITS

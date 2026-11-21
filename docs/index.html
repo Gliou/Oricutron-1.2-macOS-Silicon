@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oricutron for Mac (Apple Silicon), iPhone &amp; iPad – Oric Atmos emulator</title>
+<meta name="description" content="Oricutron 1.2, the Oric-1 / Oric Atmos / Telestrat / Pravetz 8D emulator by Peter Gordon, ported natively to Apple Silicon Macs (M1, M2, M3, M4), iPhone and iPad. Free and open source (GPL v2). Émulateur Oric pour Mac, iPhone et iPad.">
+<meta name="keywords" content="Oric, Oric Atmos, Oric-1, Telestrat, Pravetz 8D, Oricutron, emulator, émulateur, Mac, macOS, Apple Silicon, M1, M2, M3, M4, iPhone, iPad, iOS, 6502, retro computing, Tangerine">
+<link rel="canonical" href="https://gliou.github.io/Oricutron-1.2-macOS-Silicon/">
+<link rel="icon" href="icon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Oricutron for Mac (Apple Silicon), iPhone &amp; iPad">
+<meta property="og:description" content="The Oric-1 / Oric Atmos emulator Oricutron, ported natively to Apple Silicon Macs, iPhone and iPad.">
+<meta property="og:url" content="https://gliou.github.io/Oricutron-1.2-macOS-Silicon/">
+<meta property="og:image" content="https://gliou.github.io/Oricutron-1.2-macOS-Silicon/screenshot-mac.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Oricutron for Mac, iPhone and iPad",
+  "alternateName": "Oricutron 1.2 macOS Apple Silicon / iOS",
+  "applicationCategory": "GameApplication",
+  "applicationSubCategory": "Emulator",
+  "operatingSystem": "macOS 11+ (Apple Silicon), iOS 15+, iPadOS 15+",
+  "softwareVersion": "1.2.0",
+  "license": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+  "url": "https://gliou.github.io/Oricutron-1.2-macOS-Silicon/",
+  "downloadUrl": "https://github.com/Gliou/Oricutron-1.2-macOS-Silicon/raw/oric/releases/Oricutron-macOS-arm64.zip",
+  "codeRepository": "https://github.com/Gliou/Oricutron-1.2-macOS-Silicon",
+  "screenshot": "https://gliou.github.io/Oricutron-1.2-macOS-Silicon/screenshot-mac.jpg",
+  "author": { "@type": "Person", "name": "Peter Gordon", "url": "https://github.com/pete-gordon/oricutron" },
+  "contributor": { "@type": "Person", "name": "Gliou", "url": "https://github.com/Gliou" }
+}
+</script>
+<style>
+  :root {
+    --bg: #0b0b0d; --panel: #16161b; --line: #2a2a33;
+    --text: #f2f2f2; --muted: #a9a9b3;
+    --red: #e0403a; --cyan: #3fd0e0; --yellow: #f5d84a;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  a { color: var(--cyan); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  header { border-bottom: 1px solid var(--line); }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .02em; }
+  .brand img { width: 32px; height: 32px; border-radius: 7px; }
+  .lang button {
+    background: none; border: 1px solid var(--line); color: var(--muted);
+    font: inherit; font-size: 14px; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+  }
+  .lang button[aria-pressed="true"] { color: var(--text); border-color: var(--muted); }
+  .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: center; padding: 48px 0; }
+  .stripes { display: flex; gap: 6px; margin-bottom: 18px; }
+  .stripes span { height: 6px; flex: 0 0 42px; border-radius: 3px; }
+  h1 { font-size: 40px; line-height: 1.12; margin: 0 0 16px; letter-spacing: -.01em; }
+  h1 em { font-style: normal; color: var(--yellow); }
+  .lead { color: var(--muted); font-size: 19px; margin: 0 0 26px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    display: inline-block; padding: 12px 18px; border-radius: 9px; text-decoration: none;
+    font-weight: 600; border: 1px solid var(--line); color: var(--text); background: var(--panel);
+  }
+  .btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+  .btn small { display: block; font-weight: 400; font-size: 13px; opacity: .85; }
+  .shot { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); display: block; }
+  section { padding: 36px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 26px; margin: 0 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .card h3 { margin: 0 0 8px; font-size: 18px; }
+  .card p, .card li { color: var(--muted); margin: 0; }
+  ol, ul { padding-left: 22px; }
+  li { margin: 6px 0; }
+  code { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 15px; }
+  .note { color: var(--muted); font-size: 15px; }
+  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 15px; }
+  [data-lang] { display: none; }
+  html[lang="en"] [data-lang="en"], html[lang="fr"] [data-lang="fr"] { display: revert; }
+  @media (max-width: 760px) {
+    .hero { grid-template-columns: 1fr; gap: 28px; padding: 32px 0; }
+    h1 { font-size: 31px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap bar">
+    <div class="brand"><img src="icon.png" alt="" width="32" height="32">Oricutron · Mac · iPhone · iPad</div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-set="en">English</button>
+      <button type="button" data-set="fr">Français</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <div class="stripes" aria-hidden="true">
+        <span style="background:var(--red)"></span><span style="background:var(--yellow)"></span><span style="background:var(--cyan)"></span>
+      </div>
+      <h1 data-lang="en">The <em>Oric Atmos</em> is back, on your Mac, iPhone and iPad</h1>
+      <h1 data-lang="fr">L'<em>Oric Atmos</em> revit sur votre Mac, iPhone et iPad</h1>
+      <p class="lead" data-lang="en">A native port of <strong>Oricutron 1.2</strong>, Peter Gordon's Oric-1 / Oric Atmos / Telestrat / Pravetz 8D emulator, for Apple Silicon Macs (M1, M2, M3, M4…) and iOS devices. Free and open source.</p>
+      <p class="lead" data-lang="fr">Un portage natif d'<strong>Oricutron 1.2</strong>, l'émulateur Oric-1 / Oric Atmos / Telestrat / Pravetz 8D de Peter Gordon, pour les Mac Apple Silicon (M1, M2, M3, M4…) et les iPhone / iPad. Libre et gratuit.</p>
+      <div class="buttons">
+        <a class="btn primary" href="https://github.com/Gliou/Oricutron-1.2-macOS-Silicon/raw/oric/releases/Oricutron-macOS-arm64.zip">
+          <span data-lang="en">Download for Mac</span><span data-lang="fr">Télécharger pour Mac</span>
+          <small>Apple Silicon · macOS 11+</small>
+        </a>
+        <a class="btn" href="https://github.com/Gliou/Oricutron-1.2-macOS-Silicon/raw/oric/releases/Oricutron-iOS-unsigned.ipa">
+          <span data-lang="en">iPhone / iPad (.ipa)</span><span data-lang="fr">iPhone / iPad (.ipa)</span>
+          <small>iOS / iPadOS 15+</small>
+        </a>
+        <a class="btn" href="https://github.com/Gliou/Oricutron-1.2-macOS-Silicon">
+          <span data-lang="en">Source code</span><span data-lang="fr">Code source</span>
+          <small>GitHub · GPL v2</small>
+        </a>
+      </div>
+    </div>
+    <img class="shot" src="screenshot-mac.jpg" width="640" height="752"
+         alt="Oricutron on macOS: Oric Extended Basic start-up screen above the on-screen Oric keyboard">
+  </div>
+
+  <section>
+    <h2 data-lang="en">Features</h2>
+    <h2 data-lang="fr">Fonctionnalités</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Mac</h3>
+        <p data-lang="en">Native Apple Silicon app with macOS menus, drag and drop of <code>.tap</code>, <code>.dsk</code> and <code>.sna</code> files, “Open with” from the Finder, and a missing-ROM check at start-up.</p>
+        <p data-lang="fr">App native Apple Silicon avec menus macOS, glisser-déposer des fichiers <code>.tap</code>, <code>.dsk</code> et <code>.sna</code>, « Ouvrir avec » depuis le Finder et vérification des ROMs au démarrage.</p>
+      </div>
+      <div class="card">
+        <h3>iPhone &amp; iPad</h3>
+        <p data-lang="en">Touch Oric keyboard, toolbar for tapes, disks, CLOAD and reset, and import of ROMs, tapes and disks from the Files app.</p>
+        <p data-lang="fr">Clavier Oric tactile, barre d'outils pour cassettes, disquettes, CLOAD et Reset, import des ROMs, cassettes et disquettes depuis l'app Fichiers.</p>
+      </div>
+      <div class="card">
+        <h3 data-lang="en">Keyboard</h3>
+        <h3 data-lang="fr">Clavier</h3>
+        <p data-lang="en">Positional mapping: each Mac key presses the Oric key at the same place, so AZERTY and QWERTZ keyboards work. Clickable on-screen Oric keyboard.</p>
+        <p data-lang="fr">Correspondance par position : chaque touche du Mac actionne la touche de l'Oric au même endroit, même sur un clavier AZERTY. Clavier Oric cliquable à l'écran.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-lang="en">Installation</h2>
+    <h2 data-lang="fr">Installation</h2>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="card">
+        <h3>Mac</h3>
+        <ol data-lang="en">
+          <li>Unzip the download and drag <strong>Oricutron</strong> into Applications.</li>
+          <li>First launch: right-click the app › Open › Open (the app is not notarized).</li>
+          <li>Add the Oric ROMs (see below) via <em>File › Open data folder</em>.</li>
+        </ol>
+        <ol data-lang="fr">
+          <li>Décompressez le téléchargement et glissez <strong>Oricutron</strong> dans Applications.</li>
+          <li>Premier lancement : clic droit sur l'app › Ouvrir › Ouvrir (app non notariée).</li>
+          <li>Ajoutez les ROMs de l'Oric (voir plus bas) via <em>Fichier › Ouvrir le dossier de données</em>.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>iPhone / iPad</h3>
+        <ol data-lang="en">
+          <li>Sign and install the <code>.ipa</code> with your own Apple ID, using a sideloading tool such as Sideloadly or AltStore — or build it with Xcode from the <code>ios/</code> folder.</li>
+          <li>On the device: Settings › General › VPN &amp; Device Management › trust your Apple ID.</li>
+          <li>With a free Apple ID, reinstall every 7 days.</li>
+        </ol>
+        <ol data-lang="fr">
+          <li>Signez et installez l'<code>.ipa</code> avec votre propre Apple ID, avec un outil comme Sideloadly ou AltStore — ou compilez-la avec Xcode depuis le dossier <code>ios/</code>.</li>
+          <li>Sur l'appareil : Réglages › Général › VPN et gestion de l'appareil › faites confiance à votre Apple ID.</li>
+          <li>Avec un Apple ID gratuit, réinstallez tous les 7 jours.</li>
+        </ol>
+      </div>
+    </div>
+    <p class="note" data-lang="en">The Oric ROMs are copyrighted and are <strong>not included</strong>: copy <code>basic11b.rom</code> (Oric Atmos), <code>basic10.rom</code> (Oric-1) and, for disks, <code>microdis.rom</code> from an official Oricutron distribution.</p>
+    <p class="note" data-lang="fr">Les ROMs de l'Oric sont protégées par le droit d'auteur et <strong>ne sont pas incluses</strong> : copiez <code>basic11b.rom</code> (Oric Atmos), <code>basic10.rom</code> (Oric-1) et, pour les disquettes, <code>microdis.rom</code> depuis une distribution officielle d'Oricutron.</p>
+  </section>
+
+  <section>
+    <h2 data-lang="en">Credits</h2>
+    <h2 data-lang="fr">Crédits</h2>
+    <p data-lang="en">Oricutron is the work of <strong>Peter Gordon</strong> and its contributors — <a href="https://github.com/pete-gordon/oricutron">github.com/pete-gordon/oricutron</a>. This Mac / iOS port is distributed under the same GNU GPL v2 licence. Thank you for this wonderful emulator.</p>
+    <p data-lang="fr">Oricutron est l'œuvre de <strong>Peter Gordon</strong> et de ses contributeurs — <a href="https://github.com/pete-gordon/oricutron">github.com/pete-gordon/oricutron</a>. Ce portage Mac / iOS est distribué sous la même licence GNU GPL v2. Merci pour cet émulateur formidable.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Oricutron 1.2 · Mac Apple Silicon · iPhone · iPad ·
+    <a href="https://github.com/Gliou/Oricutron-1.2-macOS-Silicon">GitHub</a> ·
+    GNU GPL v2
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    function set(lang) {
+      root.lang = lang;
+      document.querySelectorAll('.lang button').forEach(function (b) {
+        b.setAttribute('aria-pressed', b.dataset.set === lang ? 'true' : 'false');
+      });
+      try { localStorage.setItem('lang', lang); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('lang'); } catch (e) {}
+    var nav = (navigator.language || 'en').toLowerCase().indexOf('fr') === 0 ? 'fr' : 'en';
+    set(saved === 'fr' || saved === 'en' ? saved : nav);
+    document.querySelectorAll('.lang button').forEach(function (b) {
+      b.addEventListener('click', function () { set(b.dataset.set); });
+    });
+  })();
+</script>
+</body>
+</html>

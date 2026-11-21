@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://gliou.github.io/Oricutron-1.2-macOS-Silicon/sitemap.xml
