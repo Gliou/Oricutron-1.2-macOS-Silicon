@@ -44,6 +44,8 @@ Les autres fichiers du cœur n'ont pas été modifiés.
 
 1. INSTALLATION
 ---------------
+### Sur Mac
+
 Décompresse le fichier .zip, puis glisse « Oricutron » dans le dossier « Applications ».
 
 Premier lancement : l'app n'est pas notariée par Apple, macOS va donc
@@ -57,6 +59,41 @@ la bloquer (« Oricutron ne peut pas être ouvert… »). Pour l'autoriser :
     xattr -dr com.apple.quarantine /Applications/Oricutron.app
 
 Il suffit de le faire une seule fois.
+
+### Sur iPhone / iPad
+
+Compatible iOS / iPadOS 15 ou plus récent. Apple n'autorise pas l'installation
+directe d'une app hors App Store : il faut la signer avec ton identifiant Apple
+(un compte gratuit suffit). Deux méthodes :
+
+**Méthode A — compiler avec Xcode** (il faut un Mac avec Xcode) :
+
+1. Télécharge ce dépôt (bouton « Code » > « Download ZIP ») et décompresse-le.
+2. Double-clique sur `ios/prepare_ios.command` : le script prépare SDL2, génère
+   le projet Xcode et l'ouvre (quelques minutes la première fois).
+3. Dans Xcode : Réglages > Comptes > « + » > ajoute ton identifiant Apple,
+   puis cible « Oricutron » > « Signing & Capabilities » > « Team » : choisis ton nom.
+4. Branche l'iPhone / iPad au Mac, déverrouille-le et touche « Se fier à cet ordinateur ».
+   Active le mode développeur : Réglages > Confidentialité et sécurité >
+   Mode développeur, puis redémarre l'appareil.
+5. En haut de Xcode, choisis ton appareil comme destination, puis clique sur ▶.
+
+**Méthode B — installer l'app déjà compilée** `releases/Oricutron-iOS-unsigned.ipa`,
+avec un outil qui la signe avec ton identifiant Apple (par exemple Sideloadly ou
+AltStore, à installer sur ton Mac ou ton PC). Utile aussi pour les appareils restés
+en iOS 15 ou 16, que les dernières versions de Xcode ne savent plus gérer.
+
+Dans les deux cas :
+
+- au premier lancement, l'appareil refuse l'app (« développeur non fiable ») :
+  Réglages > Général > VPN et gestion de l'appareil > ton identifiant Apple >
+  Faire confiance ;
+- avec un identifiant Apple gratuit, l'app expire au bout de 7 jours : il suffit
+  de la réinstaller de la même façon (tes ROMs et fichiers sont conservés) ;
+- les ROMs s'importent depuis l'app (« Importer des ROMs… ») ou dans
+  Fichiers > Sur mon iPhone > Oricutron > roms.
+
+Détails et utilisation : voir `ios/LISEZ-MOI-iOS.txt`.
 
 
 2. LES ROMs (OBLIGATOIRE)
