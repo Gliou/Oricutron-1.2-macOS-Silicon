@@ -6,6 +6,8 @@
 # écran tactile) quand la boucle est lente.
 # Variables : X(),Y() positions (tampon circulaire), H tête, T queue,
 # DX/DY direction, S score, FX/FY nourriture.
+# La queue est effacée AVANT d'avancer la tête : la case qu'elle quitte est libre
+# (ligne 155), sinon le serpent mourait en suivant sa queue de près.
 10 REM SERPENT - ORICUTRON MAC/IOS
 20 CLS:PAPER 0:INK 2:POKE 618,10
 30 DIM X(255),Y(255)
@@ -23,10 +25,11 @@
 130 IF K=10 AND DY=0 THEN DX=0:DY=1
 140 IF K=11 AND DY=0 THEN DX=0:DY=-1
 150 NX=X(H)+DX:NY=Y(H)+DY:C=SCRN(NX,NY)
+155 IF C=79 AND NX=X(T) AND NY=Y(T) THEN C=32
 160 IF C=42 OR C=79 THEN 300
+165 IF C<>64 THEN PLOT X(T),Y(T)," ":T=(T+1) AND 255
 170 H=(H+1) AND 255:X(H)=NX:Y(H)=NY:PLOT NX,NY,"O"
 180 IF C=64 THEN S=S+10:PING:PLOT 9,26,STR$(S):GOSUB 500:GOTO 100
-190 PLOT X(T),Y(T)," ":T=(T+1) AND 255
 200 WAIT 8:GOTO 100
 300 EXPLODE:PLOT 15,12,"  PERDU !  ":PLOT 10,14," ESPACE = REJOUER "
 310 GET K$:IF K$<>" " THEN 310
