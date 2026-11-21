@@ -9,6 +9,9 @@ Les `.tap` sont aussi copiés dans `~/Library/Application Support/Oricutron/tape
 | Serpent | `serpent.bas` → `serpent.tap` | BASIC | Petit jeu : flèches pour diriger, mange les `@` (+10), perdu si on touche le bord ou sa queue. Espace pour commencer / rejouer. |
 | Écran titre | `titre.s` → `titre.tap` | Assembleur 6502 | Titre double hauteur, arc-en-ciel animé, texte défilant. Une touche rend l'écran BASIC d'avant. |
 
+Le serpent existe aussi en **disquette** `serpent.dsk` (lecteur Microdisc), qui
+démarre toute seule sur le jeu (copiée aussi dans `~/Library/Application Support/Oricutron/disks`).
+
 Captures d'écran prises dans Oricutron : dossier `captures/`.
 
 ## Lancer un programme
@@ -17,6 +20,27 @@ Captures d'écran prises dans Oricutron : dossier `captures/`.
   Les trois programmes démarrent tout seuls après le chargement.
 - Depuis le Terminal :
   `/Applications/Oricutron.app/Contents/MacOS/Oricutron "$PWD/serpent.tap"`
+
+## Lancer une disquette
+
+Il faut la ROM `microdis.rom` dans le dossier `roms` d'Oricutron, et choisir le
+lecteur Microdisc :
+`/Applications/Oricutron.app/Contents/MacOS/Oricutron -k m -d "$PWD/serpent.dsk"`
+(ou, dans Oricutron, choisir le lecteur Microdisc puis insérer la disquette, et faire un reset).
+
+## Refaire la disquette
+
+```
+python3 oric_dsk.py serpent.bas serpent.dsk
+```
+
+`oric_dsk.py` range le programme BASIC tokenisé sur la piste 0 (secteurs 4 et
+suivants, 3840 octets au plus) et y ajoute le code de démarrage
+`boot_microdisc.s` (assemblé par `xa`). Au reset, la ROM du Microdisc lit le
+secteur 1, puis le répertoire (secteur 3), où elle trouve `SYSTEM.DOS`, et exécute
+le code du secteur 2. Ce code charge le programme, démarre le BASIC comme un
+vrai reset (sans le test mémoire, qui effacerait tout), puis fait `RUN` dès que
+le BASIC affiche `Ready`. Pas de DOS sur la disquette : `SAVE`/`DIR` n'y marchent pas.
 
 ## Refaire les cassettes
 
@@ -44,5 +68,9 @@ cassette qui se lance toute seule. `xa` est l'assembleur 6502 (Homebrew : `brew 
 - **Écran texte en assembleur** : le début de chaque ligne contient des attributs de
   couleur posés par la ROM. Les effacer change les couleurs du BASIC ; il vaut mieux
   sauvegarder l'écran et le remettre en sortant.
+- **Disquette Microdisc** : la ROM refuse la disquette (« No operating system on
+  disc ») si le secteur 1 de la piste 0 est vide. Il doit contenir en `$12` le
+  numéro du secteur du répertoire (3). Le code du secteur 2 doit tenir dans les
+  195 octets qui suivent l'en-tête et le prologue.
 - **Assembleur xa** : un `:` est un séparateur d'instructions, même dans un commentaire,
   et une adresse qui commence par `(` est lue comme un adressage indirect.
