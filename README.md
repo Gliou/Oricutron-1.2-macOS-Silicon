@@ -11,6 +11,37 @@ Compatible macOS 11 (Big Sur) ou plus récent, Mac Apple Silicon (M1, M2, M3, M4
 Cette version ne fonctionne pas sur les Mac Intel.
 
 
+ORIGINE ET CRÉDITS
+------------------
+Oricutron est l'œuvre de **Peter Gordon** et de ses contributeurs :
+https://github.com/pete-gordon/oricutron
+
+Il est distribué sous licence GNU GPL v2 (voir LICENSE.txt), tout comme ce portage.
+Un grand merci à eux pour cet émulateur.
+
+Organisation du dépôt :
+
+- **à la racine** : les sources d'Oricutron, rangées comme dans le dépôt d'origine
+  (cœur C, roms/, disks/, tapes/, fichiers de compilation Windows, Linux, Amiga…) ;
+- **macos/** : couche native macOS (Swift) et scripts de compilation ;
+- **ios/** : version iPhone / iPad (Swift, projet XcodeGen) ;
+- **releases/** : applications compilées (sans la ROM basic11b, pour les droits d'auteur).
+
+Fichiers d'Oricutron modifiés pour ce portage (par rapport au dépôt d'origine) :
+
+- **main.c** : branchement des couches Swift (menus natifs, glisser-déposer, clavier
+  par position), lecture d'un oricutron.cfg placé à côté de l'app, et correction du
+  blocage lors du passage entre rendu OpenGL et rendu logiciel ;
+- **keyboard.c / keyboard.h** : un clic bref sur le clavier virtuel est maintenu au
+  moins 3 images, pour que la ROM de l'Oric voie la touche ;
+- **gui.c** : retour au rendu logiciel si OpenGL est indisponible, lien vers ce dépôt
+  dans le menu ;
+- **system_sdl.c** : création du contexte OpenGL compatible avec les macOS récents,
+  rattachement de la fenêtre SDL à l'app sur iPhone / iPad.
+
+Les autres fichiers du cœur n'ont pas été modifiés.
+
+
 1. INSTALLATION
 ---------------
 Décompresse le fichier .zip, puis glisse « Oricutron » dans le dossier « Applications ».
