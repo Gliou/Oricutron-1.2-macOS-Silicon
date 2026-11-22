@@ -1,0 +1,277 @@
+LA SAUVEGARDE DU HALL OF FAME DE SERPENT.DSK
+Routine 6502 de lecture / écriture d'un secteur sur le lecteur Microdisc
+Créé le 2026-11-22 by GliouCNR©70
+
+======================================================================
+1. EN DEUX MOTS
+======================================================================
+
+Le jeu du serpent garde les 10 meilleurs scores (nom + score) dans un seul
+secteur de la disquette : piste 0, face 0, secteur 18, 256 octets.
+
+Le BASIC de l'Atmos ne sait pas parler au lecteur de disquette, et la
+disquette serpent.dsk ne contient pas de DOS (ni Sedoric, ni OricDOS).
+Le jeu apporte donc sa propre petite routine en langage machine, 93 octets,
+qui commande directement le contrôleur de disquette :
+
+    CALL #400   lit le secteur 18     ->  tampon mémoire $9800-$98FF
+    CALL #403   écrit le tampon $9800-$98FF  ->  secteur 18
+
+Après chaque appel, PEEK(#4FE) vaut 0 si tout s'est bien passé, sinon un
+code d'erreur (voir section 6).
+
+Le source de la routine est hof_disque.s ; ses 93 octets sont recopiés dans
+les lignes DATA 1000 à 1040 de serpent.bas. Le désassemblage ci-dessous a été
+fait à partir des octets réellement présents sur serpent.dsk (programme lu
+sur la piste 0, lignes DATA décodées, puis désassemblé avec da65) : ils sont
+identiques, octet pour octet, à ceux que produit l'assembleur xa.
+
+
+======================================================================
+2. LE MATÉRIEL : LE CONTRÔLEUR MICRODISC
+======================================================================
+
+Le Microdisc contient un contrôleur de disquette WD1793 (Western Digital).
+Le 6502 le voit comme quelques adresses mémoire de la page 3 :
+
+    $0310  FDC_CMD   en écriture : on y met une COMMANDE
+                     en lecture  : on y lit l'ÉTAT (status) du contrôleur
+    $0311  FDC_TRK   numéro de la piste sous la tête (pas utilisé ici)
+    $0312  FDC_SEC   numéro du SECTEUR à lire ou écrire
+    $0313  FDC_DAT   registre de DONNÉES : un octet à la fois
+    $0314  MD_CTRL   registre de contrôle du Microdisc (lecteur, face, ROM...)
+    $0318  MD_DRQ    bit 7 = 0 quand le contrôleur attend ou donne un octet
+                     ("DRQ", Data ReQuest), bit 7 = 1 sinon
+
+Les deux commandes utilisées :
+
+    $80  = %1000 0000   lire UN secteur
+    $A0  = %1010 0000   écrire UN secteur
+
+Le bit 0 de l'état ($0310) s'appelle BUSY : il vaut 1 tant que la commande
+est en cours, et retombe à 0 quand le secteur est fini (ou en cas d'erreur).
+
+Le principe d'un transfert, en lecture comme en écriture :
+  1. on choisit le secteur ($0312), on envoie la commande ($0310) ;
+  2. tant que BUSY = 1 :
+       - si DRQ est actif, on lit (ou écrit) un octet dans $0313 ;
+       - sinon on attend ;
+  3. quand BUSY retombe, on regarde les bits d'erreur de l'état.
+
+Ce transfert se fait "octet par octet, à la main" (pas de DMA) : le 6502 doit
+être là au bon moment pour chaque octet, sinon l'octet est perdu. C'est pour
+ça que la routine coupe les interruptions (SEI) pendant le transfert.
+
+
+======================================================================
+3. OÙ EST LA ROUTINE EN MÉMOIRE, ET POURQUOI LÀ
+======================================================================
+
+    $0400-$045C   la routine (93 octets)
+    $04FE         STATUS : le résultat du dernier appel
+    $04FF         marque posée par le démarrage de la disquette (68 = "D")
+    $9800-$98FF   TAMPON : l'image en mémoire du secteur 18
+
+- La page 4 ($0400-$04FF) n'est pas utilisée par le BASIC de l'Atmos quand
+  il n'y a pas de DOS : c'est l'endroit classique pour un petit programme
+  machine appelé par CALL.
+- $9800 est juste au-dessus de HIMEM (le BASIC s'arrête à $97FF). En mode
+  texte, cette zone ne sert à rien (elle ne sert qu'au jeu de caractères
+  du mode HIRES) : le BASIC ne l'écrasera jamais.
+
+
+======================================================================
+4. LE DÉSASSEMBLAGE COMMENTÉ
+======================================================================
+
+Colonnes : adresse | octets | instruction | explication
+
+---- Table d'entrée : deux sauts, pour que les adresses d'appel ne changent
+---- jamais, même si le code derrière est modifié un jour.
+
+0400  4C 06 04     JMP $0406        CALL #400  -> va à "lire"
+0403  4C 2B 04     JMP $042B        CALL #403  -> va à "écrire"
+
+---- LIRE : secteur 18 -> tampon $9800
+
+0406  78           SEI              coupe les interruptions (le transfert
+                                    ne doit pas être interrompu)
+0407  A9 12        LDA #$12         $12 = 18, le numéro du secteur
+0409  8D 12 03     STA $0312        ... dans le registre secteur (FDC_SEC)
+040C  A9 80        LDA #$80         commande "lire un secteur"
+040E  8D 10 03     STA $0310        ... envoyée au contrôleur (FDC_CMD)
+0411  20 57 04     JSR $0457        petite attente : le contrôleur a besoin
+                                    de quelques microsecondes avant que
+                                    son état soit valable
+0414  A0 00        LDY #$00         Y = index dans le tampon (0 à 255)
+
+0416  AD 10 03     LDA $0310        lit l'état du contrôleur
+0419  4A           LSR A            décale à droite : le bit 0 (BUSY)
+                                    passe dans la retenue C
+041A  90 34        BCC $0450        BUSY = 0 -> commande terminée -> "fin"
+
+041C  AD 18 03     LDA $0318        lit le signal DRQ (bit 7)
+041F  30 F5        BMI $0416        bit 7 = 1 : pas d'octet prêt
+                                    -> retourne tester BUSY
+0421  AD 13 03     LDA $0313        un octet est arrivé : on le prend
+0424  99 00 98     STA $9800,Y      ... et on le range dans le tampon
+0427  C8           INY              octet suivant
+0428  4C 1C 04     JMP $041C        va attendre l'octet suivant
+                                    (directement sur DRQ : plus rapide)
+
+---- ÉCRIRE : tampon $9800 -> secteur 18 (même schéma, sens inverse)
+
+042B  78           SEI              coupe les interruptions
+042C  A9 12        LDA #$12         secteur 18
+042E  8D 12 03     STA $0312
+0431  A9 A0        LDA #$A0         commande "écrire un secteur"
+0433  8D 10 03     STA $0310
+0436  20 57 04     JSR $0457        petite attente
+0439  A0 00        LDY #$00         Y = index dans le tampon
+
+043B  AD 10 03     LDA $0310        état du contrôleur
+043E  4A           LSR A            BUSY -> retenue
+043F  90 0F        BCC $0450        terminé -> "fin"
+
+0441  AD 18 03     LDA $0318        le contrôleur réclame-t-il un octet ?
+0444  30 F5        BMI $043B        pas encore -> retester BUSY
+0446  B9 00 98     LDA $9800,Y      prend l'octet dans le tampon
+0449  8D 13 03     STA $0313        ... et le donne au contrôleur
+044C  C8           INY
+044D  4C 41 04     JMP $0441        octet suivant
+
+---- FIN : commune aux deux. En arrivant ici, A contient l'état du
+---- contrôleur DÉJÀ DÉCALÉ d'un bit vers la droite (par le LSR).
+
+0450  29 2E        AND #$2E         ne garde que les bits d'erreur (section 6)
+0452  8D FE 04     STA $04FE        les range dans STATUS -> PEEK(#4FE)
+0455  58           CLI              rétablit les interruptions (clavier,
+                                    son, horloge du BASIC)
+0456  60           RTS              retour au BASIC (fin du CALL)
+
+---- ATTENTE : boucle de 4 tours, quelques dizaines de microsecondes
+
+0457  A0 04        LDY #$04
+0459  88           DEY
+045A  D0 FD        BNE $0459        tant que Y <> 0
+045C  60           RTS
+
+
+======================================================================
+5. LE FORMAT DU SECTEUR 18
+======================================================================
+
+    octet 0         72 = "H" : signature. Si elle manque (disquette neuve,
+                    secteur vide), le jeu garde son Hall of Fame d'exemple.
+    octets 1-10     joueur n°1  : 8 lettres du nom, puis le score sur
+                    2 octets (octet haut, octet bas)
+    octets 11-20    joueur n°2
+    ...
+    octets 91-100   joueur n°10
+    octets 101-255  inutilisés (zéros)
+
+    Le joueur I commence à l'octet  I*10-9.
+    Score = octet_haut * 256 + octet_bas  (jusqu'à 65535 points).
+
+Exemple réel, lu sur la disquette de test après un record :
+
+    H
+    GLIOU    150      ->  47 4C 49 4F 55 20 20 20  00 96
+    ATMOS    100      ->  41 54 4D 4F 53 20 20 20  00 64
+    ...
+
+
+======================================================================
+6. LE CODE D'ERREUR (PEEK(#4FE))
+======================================================================
+
+L'état du WD1793 a ces bits (dans $0310) :
+
+    bit 0  BUSY            commande en cours
+    bit 1  DRQ             octet demandé
+    bit 2  LOST DATA       un octet a été raté (le 6502 trop lent)
+    bit 3  CRC ERROR       le secteur est abîmé
+    bit 4  RECORD NOT FOUND  le secteur 18 n'existe pas sur la piste
+    bit 6  WRITE PROTECT   disquette protégée en écriture
+
+Après le LSR, chaque bit a glissé d'un cran vers la droite ; le masque
+$2E = %0010 1110 garde exactement les quatre erreurs :
+
+    valeur de PEEK(#4FE)    signification
+           0                tout va bien
+           2                octet perdu
+           4                erreur de CRC (secteur abîmé)
+           8                secteur 18 introuvable
+          32                disquette protégée en écriture
+    (plusieurs erreurs à la fois s'additionnent)
+
+
+======================================================================
+7. CE QUE FAIT LE BASIC AUTOUR
+======================================================================
+
+Ligne 40 - installe la routine :
+    40 FOR I=0 TO 92:READ B:POKE #400+I,B:NEXT
+    Les 93 nombres des lignes DATA 1000-1040 sont recopiés en $0400-$045C.
+
+Ligne 60 - au démarrage, relit le Hall of Fame :
+    60 D=(PEEK(#4FF)=68):IF D THEN CALL #400:IF PEEK(#4FE)=0 AND
+       PEEK(#9800)=72 THEN GOSUB 950
+    - D vaut "vrai" seulement si le jeu a démarré de la disquette : c'est le
+      code de démarrage (boot_microdisc.s) qui a posé 68 en $04FF. Chargé
+      par cassette, le jeu n'essaie jamais d'accéder au lecteur.
+    - CALL #400 lit le secteur ; si pas d'erreur ET signature "H" présente,
+      le sous-programme 950 recopie le tampon dans les tableaux N$() et SC().
+
+Lignes 950-960 - tampon -> tableaux :
+    950 FOR I=1 TO 10:A=#9800+I*10-9:N$(I)=""
+    955 FOR J=0 TO 7:N$(I)=N$(I)+CHR$(PEEK(A+J)):NEXT
+    960 SC(I)=PEEK(A+8)*256+PEEK(A+9):NEXT:RETURN
+
+Lignes 800-855 - après une partie, si le score bat le 10e :
+    cherche la place P, demande le nom (8 lettres, complété par des
+    espaces), décale vers le bas les joueurs suivants, insère le nouveau,
+    puis, si D, appelle 900 pour sauvegarder.
+
+Lignes 900-925 - tableaux -> tampon -> disquette :
+    900 POKE #9800,72:FOR I=1 TO 10:A=#9800+I*10-9      signature + adresse
+    905 FOR J=0 TO 7:POKE A+J,ASC(MID$(N$(I),J+1,1)):NEXT    le nom
+    910 POKE A+8,INT(SC(I)/256):POKE A+9,SC(I) AND 255:NEXT  le score
+    915 PRINT ... "SAUVEGARDE SUR LA DISQUETTE...":CALL #403  écriture
+    920 IF PEEK(#4FE) THEN PRINT "   ERREUR DISQUE";PEEK(#4FE):WAIT 300
+
+
+======================================================================
+8. DÉROULEMENT COMPLET D'UNE SAUVEGARDE
+======================================================================
+
+  1. Le joueur perd avec un score qui entre dans les 10 premiers.
+  2. Il tape son nom ; le BASIC met à jour N$() et SC().
+  3. Ligne 900 : le BASIC remplit les 256 octets du tampon $9800.
+  4. CALL #403 : la routine envoie "écrire le secteur 18" au WD1793 et lui
+     passe les 256 octets un par un, à chaque demande (DRQ).
+  5. Le contrôleur écrit le secteur (avec son CRC) sur la disquette.
+  6. BUSY retombe ; la routine range le code d'erreur en $04FE et rend la
+     main au BASIC.
+  7. Dans Oricutron, la disquette est un fichier : grâce au réglage
+     diskautosave = yes, l'émulateur réécrit lui-même serpent.dsk une
+     fraction de seconde après la modification. Sur un vrai Oric, c'est la
+     disquette elle-même qui est écrite.
+  8. Au prochain démarrage, la ligne 60 relit ce secteur (CALL #400).
+
+
+======================================================================
+9. LIMITES ET PRÉCAUTIONS
+======================================================================
+
+- La routine suppose que la tête du lecteur est déjà sur la piste 0. C'est
+  vrai : le démarrage vient d'y lire le programme et rien d'autre ne la
+  déplace. Elle ne fait donc pas de "seek" (déplacement de tête).
+- Elle suppose aussi le lecteur 0, face 0, déjà choisis par le démarrage
+  (registre $0314) ; elle n'y touche pas.
+- Pas de nouvel essai en cas d'erreur : le code d'erreur est simplement
+  rendu au BASIC, qui l'affiche.
+- Y compte de 0 à 255 : la routine transfère au plus 256 octets, la taille
+  exacte d'un secteur de ces disquettes.
+- Le secteur 18 est réservé par oric_dsk.py : le programme BASIC ne doit
+  occuper que les secteurs 4 à 17 (3584 octets au plus).
