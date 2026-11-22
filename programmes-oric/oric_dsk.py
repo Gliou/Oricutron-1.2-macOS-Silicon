@@ -2,15 +2,20 @@
 """
 oric_dsk.py — fabrique une disquette .dsk (Microdisc) qui démarre toute seule
 sur un programme BASIC, pour l'Oric Atmos.
-Créé le 2026-11-21 by GliouCNR©70 — secteur de données ajouté le 2026-11-22
+Créé le 2026-11-21 by GliouCNR©70 — secteur de données ajouté le 2026-11-22,
+programme compacté (espaces retirés, oric_tap.compact) et chargement sur
+plusieurs pistes avec image de présentation le 2026-11-22
 
-  python3 oric_dsk.py  programme.bas  sortie.dsk
+  python3 oric_dsk.py  programme.bas  sortie.dsk  [image.hir]
 
-Le programme est tokenisé par oric_tap.py, puis rangé sur la piste 0 à partir
-du secteur 4 (17 au plus). Le secteur 18 est laissé vide : le programme peut
-y garder ses données (le Hall of Fame du serpent). Le secteur 2 reçoit le code de démarrage (boot_microdisc.s,
-assemblé avec xa) et le secteur 3 le répertoire où la ROM du Microdisc cherche
-SYSTEM.DOS. Dans Oricutron :
+Piste 0 : secteur 1 = en-tête lu par la ROM du Microdisc, secteur 2 = 1re étape
+du démarrage (boot_microdisc.s), secteur 3 = répertoire où la ROM cherche
+SYSTEM.DOS, secteurs 4-5 = 2e étape (boot_etage2.s), secteur 18 = laissé vide
+pour les données du programme (le Hall of Fame du serpent).
+Pistes 1, 2... (depuis le 2026-11-22) : le programme BASIC tokenisé par
+oric_tap.py (24 secteurs = 6 Ko au plus, lu en $8000), puis l'image HIRES
+facultative (8 000 octets, lue en $6000, que le programme affiche lui-même).
+Les deux étapes sont assemblées avec xa. Dans Oricutron :
 
   Oricutron -k m -d sortie.dsk
 
@@ -28,9 +33,10 @@ from oric_tap import basic_program, BASIC_START
 
 SIDES, TRACKS, SECTORS = 1, 40, 18
 TRACK_SIZE = 6400
-FIRST_PROG_SECTOR = 4
 DATA_SECTOR = SECTORS                                  # secteur 18 : données du programme
-MAX_PROG_SECTORS = DATA_SECTOR - FIRST_PROG_SECTOR     # 14 secteurs = 3584 octets
+ETAGE2_SECTOR, ETAGE2_MAX = 4, 2                       # 2e étape : secteurs 4-5, piste 0
+MAX_PROG_SECTORS = 24                                  # tampon $8000-$97FF
+IMAGE_SECTORS = 32                                     # $6000-$7FFF
 # Ordre des secteurs sur la piste (entrelacement 3), comme les disquettes Sedoric.
 ORDER = [s for start in (1, 2, 3) for s in range(start, SECTORS + 1, 3)]
 
@@ -71,12 +77,16 @@ def track(num, side, sectors):
     return bytes(t + b"\x4e" * (TRACK_SIZE - len(t)))
 
 
-def boot_sector(nsect, pend):
+def assembler(source, *defs):
     with tempfile.TemporaryDirectory() as tmp:
-        out = os.path.join(tmp, "boot.bin")
-        subprocess.run(["xa", f"-DNSECT={nsect}", f"-DPEND=${pend:04X}", "-o", out,
-                        os.path.join(HERE, "boot_microdisc.s")], check=True)
-        code = open(out, "rb").read()
+        out = os.path.join(tmp, "code.bin")
+        subprocess.run(["xa", *[f"-D{d}" for d in defs], "-o", out,
+                        os.path.join(HERE, source)], check=True)
+        return open(out, "rb").read()
+
+
+def boot_sector():
+    code = assembler("boot_microdisc.s")
     # La ROM du Microdisc ne charge pas la fin du secteur : au-delà de l'octet
     # $F7 le code est perdu (constaté le 2026-11-22, la disquette plantait).
     if len(code) > BOOT_MAX:
@@ -84,28 +94,53 @@ def boot_sector(nsect, pend):
     return code + bytes(256 - len(code))
 
 
+def position(n):
+    """n-ième secteur à partir de la piste 1, secteur 1 -> (piste, secteur)."""
+    return 1 + n // SECTORS, 1 + n % SECTORS
+
+
 def main(argv):
-    if len(argv) != 3:
+    if len(argv) not in (3, 4):
         print(__doc__); return 1
     src, dst = argv[1], argv[2]
-    prog = basic_program(open(src, encoding="utf-8").read())
+    prog = basic_program(open(src, encoding="utf-8").read(), compacter=True)   # sans espaces
     nsect = (len(prog) + 255) // 256
     if nsect > MAX_PROG_SECTORS:
         sys.exit(f"programme trop long : {len(prog)} octets ({MAX_PROG_SECTORS * 256} au plus)")
-    sectors0 = {1: SECTOR1_HEADER + bytes(256 - len(SECTOR1_HEADER)),
-                2: boot_sector(nsect, BASIC_START + len(prog)),
-                3: DIRECTORY + bytes(256 - len(DIRECTORY))}
-    padded = prog + bytes(nsect * 256 - len(prog))
-    for i in range(nsect):
-        sectors0[FIRST_PROG_SECTOR + i] = padded[i * 256:(i + 1) * 256]
+    image = b""
+    if len(argv) == 4:
+        image = open(argv[3], "rb").read()
+        if len(image) != 8000:
+            sys.exit(f"{argv[3]} : une image HIRES fait 8000 octets, pas {len(image)}")
+        image += bytes(IMAGE_SECTORS * 256 - len(image))
+    isect = len(image) // 256
+    ptrk, psec = position(0)
+    itrk, isec = position(nsect)
+    etage2 = assembler("boot_etage2.s", f"PTRK={ptrk}", f"PSEC={psec}", f"NSECT={nsect}",
+                       f"ITRK={itrk}", f"ISEC={isec}", f"ISECT={isect}",
+                       f"PEND=${BASIC_START + len(prog):04X}")
+    if len(etage2) > ETAGE2_MAX * 256:
+        sys.exit(f"2e étape trop longue : {len(etage2)} octets")
+    etage2 += bytes(ETAGE2_MAX * 256 - len(etage2))
+
+    pistes = {0: {1: SECTOR1_HEADER + bytes(256 - len(SECTOR1_HEADER)),
+                  2: boot_sector(),
+                  3: DIRECTORY + bytes(256 - len(DIRECTORY))}}
+    for i in range(ETAGE2_MAX):
+        pistes[0][ETAGE2_SECTOR + i] = etage2[i * 256:(i + 1) * 256]
+    donnees = prog + bytes(nsect * 256 - len(prog)) + image
+    for n in range(len(donnees) // 256):
+        t, s_ = position(n)
+        pistes.setdefault(t, {})[s_] = donnees[n * 256:(n + 1) * 256]
 
     header = b"MFM_DISK" + SIDES.to_bytes(4, "little") + TRACKS.to_bytes(4, "little") + (1).to_bytes(4, "little")
-    image = bytearray(header + bytes(256 - len(header)))
+    out = bytearray(header + bytes(256 - len(header)))
     for side in range(SIDES):
         for t in range(TRACKS):
-            image += track(t, side, sectors0 if (t, side) == (0, 0) else {})
-    open(dst, "wb").write(image)
-    print(f"{dst} : programme BASIC de {len(prog)} octets sur {nsect} secteurs, démarrage automatique")
+            out += track(t, side, pistes.get(t, {}) if side == 0 else {})
+    open(dst, "wb").write(out)
+    print(f"{dst} : programme BASIC de {len(prog)} octets ({nsect} secteurs, piste {ptrk})"
+          + (f", image HIRES (piste {itrk} secteur {isec})" if image else "") + ", démarrage automatique")
     return 0
 
 

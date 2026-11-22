@@ -1,0 +1,351 @@
+SERPENT.BAS COMMENTÉ — le programme BASIC du jeu, ligne par ligne
+Créé le 2026-11-22 by GliouCNR©70
+
+À gauche : le programme tel qu'il est dans serpent.bas (lignes rangées par
+numéro, comme l'Oric les range). Les lignes trop longues sont coupées après
+un « : » et continuent en retrait. À droite : ce que fait la ligne.
+Rappels : PLOT x,y,... écrit à la colonne x, ligne y de l'écran texte ;
+SCRN(x,y) rend le code du caractère qui s'y trouve ; PEEK/POKE lisent et
+écrivent la mémoire ; # devant un nombre = hexadécimal ; en BASIC Oric,
+une comparaison vraie vaut -1.
+
+─────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────
+12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT                       │ Lit les 44 octets de la routine titre_copie (DATA 990-995)
+                                                                 │ et les pose en $0460.
+                                                                 │
+14 IF PEEK(#4FF)=68 THEN PAPER 0:INK 6:HIRES:POKE 618,10:        │ Démarré de la disquette (marque 68 en $04FF) ? Alors : passe
+      CALL #460:PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:   │ en HIRES, cache le curseur, recopie l'image de présentation
+      POKE 618,10:POKE 735,0:GOSUB 980:TEXT                      │ ($6000 -> écran $A000) avec CALL #460, écrit APPUIE SUR UNE
+                                                                 │ TOUCHE en bas, attend une touche (980) puis revient en mode
+                                                                 │ TEXTE.
+                                                                 │
+20 CLS:PAPER 0:INK 2:POKE 618,10                                 │ Efface l'écran, fond noir, encre verte (Hall of Fame),
+                                                                 │ curseur caché (618 = 10).
+                                                                 │
+30 DIM X(255),Y(255),N$(10),SC(10):W$=CHR$(160):B$=CHR$(255):    │ Tableaux : X(),Y() = positions des anneaux (tampon
+      F$="@"                                                     │ circulaire de 256), N$()/SC() = noms et scores du Hall of
+                                                                 │ Fame. W$ = mur intérieur (espace en inverse, pavé blanc), B$
+                                                                 │ = bord (bloc plein en inverse, rouge), F$ = la pomme
+                                                                 │ (caractère @ redessiné).
+                                                                 │
+32 FOR I=0 TO 7:POKE #B7F8+I,63:NEXT                             │ Redessine le caractère 127 en bloc plein (8 lignes de 6
+                                                                 │ points allumés = 63).
+                                                                 │
+34 FOR I=0 TO 7:READ B:POKE #B600+I,B:NEXT                       │ Redessine le caractère @ en petite pomme (8 nombres lus en
+                                                                 │ DATA 996).
+                                                                 │
+35 DIM CR(5),OP(5),EL(5),PD(5),NW(5),XA(5,15),YA(5,15),XB(5,15), │ Mémoire des 5 tableaux : CR() créé ?, OP() porte de droite
+      YB(5,15)                                                   │ ouverte ?, EL() pommes déjà mangées, PD() hauteur de la
+                                                                 │ porte, NW() nombre de murs, XA/YA-XB/YB extrémités de chaque
+                                                                 │ mur (15 au plus).
+                                                                 │
+36 FOR I=0 TO 71:READ B:POKE #B7B0+I,B:NEXT:Z$=CHR$(122)         │ Redessine les caractères 118 à 126 : 4 queues, le corps, 4
+                                                                 │ têtes (DATA 997-999). Z$ = un anneau du corps.
+                                                                 │
+40 FOR I=0 TO 92:READ B:POKE #400+I,B:NEXT                       │ Lit les 93 octets de la routine disque du Hall of Fame (DATA
+                                                                 │ 1000-1040) et les pose en $0400.
+                                                                 │
+50 FOR I=1 TO 10:N$(I)="ATMOS   ":SC(I)=110-I*10:NEXT            │ Hall of Fame par défaut : 10 fois ATMOS, scores 100, 90 ...
+                                                                 │ 10.
+                                                                 │
+60 D=(PEEK(#4FF)=68):IF D THEN CALL #400:                        │ D = vrai si on a démarré de la disquette. Si oui, CALL #400
+      IF PEEK(#4FE)=0 AND PEEK(#9800)=72 THEN GOSUB 950          │ lit le secteur 18 de la piste 0 dans $9800 ; s'il n'y a pas
+                                                                 │ d'erreur et qu'il commence par H (72), on charge ce Hall of
+                                                                 │ Fame (950).
+                                                                 │
+70 GOSUB 700:PLOT 12,22,"ESPACE = JOUER"                         │ Affiche le Hall of Fame (700) et l'invitation à jouer.
+                                                                 │
+75 GET K$:IF K$<>" " THEN 75                                     │ Attend la barre d'espace.
+                                                                 │
+80 S=0:L=1:N=4:EN=0:FOR I=1 TO 5:CR(I)=0:OP(I)=0:EL(I)=0:NEXT:   │ Nouvelle partie : score 0, niveau 1, serpent de 4 anneaux,
+      GOSUB 400                                                  │ entrée par la gauche ; oublie les 5 tableaux (ils seront
+                                                                 │ retirés au hasard) ; dessine le niveau 1 (400).
+                                                                 │
+100 K=PEEK(735):IF K<128 THEN 150                                │ BOUCLE DU JEU. 735 = dernière touche mémorisée par la ROM ;
+                                                                 │ bit 7 (128) = nouvelle touche. Rien de nouveau : on avance
+                                                                 │ (150).
+                                                                 │
+105 POKE 735,0:K=K-128                                           │ Touche lue : on l'efface et on garde son code (8 à 11 =
+                                                                 │ flèches).
+                                                                 │
+110 IF K=8 AND DX=0 THEN DX=-1:DY=0                              │ Flèche gauche : on tourne à gauche, sauf si on allait déjà à
+                                                                 │ l'horizontale (pas de demi-tour).
+                                                                 │
+120 IF K=9 AND DX=0 THEN DX=1:DY=0                               │ Flèche droite.
+                                                                 │
+130 IF K=10 AND DY=0 THEN DX=0:DY=1                              │ Flèche bas (Y augmente vers le bas).
+                                                                 │
+140 IF K=11 AND DY=0 THEN DX=0:DY=-1                             │ Flèche haut.
+                                                                 │
+150 NX=X(H)+DX:NY=Y(H)+DY:C=SCRN(NX,NY)                          │ Case où va arriver la tête (NX,NY) et ce qu'elle contient
+                                                                 │ (SCRN = code du caractère à l'écran).
+                                                                 │
+155 IF C>117 AND C<127 AND NX=X(T) AND NY=Y(T) AND GR=0 THEN C=3 │ Si c'est la queue et qu'elle va bouger (le serpent ne
+      2                                                          │ grandit pas), la case sera libre : on fait comme si c'était
+                                                                 │ vide.
+                                                                 │
+157 IF NX=37 AND C=32 THEN N=((H-T) AND 255)+1+GR:EL(L)=E:L=L+1: │ Case vide dans le bord droit = la porte : on note la
+      EN=0:PING:GOSUB 400:GOTO 100                               │ longueur du serpent et les pommes mangées ici, et on passe
+                                                                 │ au niveau suivant en entrant par la gauche.
+                                                                 │
+158 IF NX=2 AND C=32 THEN N=((H-T) AND 255)+1+GR:EL(L)=E:L=L-1:  │ Case vide dans le bord gauche = la porte de retour : même
+      EN=1:PING:GOSUB 400:GOTO 100                               │ chose vers le niveau précédent, en ressortant par sa porte
+                                                                 │ de droite.
+                                                                 │
+160 IF C=255 OR C=160 OR (C>117 AND C<127) THEN 300              │ Bord rouge (255), mur blanc (160) ou un morceau du serpent
+                                                                 │ (118-126) : perdu (300).
+                                                                 │
+165 IF C=64 THEN 170                                             │ Une pomme (64) : la queue ne bouge pas, le serpent grandit
+                                                                 │ d'un anneau.
+                                                                 │
+166 IF GR THEN GR=GR-1:GOTO 170                                  │ Le corps sort encore du mur d'entrée (GR anneaux à sortir) :
+                                                                 │ la queue ne bouge pas non plus.
+                                                                 │
+167 PLOT X(T),Y(T)," ":T=(T+1) AND 255                           │ Sinon on efface la queue et on avance l'indice de queue
+                                                                 │ (tampon circulaire : AND 255).
+                                                                 │
+170 PLOT X(H),Y(H),Z$:H=(H+1) AND 255:X(H)=NX:Y(H)=NY            │ L'ancienne tête devient un anneau du corps ; on range la
+                                                                 │ nouvelle position de la tête.
+                                                                 │
+172 HC=123-(DX<0):IF DY THEN HC=125-(DY<0)                       │ Choisit le dessin de la tête selon la direction : 123
+                                                                 │ droite, 124 gauche, 125 bas, 126 haut (en BASIC Oric, vrai =
+                                                                 │ -1).
+                                                                 │
+175 PLOT NX,NY,CHR$(HC)                                          │ Dessine la nouvelle tête.
+                                                                 │
+177 IF T<>H THEN I=(T+1) AND 255:TX=X(I)-X(T):TC=118-(TX<0):     │ Si le serpent a plus d'un anneau : regarde où est l'anneau
+      IF TX=0 THEN TC=120-(Y(I)<Y(T))                            │ qui suit la queue (à droite, à gauche, dessous, dessus) et
+                                                                 │ choisit le dessin de la queue (118 à 121) qui pointe dans
+                                                                 │ l'autre sens.
+                                                                 │
+178 IF T<>H THEN PLOT X(T),Y(T),CHR$(TC)                         │ Dessine la queue en pointe.
+                                                                 │
+180 IF C<>64 THEN 200                                            │ Pas de pomme mangée : petite pause puis on recommence (200).
+                                                                 │
+185 S=S+L*10:E=E+1:PING:GOSUB 600:GOSUB 500                      │ Pomme mangée : 10 points par niveau, une pomme de plus dans
+                                                                 │ ce niveau, son PING, score affiché (600), nouvelle pomme
+                                                                 │ (500).
+                                                                 │
+190 IF E=5 AND L<5 THEN GOSUB 650                                │ 5e pomme d'un niveau 1 à 4 : la porte de droite s'ouvre
+                                                                 │ (650).
+                                                                 │
+195 GOTO 100                                                     │ Tour suivant, sans pause (on vient de manger).
+                                                                 │
+200 WAIT 8:GOTO 100                                              │ Pause (vitesse du jeu) puis tour suivant.
+                                                                 │
+300 EXPLODE:PLOT 15,12,"  PERDU !  ":WAIT 250                    │ Perdu : bruit d'explosion, message, attente.
+                                                                 │
+310 IF S>SC(10) THEN GOSUB 800                                   │ Score meilleur que le 10e du Hall of Fame : on y entre
+                                                                 │ (800).
+                                                                 │
+320 GOTO 70                                                      │ Retour au Hall of Fame.
+                                                                 │
+400 CLS:H=0:T=0:GR=N-1:E=EL(L):LY=13:IF L>1 THEN LY=PD(L-1)+1    │ DESSIN D'UN TABLEAU. Efface l'écran ; le serpent repart d'un
+                                                                 │ seul anneau, GR = anneaux qui sortiront du mur ; pommes déjà
+                                                                 │ mangées ici. LY = hauteur d'entrée : celle de la porte de
+                                                                 │ droite du tableau précédent (13 au niveau 1).
+                                                                 │
+405 FOR I=1 TO 25:PLOT 1,I,6:PLOT 2,I,B$:PLOT 37,I,B$:NEXT       │ Pour chaque ligne : encre cyan (attribut 6 en colonne 1), et
+                                                                 │ un bloc rouge dans les colonnes 2 et 37 (bords gauche et
+                                                                 │ droit).
+                                                                 │
+410 FOR I=3 TO 36:PLOT I,1,B$:PLOT I,25,B$:NEXT                  │ Bords du haut et du bas en blocs rouges.
+                                                                 │
+412 IF L>1 THEN FOR I=LY-1 TO LY+1:PLOT 2,I," ":NEXT             │ Niveaux 2 à 5 : ouvre la porte de gauche (3 cases) à la
+                                                                 │ hauteur LY.
+                                                                 │
+415 PLOT 2,26,6:PLOT 3,26,"SCORE":PLOT 14,26,7:                  │ Barre du bas : SCORE en cyan, NIV en blanc, HI-SCORE en
+      PLOT 15,26,"NIV"+STR$(L):PLOT 21,26,5:                     │ magenta (attributs 6, 7, 5 posés devant chaque mot).
+      PLOT 22,26,"HI-SCORE"                                      │
+                                                                 │
+417 PLOT 30,26,STR$(SC(1)):GOSUB 600                             │ Affiche le meilleur score du Hall of Fame, puis le score
+                                                                 │ (600).
+                                                                 │
+420 M$="NIVEAU"+STR$(L)+" - @ ="+STR$(L*10):GOSUB 660            │ Écrit « NIVEAU n - pomme = points » au centre de la barre de
+                                                                 │ statut (660).
+                                                                 │
+422 IF CR(L) THEN 472                                            │ Tableau déjà visité : on le redessine tel quel (472).
+                                                                 │
+423 CR(L)=1:PD(L)=3+INT(RND(1)*19):PY=PD(L):NW(L)=0              │ Première visite : on le marque créé, on tire la hauteur de
+                                                                 │ sa porte de droite (lignes 3 à 21) et on remet son compteur
+                                                                 │ de murs à 0.
+                                                                 │
+425 FOR W=1 TO L*3:FOR A=1 TO 30                                 │ On veut 3 murs par niveau (3, 6 ... 15), et on essaie 30
+                                                                 │ fois au plus de placer chacun.
+                                                                 │
+430 V=INT(RND(1)*2):U=1-V:Q=2+INT(RND(1)*(L+2))                  │ Tire un mur : V = 1 vertical, 0 horizontal (U = l'inverse) ;
+                                                                 │ Q = longueur, de 2 à L+3 cases.
+                                                                 │
+435 X1=4+INT(RND(1)*(33-Q*U-V)):Y1=3+INT(RND(1)*(22-Q*V-U))      │ Tire sa première case, en laissant une case libre contre
+                                                                 │ chaque bord.
+                                                                 │
+440 X2=X1+(Q-1)*U:Y2=Y1+(Q-1)*V:G=1                              │ Calcule sa dernière case ; G = 1 : place libre jusqu'à
+                                                                 │ preuve du contraire.
+                                                                 │
+445 IF X1<25 AND Y1<LY+3 AND Y2>LY-3 THEN G=0:GOTO 465           │ Refusé s'il empiète sur l'entrée du serpent (colonnes 3-24,
+                                                                 │ 2 lignes autour de LY).
+                                                                 │
+447 IF X2>31 AND Y1<PY+4 AND Y2>PY-2 THEN G=0:GOTO 465           │ Refusé s'il est devant la porte de droite (colonnes 32-36,
+                                                                 │ autour de PY).
+                                                                 │
+450 FOR I=X1-1 TO X2+1:FOR J=Y1-1 TO Y2+1                        │ Parcourt le mur ET le cadre d'une case tout autour...
+                                                                 │
+455 IF SCRN(I,J)<>32 THEN G=0:I=X2+1:J=Y2+1                      │ ...si une seule case n'est pas vide, le mur toucherait un
+                                                                 │ autre mur : refusé (et on sort des boucles).
+                                                                 │
+460 NEXT J,I                                                     │ Fin du parcours.
+                                                                 │
+465 IF G=0 THEN 470                                              │ Refusé : essai suivant.
+                                                                 │
+466 FOR I=X1 TO X2:FOR J=Y1 TO Y2:PLOT I,J,W$:NEXT J,I:A=30      │ Accepté : dessine le mur en pavés blancs et arrête les
+                                                                 │ essais (A=30).
+                                                                 │
+467 K=NW(L)+1:NW(L)=K:XA(L,K)=X1:YA(L,K)=Y1:XB(L,K)=X2:          │ Et l'enregistre dans la mémoire du tableau (pour le
+      YB(L,K)=Y2                                                 │ redessiner au retour).
+                                                                 │
+470 NEXT A,W:GOTO 474                                            │ Essai suivant / mur suivant ; puis on passe à la porte
+                                                                 │ (474).
+                                                                 │
+472 PY=PD(L):FOR K=1 TO NW(L):FOR I=XA(L,K) TO XB(L,K):          │ Tableau déjà visité : reprend sa porte et redessine ses murs
+      FOR J=YA(L,K) TO YB(L,K)                                   │ enregistrés...
+                                                                 │
+473 PLOT I,J,W$:NEXT J,I,K                                       │ ...case par case.
+                                                                 │
+474 IF OP(L) THEN FOR I=PY TO PY+2:PLOT 37,I," ":NEXT            │ Porte de droite déjà ouverte ? On la rouvre (3 cases vides).
+                                                                 │
+475 X(0)=3:Y(0)=LY:DX=1:DY=0:IF EN THEN X(0)=36:Y(0)=PY+1:DX=-1  │ Position de départ : à gauche à la hauteur LY en allant à
+                                                                 │ droite ; si on revient d'un niveau plus haut, à droite
+                                                                 │ devant la porte, en allant à gauche.
+                                                                 │
+477 PLOT X(0),Y(0),CHR$(123-(DX<0))                              │ Dessine la tête (tournée à droite ou à gauche).
+                                                                 │
+480 WAIT 100:POKE 735,0                                          │ Petite pause avant de jouer ; oublie les touches tapées
+                                                                 │ entre-temps.
+                                                                 │
+490 GOSUB 500:RETURN                                             │ Pose une pomme (500) et revient au jeu.
+                                                                 │
+500 FX=INT(RND(1)*34)+3:FY=INT(RND(1)*23)+2                      │ POSE D'UNE POMME : tire une case au hasard dans le
+                                                                 │ terrain...
+                                                                 │
+510 IF SCRN(FX,FY)<>32 THEN 500                                  │ ...recommence si elle n'est pas vide...
+                                                                 │
+520 PLOT FX,FY,F$:RETURN                                         │ ...et y dessine la pomme.
+                                                                 │
+600 PLOT 8,26,STR$(S):IF S>SC(1) THEN PLOT 30,26,STR$(S)         │ Affiche le score ; s'il bat le HI-SCORE, l'affiche aussi à
+                                                                 │ la place du HI-SCORE.
+                                                                 │
+610 RETURN                                                       │
+                                                                 │
+650 OP(L)=1:FOR I=PY TO PY+2:PLOT 37,I," ":NEXT:ZAP:RETURN       │ OUVERTURE DE LA PORTE DE DROITE : retenue pour ce tableau, 3
+                                                                 │ cases vides dans le bord, bruit ZAP.
+                                                                 │
+660 GOSUB 670:A=#BB80+INT((40-LEN(M$))/2)                        │ TEXTE DANS LA BARRE DE STATUT (ligne du haut, mémoire écran
+                                                                 │ $BB80) : efface-la puis calcule où commencer pour centrer
+                                                                 │ M$...
+                                                                 │
+665 FOR I=1 TO LEN(M$):POKE A+I-1,ASC(MID$(M$,I,1)):NEXT:RETURN  │ ...et écrit M$ lettre par lettre directement dans la mémoire
+                                                                 │ écran (PLOT ne sait pas écrire sur cette ligne).
+                                                                 │
+670 FOR I=#BB82 TO #BBA7:POKE I,32:NEXT:RETURN                   │ Efface la barre de statut (colonnes 2 à 39, ce qui fait
+                                                                 │ disparaître CAPS).
+                                                                 │
+700 GOSUB 670:CLS:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"          │ AFFICHAGE DU HALL OF FAME : barre de statut et écran
+                                                                 │ effacés, titre en cyan (attribut 6)...
+                                                                 │
+705 PLOT 11,5,3:PLOT 13,5,"HALL OF FAME"                         │ ...« HALL OF FAME » en jaune (3)...
+                                                                 │
+710 FOR I=1 TO 10:R=7+I                                          │ ...puis les 10 lignes, à partir de la ligne 8 de l'écran :
+                                                                 │
+715 PLOT 8,R,7:PLOT 9,R,RIGHT$(" "+STR$(I),3)+". "+N$(I)         │ rang et nom en blanc (7),
+                                                                 │
+720 PLOT 23,R,3:PLOT 24,R,RIGHT$("    "+STR$(SC(I)),6)           │ score en jaune, aligné à droite sur 6 caractères.
+                                                                 │
+725 NEXT:POKE 735,0:RETURN                                       │ Fin de la liste ; oublie les touches déjà tapées.
+                                                                 │
+800 P=11:FOR I=10 TO 1 STEP -1                                   │ ENTRÉE AU HALL OF FAME : cherche la place P du nouveau score
+                                                                 │ (du 10e vers le 1er)...
+                                                                 │
+805 IF S>SC(I) THEN P=I                                          │ ...le score bat celui de la place I : il prendra au moins
+                                                                 │ cette place.
+                                                                 │
+810 NEXT                                                         │
+                                                                 │
+815 CLS:POKE 618,11:PRINT:PRINT:                                 │ Écran de félicitations ; curseur visible (618 = 11) pour
+      PRINT "   BRAVO ! NOUVEAU RECORD :";S                      │ taper le nom.
+                                                                 │
+820 PRINT:PRINT "   HALL OF FAME, PLACE";P                       │
+                                                                 │
+825 PRINT:INPUT "   TON NOM (8 LETTRES)";NM$                     │ Demande le nom.
+                                                                 │
+830 POKE 618,10:IF NM$="" THEN NM$="?"                           │ Recache le curseur ; un nom vide devient « ? ».
+                                                                 │
+835 NM$=LEFT$(NM$+"        ",8)                                  │ Complète le nom par des espaces pour qu'il fasse 8 lettres.
+                                                                 │
+840 IF P<10 THEN FOR I=10 TO P+1 STEP -1:N$(I)=N$(I-1):          │ Décale vers le bas les scores moins bons (le 10e
+      SC(I)=SC(I-1):NEXT                                         │ disparaît)...
+                                                                 │
+845 N$(P)=NM$:SC(P)=S                                            │ ...et range le nouveau à sa place.
+                                                                 │
+850 IF D THEN GOSUB 900                                          │ Sur disquette : sauvegarde (900).
+                                                                 │
+855 RETURN                                                       │
+                                                                 │
+900 POKE #9800,72:FOR I=1 TO 10:A=#9800+I*10-9                   │ SAUVEGARDE : prépare le secteur dans le tampon $9800 : un H
+                                                                 │ (72) puis 10 fois 10 octets...
+                                                                 │
+905 FOR J=0 TO 7:POKE A+J,ASC(MID$(N$(I),J+1,1)):NEXT            │ ...les 8 lettres du nom...
+                                                                 │
+910 POKE A+8,INT(SC(I)/256):POKE A+9,SC(I) AND 255:NEXT          │ ...puis le score sur 2 octets (haut, bas).
+                                                                 │
+915 PRINT:PRINT "   SAUVEGARDE...":CALL #403                     │ Écrit le tampon dans le secteur 18 de la piste 0 (CALL #403,
+                                                                 │ routine de hof_disque.s).
+                                                                 │
+920 IF PEEK(#4FE) THEN PRINT "   ERREUR DISQUE";PEEK(#4FE):      │ Le contrôleur a signalé une erreur ($04FE <> 0) : on
+      WAIT 300                                                   │ l'affiche.
+                                                                 │
+925 RETURN                                                       │
+                                                                 │
+950 FOR I=1 TO 10:A=#9800+I*10-9:N$(I)=""                        │ LECTURE : reprend les 10 noms depuis le tampon $9800 (rempli
+                                                                 │ par CALL #400)...
+                                                                 │
+955 FOR J=0 TO 7:N$(I)=N$(I)+CHR$(PEEK(A+J)):NEXT                │ ...lettre par lettre...
+                                                                 │
+960 SC(I)=PEEK(A+8)*256+PEEK(A+9):NEXT:RETURN                    │ ...et les 10 scores (octet haut x 256 + octet bas).
+                                                                 │
+980 IF PEEK(735)<128 THEN 980                                    │ ATTENTE D'UNE TOUCHE sans GET (GET rallume le curseur) : on
+                                                                 │ guette le bit 7 de 735...
+                                                                 │
+985 POKE 735,0:RETURN                                            │ ...puis on oublie la touche.
+                                                                 │
+990 DATA 169,96,141,112,4,169,160,141,115,4,162,31,160,0,185,0,9 │ Routine machine titre_copie.s (copie de l'image $6000 ->
+      6,153,0,160,200,208                                        │ $A000), 1re partie.
+                                                                 │
+995 DATA 247,238,112,4,238,115,4,202,208,238,185,0,127,153,0,191 │ Routine titre_copie.s, 2e partie (44 octets en tout).
+      ,200,192,64,208,245,96                                     │
+                                                                 │
+996 DATA 6,8,27,63,63,63,30,12                                   │ Dessin de la pomme : 8 lignes de 6 points (32,16,8,4,2,1 de
+                                                                 │ gauche à droite).
+                                                                 │
+997 DATA 3,7,15,63,63,15,7,3,48,56,60,63,63,60,56,48,12,12,30,30 │ Dessin des 4 queues (caractères 118 à 121).
+      ,30,63,63,30,30,63,63,30,30,30,12,12                       │
+                                                                 │
+998 DATA 30,51,45,45,51,63,63,30,28,62,58,63,63,58,62,28,14,31,2 │ Dessin du corps (122) et des premières têtes (123, 124).
+      3,63                                                       │
+                                                                 │
+999 DATA 63,23,31,14,30,63,63,63,45,63,30,12,12,30,63,45,63,63,6 │ Fin des têtes (125 bas, 126 haut).
+      3,30                                                       │
+                                                                 │
+1000 DATA 76,6,4,76,43,4,120,169,18,141,18,3,169,128,141,16,3,32 │ Routine machine hof_disque.s : lecture / écriture du secteur
+      ,87,4                                                      │ du Hall of Fame (93 octets, voir HALL-OF-FAME-routine.txt).
+                                                                 │
+1010 DATA 160,0,173,16,3,74,144,52,173,24,3,48,245,173,19,3,153, │
+      0,152,200                                                  │
+                                                                 │
+1020 DATA 76,28,4,120,169,18,141,18,3,169,160,141,16,3,32,87,4,1 │
+      60,0,173                                                   │
+                                                                 │
+1030 DATA 16,3,74,144,15,173,24,3,48,245,185,0,152,141,19,3,200, │
+      76,65,4                                                    │
+                                                                 │
+1040 DATA 41,46,141,254,4,88,96,160,4,136,208,253,96             │ Fin de la routine disque.
+                                                                 │

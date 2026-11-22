@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 oric_tap.py — fabrique des fichiers cassette .tap pour l'Oric Atmos.
+Créé le 2026-11-21 by GliouCNR©70 — compact() ajouté le 2026-11-22
 
   python3 oric_tap.py basic  programme.bas  sortie.tap  [NOM]
       Programme BASIC texte (une ligne = numéro + instructions, mots-clés en
@@ -67,14 +68,42 @@ def crunch(text):
     return bytes(out)
 
 
-def basic_program(source):
+def compact(body):
+    """Retire les espaces hors des chaînes, des REM et des DATA (place gagnée sur
+    disquette). Ajouté le 2026-11-22 by GliouCNR©70. La ligne compactée n'est
+    gardée que si elle donne exactement les mêmes jetons que l'originale moins
+    ses espaces ; sinon (un mot-clé apparaîtrait en collant deux mots) on garde
+    la ligne telle quelle."""
+    ref = crunch(body)
+    want, in_quote, rest = bytearray(), False, False
+    for b in ref:
+        if rest or in_quote or b != 0x20:
+            want.append(b)
+        if b == 0x22 and not rest:
+            in_quote = not in_quote
+        if b in (TOK_REM, TOK_DATA) and not in_quote:
+            rest = True
+    out, in_quote = [], False
+    for i, c in enumerate(body):
+        if c == '"':
+            in_quote = not in_quote
+        if not in_quote and (body.startswith("REM", i) or body.startswith("DATA", i)):
+            out.append(body[i:]); break
+        if c != " " or in_quote:
+            out.append(c)
+    short = "".join(out)
+    return crunch(short) if crunch(short) == bytes(want) else ref
+
+
+def basic_program(source, compacter=False):
     lines = []
     for raw in source.splitlines():
         raw = raw.rstrip()
         if not raw.strip() or raw.lstrip().startswith("#"):
             continue                              # lignes vides et commentaires du fichier source
         num, _, body = raw.strip().partition(" ")
-        lines.append((int(num), crunch(body.lstrip())))
+        body = body.lstrip()
+        lines.append((int(num), compact(body) if compacter else crunch(body)))
     lines.sort()
     data, addr = bytearray(), BASIC_START
     for num, body in lines:

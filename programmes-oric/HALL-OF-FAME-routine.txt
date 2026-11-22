@@ -1,6 +1,7 @@
 LA SAUVEGARDE DU HALL OF FAME DE SERPENT.DSK
 Routine 6502 de lecture / écriture d'un secteur sur le lecteur Microdisc
-Créé le 2026-11-22 by GliouCNR©70
+Créé le 2026-11-22 by GliouCNR©70 — mis à jour le 2026-11-22 (démarrage sur
+plusieurs pistes)
 
 ======================================================================
 1. EN DEUX MOTS
@@ -23,7 +24,7 @@ code d'erreur (voir section 6).
 Le source de la routine est hof_disque.s ; ses 93 octets sont recopiés dans
 les lignes DATA 1000 à 1040 de serpent.bas. Le désassemblage ci-dessous a été
 fait à partir des octets réellement présents sur serpent.dsk (programme lu
-sur la piste 0, lignes DATA décodées, puis désassemblé avec da65) : ils sont
+sur la disquette, lignes DATA décodées, puis désassemblé avec da65) : ils sont
 identiques, octet pour octet, à ceux que produit l'assembleur xa.
 
 
@@ -265,8 +266,10 @@ Lignes 900-925 - tableaux -> tampon -> disquette :
 ======================================================================
 
 - La routine suppose que la tête du lecteur est déjà sur la piste 0. C'est
-  vrai : le démarrage vient d'y lire le programme et rien d'autre ne la
-  déplace. Elle ne fait donc pas de "seek" (déplacement de tête).
+  vrai : depuis que le programme et l'image sont rangés sur les pistes 1, 2...,
+  la 2e étape du démarrage (boot_etage2.s) ramène la tête sur la piste 0 avant
+  de lancer le BASIC, et rien d'autre ne la déplace ensuite. Elle ne fait donc
+  pas de "seek" (déplacement de tête).
 - Elle suppose aussi le lecteur 0, face 0, déjà choisis par le démarrage
   (registre $0314) ; elle n'y touche pas.
 - Pas de nouvel essai en cas d'erreur : le code d'erreur est simplement
