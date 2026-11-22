@@ -67,7 +67,10 @@ voit est exactement ce qui touche.
 disquette, le jeu commence par une image HIRES - SERPENT en dégradé jaune/rouge,
 un serpent, un `@`, « un jeu de GliouCNR©70 » - et attend une touche. L'écran
 reste noir pendant le chargement (le démarrage efface le message de la ROM),
-et ni CAPS ni le curseur ne s'affichent. L'image
+et ni CAPS ni le curseur ne s'affichent : le démarrage éteint le curseur et le
+verrouillage des majuscules (`$020C`), si bien que la ROM n'a plus jamais de CAPS
+à réafficher, même après `TEXT`. Le nom tapé pour le Hall of Fame est remis en
+majuscules par le programme. L'image
 est dessinée par `titre_serpent.py` (Python + Pillow, `pip install pillow`) au
 format HIRES de l'Oric (`serpent-titre.hir`, 8 000 octets) ; l'aperçu
 `captures/serpent-titre.png` est recalculé à partir de ces octets. Une ligne

@@ -17,7 +17,8 @@
 # 160 mur, 118-121 queue du serpent, 122 corps, 123-126 tête, 64 pomme.
 # Serpent dessiné (2026-11-22) : à chaque pas, l'ancienne tête devient un
 # anneau du corps et la nouvelle tête est tournée dans le sens de la marche
-# (lignes 170-175 : HC = 123 droite, 124 gauche, 125 bas, 126 haut).
+# (lignes 145-147 et 171 : HC = 123 droite, 124 gauche, 125 bas, 126 haut ;
+# H$ n'est recalculé que quand on change de direction).
 # Bord - colonnes 2 et 37, lignes 1 et 25 ; terrain - colonnes 3-36, lignes
 # 2-24. Une porte = 3 espaces dans le bord. Ligne 26 : SCORE cyan, NIV blanc,
 # HI-SCORE magenta. CAPS est effacé de la barre de statut (ligne 670).
@@ -28,7 +29,7 @@
 # niveau suivant : le serpent garde sa longueur et son score.
 # Entrée dans un tableau : la tête apparaît à gauche (colonne 3, ligne LY) et
 # le corps sort du mur derrière elle : GR anneaux restent à faire sortir, la
-# queue n'avance pas tant que GR > 0 (lignes 165-167). N = longueur du serpent.
+# queue n'avance pas tant que GR > 0 (lignes 166-167). N = longueur du serpent.
 # Le niveau 5 n'a pas de porte vers la droite : on y joue jusqu'au bout.
 # Retour : les niveaux 2 à 5 ont aussi une porte à gauche, toujours ouverte,
 # à la même hauteur que la porte de droite du tableau précédent (lignes LY-1
@@ -52,7 +53,10 @@
 # oric_dsk.py et chargée en $6000 au démarrage (boot_etage2.s). La ligne 14 passe
 # en HIRES et la recopie dans l'écran ($A000) avec la routine de titre_copie.s
 # (DATA 990-995, en $0460, CALL #460), puis attend une touche (ligne 980).
-# Le curseur et CAPS sont cachés dès le démarrage par boot_etage2.s. En cassette
+# Le curseur et CAPS sont éteints dès le démarrage par boot_etage2.s (CAPS :
+# majuscules non verrouillées, $020C = $7F) - TEXT n'a donc plus de CAPS à
+# réafficher. Le clavier donne alors des minuscules : le nom du Hall of Fame
+# est remis en majuscules (ligne 833). En cassette
 # (pas de marque 68 en $04FF), pas d'image : on va droit au Hall of Fame.
 # Les DATA 990-995 sont lues avant celles du Hall of Fame (lignes 12 puis 40).
 # Hall of Fame : les 10 meilleurs scores avec leur nom ; le premier est le
@@ -72,7 +76,15 @@
 # CAPS, mémoire écran $BB80) : « NIVEAU 2 - @ = 20 » (lignes 660-670).
 # Murs : V vertical (U = 1-V), Q longueur, X1,Y1-X2,Y2 extrémités, G = place libre.
 # La queue est effacée AVANT d'avancer la tête : la case qu'elle quitte est libre
-# (ligne 155), sinon le serpent mourait en suivant sa queue de près.
+# (ligne 156), sinon le serpent mourait en suivant sa queue de près.
+# Vitesse (2026-11-22) : la boucle 100-195 est écrite pour aller vite - une
+# case vide (le cas le plus fréquent) est traitée d'abord (ligne 150), la tête
+# n'est recalculée qu'au changement de direction, la queue n'est redessinée
+# que quand elle avance (TM), et les nombres répétés sont dans des variables
+# (M = 255, KB = 735, SP = 32 : le BASIC de l'Oric relit et convertit chaque
+# nombre écrit en clair à chaque passage). Pause WT = 5-L centièmes de
+# seconde (ligne 400) : 4 au niveau 1, 0 au niveau 5.
+10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:K=0:GR=0:TM=0:TC=0:M=255:SP=32:KB=735:I=0
 12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT
 14 IF PEEK(#4FF)=68 THEN PAPER 0:INK 6:HIRES:POKE 618,10:CALL #460:PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:POKE 618,10:POKE 735,0:GOSUB 980:TEXT
 20 CLS:PAPER 0:INK 2:POKE 618,10
@@ -87,34 +99,36 @@
 70 GOSUB 700:PLOT 12,22,"ESPACE = JOUER"
 75 GET K$:IF K$<>" " THEN 75
 80 S=0:L=1:N=4:EN=0:FOR I=1 TO 5:CR(I)=0:OP(I)=0:EL(I)=0:NEXT:GOSUB 400
-100 K=PEEK(735):IF K<128 THEN 150
-105 POKE 735,0:K=K-128
+100 K=PEEK(KB):IF K<128 THEN 150
+105 POKE KB,0:K=K-128
 110 IF K=8 AND DX=0 THEN DX=-1:DY=0
 120 IF K=9 AND DX=0 THEN DX=1:DY=0
 130 IF K=10 AND DY=0 THEN DX=0:DY=1
 140 IF K=11 AND DY=0 THEN DX=0:DY=-1
-150 NX=X(H)+DX:NY=Y(H)+DY:C=SCRN(NX,NY)
-155 IF C>117 AND C<127 AND NX=X(T) AND NY=Y(T) AND GR=0 THEN C=32
-157 IF NX=37 AND C=32 THEN N=((H-T) AND 255)+1+GR:EL(L)=E:L=L+1:EN=0:PING:GOSUB 400:GOTO 100
-158 IF NX=2 AND C=32 THEN N=((H-T) AND 255)+1+GR:EL(L)=E:L=L-1:EN=1:PING:GOSUB 400:GOTO 100
-160 IF C=255 OR C=160 OR (C>117 AND C<127) THEN 300
-165 IF C=64 THEN 170
+145 HC=123-(DX<0):IF DY THEN HC=125-(DY<0)
+147 H$=CHR$(HC)
+150 NX=X(H)+DX:NY=Y(H)+DY:C=SCRN(NX,NY):IF C<>SP THEN 155
+151 IF NX=37 THEN N=((H-T) AND M)+1+GR:EL(L)=E:L=L+1:EN=0:PING:GOSUB 400:GOTO 100
+152 IF NX=2 THEN N=((H-T) AND M)+1+GR:EL(L)=E:L=L-1:EN=1:PING:GOSUB 400:GOTO 100
+153 GOTO 166
+155 IF C=64 THEN 170
+156 IF C>117 AND C<127 AND NX=X(T) AND NY=Y(T) AND GR=0 THEN 167
+157 GOTO 300
 166 IF GR THEN GR=GR-1:GOTO 170
-167 PLOT X(T),Y(T)," ":T=(T+1) AND 255
-170 PLOT X(H),Y(H),Z$:H=(H+1) AND 255:X(H)=NX:Y(H)=NY
-172 HC=123-(DX<0):IF DY THEN HC=125-(DY<0)
-175 PLOT NX,NY,CHR$(HC)
-177 IF T<>H THEN I=(T+1) AND 255:TX=X(I)-X(T):TC=118-(TX<0):IF TX=0 THEN TC=120-(Y(I)<Y(T))
-178 IF T<>H THEN PLOT X(T),Y(T),CHR$(TC)
-180 IF C<>64 THEN 200
+167 PLOT X(T),Y(T)," ":T=(T+1) AND M:TM=1
+170 IF T=H THEN TM=1
+171 PLOT X(H),Y(H),Z$:H=(H+1) AND M:X(H)=NX:Y(H)=NY:PLOT NX,NY,H$
+175 IF TM THEN TM=0:I=(T+1) AND M:TX=X(I)-X(T):TC=118-(TX<0):IF TX=0 THEN TC=120-(Y(I)<Y(T))
+176 IF TC THEN PLOT X(T),Y(T),CHR$(TC):TC=0
+180 IF C=64 THEN 185
+182 WAIT WT:GOTO 100
 185 S=S+L*10:E=E+1:PING:GOSUB 600:GOSUB 500
 190 IF E=5 AND L<5 THEN GOSUB 650
 195 GOTO 100
-200 WAIT 8:GOTO 100
 300 EXPLODE:PLOT 15,12,"  PERDU !  ":WAIT 250
 310 IF S>SC(10) THEN GOSUB 800
 320 GOTO 70
-400 CLS:H=0:T=0:GR=N-1:E=EL(L):LY=13:IF L>1 THEN LY=PD(L-1)+1
+400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:LY=13:IF L>1 THEN LY=PD(L-1)+1
 405 FOR I=1 TO 25:PLOT 1,I,6:PLOT 2,I,B$:PLOT 37,I,B$:NEXT
 410 FOR I=3 TO 36:PLOT I,1,B$:PLOT I,25,B$:NEXT
 415 PLOT 2,26,6:PLOT 3,26,"SCORE":PLOT 14,26,7:PLOT 15,26,"NIV"+STR$(L):PLOT 21,26,5:PLOT 22,26,"HI-SCORE"
@@ -140,7 +154,7 @@
 473 PLOT I,J,W$:NEXT J,I,K
 474 IF OP(L) THEN FOR I=PY TO PY+2:PLOT 37,I," ":NEXT
 475 X(0)=3:Y(0)=LY:DX=1:DY=0:IF EN THEN X(0)=36:Y(0)=PY+1:DX=-1
-477 PLOT X(0),Y(0),CHR$(123-(DX<0))
+477 H$=CHR$(123-(DX<0)):PLOT X(0),Y(0),H$:TM=0:TC=0
 480 WAIT 100:POKE 735,0
 490 GOSUB 500:RETURN
 500 FX=INT(RND(1)*34)+3:FY=INT(RND(1)*23)+2
@@ -152,7 +166,7 @@
 660 GOSUB 670:A=#BB80+INT((40-LEN(M$))/2)
 665 FOR I=1 TO LEN(M$):POKE A+I-1,ASC(MID$(M$,I,1)):NEXT:RETURN
 670 FOR I=#BB82 TO #BBA7:POKE I,32:NEXT:RETURN
-700 GOSUB 670:CLS:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"
+700 CLS:GOSUB 670:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"
 705 PLOT 11,5,3:PLOT 13,5,"HALL OF FAME"
 710 FOR I=1 TO 10:R=7+I
 715 PLOT 8,R,7:PLOT 9,R,RIGHT$(" "+STR$(I),3)+". "+N$(I)
@@ -165,6 +179,8 @@
 820 PRINT:PRINT "   HALL OF FAME, PLACE";P
 825 PRINT:INPUT "   TON NOM (8 LETTRES)";NM$
 830 POKE 618,10:IF NM$="" THEN NM$="?"
+833 U$="":FOR I=1 TO LEN(NM$):J=ASC(MID$(NM$,I,1)):IF J>96 AND J<123 THEN J=J-32
+834 U$=U$+CHR$(J):NEXT:NM$=U$
 835 NM$=LEFT$(NM$+"        ",8)
 840 IF P<10 THEN FOR I=10 TO P+1 STEP -1:N$(I)=N$(I-1):SC(I)=SC(I-1):NEXT
 845 N$(P)=NM$:SC(P)=S
@@ -189,7 +205,7 @@
 996 DATA 6,8,27,63,63,63,30,12
 # Queue (ligne 36, ajoutée le 2026-11-22) : caractères 118 = corps à droite
 # (pointe vers la gauche), 119 = corps à gauche, 120 = corps en dessous (pointe
-# vers le haut), 121 = corps au-dessus ; redessinée à chaque pas (177-178).
+# vers le haut), 121 = corps au-dessus ; redessinée quand elle avance (175-176).
 997 DATA 3,7,15,63,63,15,7,3,48,56,60,63,63,60,56,48,12,12,30,30,30,63,63,30,30,63,63,30,30,30,12,12
 # Dessin du serpent (ligne 36) : caractères 122 = corps (anneau à écailles),
 # 123/124/125/126 = tête vers la droite/gauche/le bas/le haut (yeux, museau)

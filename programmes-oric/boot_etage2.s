@@ -95,6 +95,8 @@ hook    lda #$78              ; remet le vecteur d'origine (JMP $EB78)
         sta $04FF
         lda #$0A              ; curseur caché (comme POKE 618,10)
         sta $026A
+        lda #$7F              ; CAPS éteint (majuscules non verrouillées) -
+        sta $020C             ; la ROM ne réécrit plus CAPS, même après TEXT
         lda #$20              ; écran texte vidé - le message du BASIC, Ready
         ldy #$00              ; et CAPS ne restent pas affichés (2026-11-22)
 efface  sta $BB80,y           ; $BB80-$BF7F (4 pages)

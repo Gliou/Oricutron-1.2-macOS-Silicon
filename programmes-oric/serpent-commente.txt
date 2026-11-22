@@ -9,7 +9,14 @@ SCRN(x,y) rend le code du caractère qui s'y trouve ; PEEK/POKE lisent et
 écrivent la mémoire ; # devant un nombre = hexadécimal ; en BASIC Oric,
 une comparaison vraie vaut -1.
 
-─────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────
+================================================================═╪═============================================================
+10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:K=0:GR=0:TM=0:TC=0:M=255:     │ Crée d'abord les variables de la boucle du jeu : le BASIC
+      SP=32:KB=735:I=0                                           │ cherche une variable dans l'ordre où elle a été créée, les
+                                                                 │ premières sont trouvées plus vite. M = 255, SP = 32
+                                                                 │ (espace), KB = 735 (adresse de la dernière touche) : un
+                                                                 │ nombre dans une variable va plus vite qu'un nombre écrit en
+                                                                 │ clair, que le BASIC reconvertit à chaque passage.
+                                                                 │
 12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT                       │ Lit les 44 octets de la routine titre_copie (DATA 990-995)
                                                                  │ et les pose en $0460.
                                                                  │
@@ -19,8 +26,8 @@ une comparaison vraie vaut -1.
                                                                  │ TOUCHE en bas, attend une touche (980) puis revient en mode
                                                                  │ TEXTE.
                                                                  │
-20 CLS:PAPER 0:INK 2:POKE 618,10                                 │ Efface l'écran, fond noir, encre verte (Hall of Fame),
-                                                                 │ curseur caché (618 = 10).
+20 CLS:PAPER 0:INK 2:POKE 618,10                                 │ Efface l'écran, fond noir, encre verte, curseur caché (618 =
+                                                                 │ 10).
                                                                  │
 30 DIM X(255),Y(255),N$(10),SC(10):W$=CHR$(160):B$=CHR$(255):    │ Tableaux : X(),Y() = positions des anneaux (tampon
       F$="@"                                                     │ circulaire de 256), N$()/SC() = noms et scores du Hall of
@@ -61,11 +68,11 @@ une comparaison vraie vaut -1.
       GOSUB 400                                                  │ entrée par la gauche ; oublie les 5 tableaux (ils seront
                                                                  │ retirés au hasard) ; dessine le niveau 1 (400).
                                                                  │
-100 K=PEEK(735):IF K<128 THEN 150                                │ BOUCLE DU JEU. 735 = dernière touche mémorisée par la ROM ;
-                                                                 │ bit 7 (128) = nouvelle touche. Rien de nouveau : on avance
-                                                                 │ (150).
+100 K=PEEK(KB):IF K<128 THEN 150                                 │ BOUCLE DU JEU (écrite pour aller vite). KB = 735 = dernière
+                                                                 │ touche mémorisée par la ROM ; bit 7 (128) = nouvelle touche.
+                                                                 │ Rien de nouveau : on avance (150).
                                                                  │
-105 POKE 735,0:K=K-128                                           │ Touche lue : on l'efface et on garde son code (8 à 11 =
+105 POKE KB,0:K=K-128                                            │ Touche lue : on l'efface et on garde son code (8 à 11 =
                                                                  │ flèches).
                                                                  │
 110 IF K=8 AND DX=0 THEN DX=-1:DY=0                              │ Flèche gauche : on tourne à gauche, sauf si on allait déjà à
@@ -77,50 +84,60 @@ une comparaison vraie vaut -1.
                                                                  │
 140 IF K=11 AND DY=0 THEN DX=0:DY=-1                             │ Flèche haut.
                                                                  │
-150 NX=X(H)+DX:NY=Y(H)+DY:C=SCRN(NX,NY)                          │ Case où va arriver la tête (NX,NY) et ce qu'elle contient
-                                                                 │ (SCRN = code du caractère à l'écran).
+145 HC=123-(DX<0):IF DY THEN HC=125-(DY<0)                       │ Nouvelle direction : choisit le dessin de la tête (123
+                                                                 │ droite, 124 gauche, 125 bas, 126 haut ; en BASIC Oric, vrai
+                                                                 │ = -1)...
                                                                  │
-155 IF C>117 AND C<127 AND NX=X(T) AND NY=Y(T) AND GR=0 THEN C=3 │ Si c'est la queue et qu'elle va bouger (le serpent ne
-      2                                                          │ grandit pas), la case sera libre : on fait comme si c'était
-                                                                 │ vide.
+147 H$=CHR$(HC)                                                  │ ...et le garde dans H$ : il n'est recalculé que quand on
+                                                                 │ tourne.
                                                                  │
-157 IF NX=37 AND C=32 THEN N=((H-T) AND 255)+1+GR:EL(L)=E:L=L+1: │ Case vide dans le bord droit = la porte : on note la
-      EN=0:PING:GOSUB 400:GOTO 100                               │ longueur du serpent et les pommes mangées ici, et on passe
+150 NX=X(H)+DX:NY=Y(H)+DY:C=SCRN(NX,NY):IF C<>SP THEN 155        │ Case où va arriver la tête (NX,NY) et ce qu'elle contient
+                                                                 │ (SCRN = code du caractère à l'écran). Le cas le plus
+                                                                 │ fréquent, une case vide, est traité tout de suite ; sinon on
+                                                                 │ va voir en 155.
+                                                                 │
+151 IF NX=37 THEN N=((H-T) AND M)+1+GR:EL(L)=E:L=L+1:EN=0:PING:  │ Case vide dans le bord droit = la porte : on note la
+      GOSUB 400:GOTO 100                                         │ longueur du serpent et les pommes mangées ici, et on passe
                                                                  │ au niveau suivant en entrant par la gauche.
                                                                  │
-158 IF NX=2 AND C=32 THEN N=((H-T) AND 255)+1+GR:EL(L)=E:L=L-1:  │ Case vide dans le bord gauche = la porte de retour : même
-      EN=1:PING:GOSUB 400:GOTO 100                               │ chose vers le niveau précédent, en ressortant par sa porte
+152 IF NX=2 THEN N=((H-T) AND M)+1+GR:EL(L)=E:L=L-1:EN=1:PING:   │ Case vide dans le bord gauche = la porte de retour : même
+      GOSUB 400:GOTO 100                                         │ chose vers le niveau précédent, en ressortant par sa porte
                                                                  │ de droite.
                                                                  │
-160 IF C=255 OR C=160 OR (C>117 AND C<127) THEN 300              │ Bord rouge (255), mur blanc (160) ou un morceau du serpent
-                                                                 │ (118-126) : perdu (300).
+153 GOTO 166                                                     │ Case vide ordinaire : on avance (166).
                                                                  │
-165 IF C=64 THEN 170                                             │ Une pomme (64) : la queue ne bouge pas, le serpent grandit
-                                                                 │ d'un anneau.
+155 IF C=64 THEN 170                                             │ Une pomme (64) : on avance sans bouger la queue, le serpent
+                                                                 │ grandit.
+                                                                 │
+156 IF C>117 AND C<127 AND NX=X(T) AND NY=Y(T) AND GR=0 THEN 167 │ La case est la queue et elle va bouger (le serpent ne
+                                                                 │ grandit pas) : elle sera libre, on avance.
+                                                                 │
+157 GOTO 300                                                     │ Tout le reste (bord rouge, mur blanc, corps du serpent) :
+                                                                 │ perdu (300).
                                                                  │
 166 IF GR THEN GR=GR-1:GOTO 170                                  │ Le corps sort encore du mur d'entrée (GR anneaux à sortir) :
                                                                  │ la queue ne bouge pas non plus.
                                                                  │
-167 PLOT X(T),Y(T)," ":T=(T+1) AND 255                           │ Sinon on efface la queue et on avance l'indice de queue
-                                                                 │ (tampon circulaire : AND 255).
+167 PLOT X(T),Y(T)," ":T=(T+1) AND M:TM=1                        │ Sinon on efface la queue, on avance l'indice de queue
+                                                                 │ (tampon circulaire : AND 255) et on note qu'il faudra la
+                                                                 │ redessiner (TM).
                                                                  │
-170 PLOT X(H),Y(H),Z$:H=(H+1) AND 255:X(H)=NX:Y(H)=NY            │ L'ancienne tête devient un anneau du corps ; on range la
-                                                                 │ nouvelle position de la tête.
+170 IF T=H THEN TM=1                                             │ Le serpent n'avait qu'un anneau (tête = queue) : la queue
+                                                                 │ devra être redessinée.
                                                                  │
-172 HC=123-(DX<0):IF DY THEN HC=125-(DY<0)                       │ Choisit le dessin de la tête selon la direction : 123
-                                                                 │ droite, 124 gauche, 125 bas, 126 haut (en BASIC Oric, vrai =
-                                                                 │ -1).
+171 PLOT X(H),Y(H),Z$:H=(H+1) AND M:X(H)=NX:Y(H)=NY:             │ L'ancienne tête devient un anneau du corps ; on range la
+      PLOT NX,NY,H$                                              │ nouvelle position et on dessine la tête (H$).
                                                                  │
-175 PLOT NX,NY,CHR$(HC)                                          │ Dessine la nouvelle tête.
+175 IF TM THEN TM=0:I=(T+1) AND M:TX=X(I)-X(T):TC=118-(TX<0):    │ Si la queue a bougé (TM) : regarde où est l'anneau qui la
+      IF TX=0 THEN TC=120-(Y(I)<Y(T))                            │ suit (à droite, à gauche, dessous, dessus) et choisit le
+                                                                 │ dessin de queue (118 à 121) qui pointe dans l'autre sens.
                                                                  │
-177 IF T<>H THEN I=(T+1) AND 255:TX=X(I)-X(T):TC=118-(TX<0):     │ Si le serpent a plus d'un anneau : regarde où est l'anneau
-      IF TX=0 THEN TC=120-(Y(I)<Y(T))                            │ qui suit la queue (à droite, à gauche, dessous, dessus) et
-                                                                 │ choisit le dessin de la queue (118 à 121) qui pointe dans
-                                                                 │ l'autre sens.
+176 IF TC THEN PLOT X(T),Y(T),CHR$(TC):TC=0                      │ Dessine la queue en pointe.
                                                                  │
-178 IF T<>H THEN PLOT X(T),Y(T),CHR$(TC)                         │ Dessine la queue en pointe.
+180 IF C=64 THEN 185                                             │ Pomme mangée : on compte les points (185).
                                                                  │
-180 IF C<>64 THEN 200                                            │ Pas de pomme mangée : petite pause puis on recommence (200).
+182 WAIT WT:GOTO 100                                             │ Sinon petite pause (WT = 5-L centièmes de seconde : de plus
+                                                                 │ en plus rapide d'un niveau à l'autre) puis tour suivant.
                                                                  │
 185 S=S+L*10:E=E+1:PING:GOSUB 600:GOSUB 500                      │ Pomme mangée : 10 points par niveau, une pomme de plus dans
                                                                  │ ce niveau, son PING, score affiché (600), nouvelle pomme
@@ -131,8 +148,6 @@ une comparaison vraie vaut -1.
                                                                  │
 195 GOTO 100                                                     │ Tour suivant, sans pause (on vient de manger).
                                                                  │
-200 WAIT 8:GOTO 100                                              │ Pause (vitesse du jeu) puis tour suivant.
-                                                                 │
 300 EXPLODE:PLOT 15,12,"  PERDU !  ":WAIT 250                    │ Perdu : bruit d'explosion, message, attente.
                                                                  │
 310 IF S>SC(10) THEN GOSUB 800                                   │ Score meilleur que le 10e du Hall of Fame : on y entre
@@ -140,10 +155,11 @@ une comparaison vraie vaut -1.
                                                                  │
 320 GOTO 70                                                      │ Retour au Hall of Fame.
                                                                  │
-400 CLS:H=0:T=0:GR=N-1:E=EL(L):LY=13:IF L>1 THEN LY=PD(L-1)+1    │ DESSIN D'UN TABLEAU. Efface l'écran ; le serpent repart d'un
-                                                                 │ seul anneau, GR = anneaux qui sortiront du mur ; pommes déjà
-                                                                 │ mangées ici. LY = hauteur d'entrée : celle de la porte de
-                                                                 │ droite du tableau précédent (13 au niveau 1).
+400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:LY=13:                     │ DESSIN D'UN TABLEAU. Efface l'écran ; le serpent repart d'un
+      IF L>1 THEN LY=PD(L-1)+1                                   │ seul anneau, GR = anneaux qui sortiront du mur ; pommes déjà
+                                                                 │ mangées ici ; pause WT = 5-L (4 au niveau 1, 0 au niveau 5).
+                                                                 │ LY = hauteur d'entrée : celle de la porte de droite du
+                                                                 │ tableau précédent (13 au niveau 1).
                                                                  │
 405 FOR I=1 TO 25:PLOT 1,I,6:PLOT 2,I,B$:PLOT 37,I,B$:NEXT       │ Pour chaque ligne : encre cyan (attribut 6 en colonne 1), et
                                                                  │ un bloc rouge dans les colonnes 2 et 37 (bords gauche et
@@ -217,7 +233,8 @@ une comparaison vraie vaut -1.
                                                                  │ droite ; si on revient d'un niveau plus haut, à droite
                                                                  │ devant la porte, en allant à gauche.
                                                                  │
-477 PLOT X(0),Y(0),CHR$(123-(DX<0))                              │ Dessine la tête (tournée à droite ou à gauche).
+477 H$=CHR$(123-(DX<0)):PLOT X(0),Y(0),H$:TM=0:TC=0              │ Dessine la tête (tournée à droite ou à gauche) et la garde
+                                                                 │ dans H$ ; rien à redessiner pour la queue.
                                                                  │
 480 WAIT 100:POKE 735,0                                          │ Petite pause avant de jouer ; oublie les touches tapées
                                                                  │ entre-temps.
@@ -249,7 +266,7 @@ une comparaison vraie vaut -1.
 670 FOR I=#BB82 TO #BBA7:POKE I,32:NEXT:RETURN                   │ Efface la barre de statut (colonnes 2 à 39, ce qui fait
                                                                  │ disparaître CAPS).
                                                                  │
-700 GOSUB 670:CLS:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"          │ AFFICHAGE DU HALL OF FAME : barre de statut et écran
+700 CLS:GOSUB 670:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"          │ AFFICHAGE DU HALL OF FAME : barre de statut et écran
                                                                  │ effacés, titre en cyan (attribut 6)...
                                                                  │
 705 PLOT 11,5,3:PLOT 13,5,"HALL OF FAME"                         │ ...« HALL OF FAME » en jaune (3)...
@@ -278,6 +295,14 @@ une comparaison vraie vaut -1.
 825 PRINT:INPUT "   TON NOM (8 LETTRES)";NM$                     │ Demande le nom.
                                                                  │
 830 POKE 618,10:IF NM$="" THEN NM$="?"                           │ Recache le curseur ; un nom vide devient « ? ».
+                                                                 │
+833 U$="":FOR I=1 TO LEN(NM$):J=ASC(MID$(NM$,I,1)):              │ Le clavier donne des minuscules (CAPS est éteint au
+      IF J>96 AND J<123 THEN J=J-32                              │ démarrage) : chaque lettre minuscule (97 à 122) est remise
+                                                                 │ en majuscule (-32)...
+                                                                 │
+834 U$=U$+CHR$(J):NEXT:NM$=U$                                    │ ...et le nom est reconstitué. (Les minuscules v à z sont
+                                                                 │ redessinées en morceaux de serpent : sans cela, le nom
+                                                                 │ s'afficherait en serpent !)
                                                                  │
 835 NM$=LEFT$(NM$+"        ",8)                                  │ Complète le nom par des espaces pour qu'il fasse 8 lettres.
                                                                  │
