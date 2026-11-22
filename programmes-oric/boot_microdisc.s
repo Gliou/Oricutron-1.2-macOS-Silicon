@@ -1,5 +1,6 @@
 ; boot_microdisc.s — secteur de démarrage (piste 0, secteur 2) pour le Microdisc
 ; de l'Oric Atmos, qui charge un programme BASIC et le lance tout seul.
+; Créé le 2026-11-21 by GliouCNR©70 — marque « disquette » ajoutée le 2026-11-22
 ;
 ;   xa -DNSECT=4 -DPEND=\$0880 -o boot.bin boot_microdisc.s
 ;   (oric_dsk.py s'en charge - NSECT = nombre de secteurs du programme,
@@ -15,6 +16,10 @@
 ;   4. détourne la lecture du clavier ($023B) - quand le BASIC attend la
 ;      première touche après Ready, on recopie le programme en $0501 et on
 ;      fait RUN, comme CLOAD le fait pour une cassette qui se lance seule.
+;      Il pose aussi 68 (« D ») en $04FF - le programme sait ainsi qu'il a
+;      démarré de la disquette et peut y lire et écrire (Hall of Fame).
+; Le code doit finir avant l'octet $F7 du secteur - au-delà, la ROM du
+; Microdisc ne le charge pas (vérifié le 2026-11-22 - octets perdus).
 ; Attention avec xa - un deux-points est un séparateur, même dans un commentaire.
 
 FDC_CMD  = $0310      ; contrôleur WD1793 - commande / état
@@ -26,6 +31,9 @@ MD_DRQ   = $0318      ; bit 7 à 0 = un octet est prêt
 BUF      = $8000      ; tampon pour le programme lu
 DEST     = $9000      ; où ce code se recopie
 FIRSTSEC = 4          ; premier secteur du programme
+SECTOR   = $F0        ; variables en page zéro (le BASIC les réinitialise ensuite)
+COUNT    = $F1
+TRIES    = $F2
 
 ; ----- En-tête du descripteur de SYSTEM.DOS (23 octets, tels quels) -----
         * = $0000
@@ -58,12 +66,14 @@ copy    lda ($00),y
 ; ----- Code principal, exécuté en $9000 (offset $3D) -----
         * = DEST
 
-main    lda #NSECT        ; la ROM vient de lire la piste 0 - la tête y est déjà
-        sta count
+main    lda #FIRSTSEC     ; la ROM vient de lire la piste 0 - la tête y est déjà
+        sta SECTOR
+        lda #NSECT
+        sta COUNT
 
 next    lda #8                ; 8 essais par secteur
-        sta tries
-retry   lda sector
+        sta TRIES
+retry   lda SECTOR
         sta FDC_SEC
         lda #$80              ; lecture d'un secteur
         sta FDC_CMD
@@ -82,20 +92,17 @@ store   sta BUF,y             ; (l'octet haut est modifié à chaque secteur)
         jmp drq
 done    and #$0E              ; perte de données, CRC, secteur introuvable ?
         beq ok
-        dec tries
+        dec TRIES
         bne retry
-ok      inc sector
+ok      inc SECTOR
         inc store+2
-        dec count
+        dec COUNT
         bne next
 
 ; ----- Démarrage du BASIC (copie de la routine de reset $F88F) -----
         sei
         lda #$82              ; EPROM éteinte, ROM BASIC allumée, IRQ disque coupée
         sta MD_CTRL
-        ldx #$FF
-        txs
-        cld
         ldx #$12              ; vecteurs de la page 2 (tableau de la ROM en $F87C)
 vec     lda $F87C,x
         sta $0238,x
@@ -126,6 +133,8 @@ hook    lda #$78              ; remet le vecteur d'origine (JMP $EB78)
         sta $023C
         lda #$EB
         sta $023D
+        lda #$44              ; marque « démarré de la disquette »
+        sta $04FF
         ldx #NSECT            ; recopie le programme en $0501
         ldy #$00
 cp      lda BUF,y
@@ -144,6 +153,3 @@ cpd     sta $0501,y
         jsr $C708             ; RUN - efface les variables, pointe sur la 1re ligne
         jmp $C8C1             ; et exécute
 
-sector  .byt FIRSTSEC
-count   .byt 0
-tries   .byt 0

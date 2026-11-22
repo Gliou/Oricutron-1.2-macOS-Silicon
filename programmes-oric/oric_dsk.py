@@ -2,11 +2,13 @@
 """
 oric_dsk.py — fabrique une disquette .dsk (Microdisc) qui démarre toute seule
 sur un programme BASIC, pour l'Oric Atmos.
+Créé le 2026-11-21 by GliouCNR©70 — secteur de données ajouté le 2026-11-22
 
   python3 oric_dsk.py  programme.bas  sortie.dsk
 
 Le programme est tokenisé par oric_tap.py, puis rangé sur la piste 0 à partir
-du secteur 4. Le secteur 2 reçoit le code de démarrage (boot_microdisc.s,
+du secteur 4 (17 au plus). Le secteur 18 est laissé vide : le programme peut
+y garder ses données (le Hall of Fame du serpent). Le secteur 2 reçoit le code de démarrage (boot_microdisc.s,
 assemblé avec xa) et le secteur 3 le répertoire où la ROM du Microdisc cherche
 SYSTEM.DOS. Dans Oricutron :
 
@@ -27,7 +29,8 @@ from oric_tap import basic_program, BASIC_START
 SIDES, TRACKS, SECTORS = 1, 40, 18
 TRACK_SIZE = 6400
 FIRST_PROG_SECTOR = 4
-MAX_PROG_SECTORS = SECTORS - FIRST_PROG_SECTOR + 1     # 15 secteurs = 3840 octets
+DATA_SECTOR = SECTORS                                  # secteur 18 : données du programme
+MAX_PROG_SECTORS = DATA_SECTOR - FIRST_PROG_SECTOR     # 14 secteurs = 3584 octets
 # Ordre des secteurs sur la piste (entrelacement 3), comme les disquettes Sedoric.
 ORDER = [s for start in (1, 2, 3) for s in range(start, SECTORS + 1, 3)]
 
@@ -40,6 +43,8 @@ DIRECTORY = (bytes([0x00, 0x00, 0x02]) + b"SYSTEMDOS" + bytes([0x01, 0x00, 0x02,
 # trouve le répertoire (octet $12 = secteur 3). Le reste du secteur est vide.
 SECTOR1_HEADER = (bytes([0x4C, 0x40, 0x04, 0, 0, 0, 0, 0]) + b" " * 8
                   + bytes([0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00]) + b"SEDORIC " + b" " * 32)
+
+BOOT_MAX = 0xF7                                       # octets utiles du secteur 2
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -72,8 +77,10 @@ def boot_sector(nsect, pend):
         subprocess.run(["xa", f"-DNSECT={nsect}", f"-DPEND=${pend:04X}", "-o", out,
                         os.path.join(HERE, "boot_microdisc.s")], check=True)
         code = open(out, "rb").read()
-    if len(code) > 256:
-        sys.exit(f"code de démarrage trop long : {len(code)} octets (256 au plus)")
+    # La ROM du Microdisc ne charge pas la fin du secteur : au-delà de l'octet
+    # $F7 le code est perdu (constaté le 2026-11-22, la disquette plantait).
+    if len(code) > BOOT_MAX:
+        sys.exit(f"code de démarrage trop long : {len(code)} octets ({BOOT_MAX} au plus)")
     return code + bytes(256 - len(code))
 
 
