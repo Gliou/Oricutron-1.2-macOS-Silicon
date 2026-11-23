@@ -1,17 +1,28 @@
 # Programmes Oric (Atmos) testés dans Oricutron
 
-*Créé le 2026-11-21 by GliouCNR©70 — mis à jour le 2026-11-22*
+*Créé le 2026-11-21 by GliouCNR©70 — mis à jour le 2026-11-23*
+
+Un dossier par programme (rangement du 2026-11-23 by GliouCNR©70) :
+
+| Dossier | Contenu |
+|---|---|
+| `demo-hires/` | démo graphique HIRES |
+| `serpent/` | jeu du serpent : BASIC, cassette, disquette, image titre, Hall of Fame |
+| `titre/` | écran titre en assembleur 6502 |
+| `outils/` | outils communs : `oric_tap.py` (cassettes), `oric_dsk.py` (disquettes) et son démarrage Microdisc (`boot_microdisc.s`, `boot_etage2.s`) |
+
+Chaque programme a ses captures d'écran dans son propre dossier `captures/`.
 
 Trois programmes, chacun en source et en cassette `.tap` prête à charger.
 Les `.tap` sont aussi copiés dans `~/Library/Application Support/Oricutron/tapes`.
 
 | Programme | Fichiers | Langage | Ce qu'il fait |
 |---|---|---|---|
-| Démo graphique | `demo-hires.bas` → `demo-hires.tap` | BASIC | Mode HIRES : bandes de couleur, cercles, rayons, texte, son (ZAP, PING). Une touche revient au mode texte. |
-| Serpent | `serpent.bas` → `serpent.tap` | BASIC | Petit jeu : flèches pour diriger, mange les `@`, perdu si on touche le bord, un mur ou sa queue. En couleurs : bord rouge plein, serpent cyan, pomme cyan (le `@` redessiné), murs en pavés blancs, SCORE cyan, HI-SCORE magenta. Espace pour jouer. **5 niveaux** (voir plus bas). **Hall of Fame** des 10 meilleurs scores, HI-SCORE affiché pendant la partie. |
-| Écran titre | `titre.s` → `titre.tap` | Assembleur 6502 | Titre double hauteur, arc-en-ciel animé, texte défilant. Une touche rend l'écran BASIC d'avant. |
+| Démo graphique | `demo-hires/` : `demo-hires.bas` → `demo-hires.tap` | BASIC | Mode HIRES : bandes de couleur, cercles, rayons, texte, son (ZAP, PING). Une touche revient au mode texte. |
+| Serpent | `serpent/` : `serpent.bas` → `serpent.tap` | BASIC | Petit jeu : flèches pour diriger, mange les `@`, perdu si on touche le bord, un mur ou sa queue. En couleurs : bord rouge plein, serpent cyan, pomme cyan (le `@` redessiné), murs en pavés blancs, SCORE cyan, HI-SCORE magenta. Espace pour jouer. **5 niveaux** (voir plus bas). **Hall of Fame** des 10 meilleurs scores, HI-SCORE affiché pendant la partie. |
+| Écran titre | `titre/` : `titre.s` → `titre.tap` | Assembleur 6502 | Titre double hauteur, arc-en-ciel animé, texte défilant. Une touche rend l'écran BASIC d'avant. |
 
-Le serpent existe aussi en **disquette** `serpent.dsk` (lecteur Microdisc), qui
+Le serpent existe aussi en **disquette** `serpent/serpent.dsk` (lecteur Microdisc), qui
 démarre toute seule sur le jeu (copiée aussi dans `~/Library/Application Support/Oricutron/disks`).
 Sur la disquette, le Hall of Fame est **sauvegardé** : quand un joueur entre au
 classement, son nom et son score sont écrits sur la piste 0, secteur 18, et relus
@@ -44,9 +55,9 @@ En cassette, le Hall of Fame marche aussi mais n'est gardé que jusqu'à l'extin
   niveau et la valeur d'un `@`, par exemple « NIVEAU 5 - @ = 50 » ;
 - le tracé des murs prend quelques secondes au niveau 5 (BASIC).
 
-![Niveau 5](captures/serpent-niveau5.jpg)
+![Niveau 5](serpent/captures/serpent-niveau5.jpg)
 
-![Serpent en couleurs](captures/serpent-couleurs.jpg)
+![Serpent en couleurs](serpent/captures/serpent-couleurs.jpg)
 
 Les couleurs du terrain n'utilisent **aucune case couleur** (attribut série) :
 une telle case s'affiche comme une case vide, et le serpent mourait devant le
@@ -59,7 +70,7 @@ redéfinis) : des anneaux à écailles, une tête avec deux yeux et un museau,
 tournée dans le sens de la marche, et une queue en pointe sur le dernier
 anneau.
 
-![Dessin du serpent, agrandi](captures/serpent-dessin.png)
+![Dessin du serpent, agrandi](serpent/captures/serpent-dessin.png)
  Ce qu'on
 voit est exactement ce qui touche.
 
@@ -71,38 +82,39 @@ et ni CAPS ni le curseur ne s'affichent : le démarrage éteint le curseur et le
 verrouillage des majuscules (`$020C`), si bien que la ROM n'a plus jamais de CAPS
 à réafficher, même après `TEXT`. Le nom tapé pour le Hall of Fame est remis en
 majuscules par le programme. L'image
-est dessinée par `titre_serpent.py` (Python + Pillow, `pip install pillow`) au
+est dessinée par `serpent/titre_serpent.py` (Python + Pillow, `pip install pillow`) au
 format HIRES de l'Oric (`serpent-titre.hir`, 8 000 octets) ; l'aperçu
-`captures/serpent-titre.png` est recalculé à partir de ces octets. Une ligne
+`serpent/captures/serpent-titre.png` est recalculé à partir de ces octets. Une ligne
 HIRES n'a qu'une couleur d'encre à la fois : le dessin laisse des cases vides
 de 6 pixels où le convertisseur pose les changements de couleur.
 
 ```
-python3 titre_serpent.py
+python3 serpent/titre_serpent.py
 ```
 
-![Écran titre dans Oricutron](captures/serpent-titre-oricutron.jpg)
+![Écran titre dans Oricutron](serpent/captures/serpent-titre-oricutron.jpg)
 
-Captures d'écran prises dans Oricutron : dossier `captures/`.
+Captures d'écran prises dans Oricutron : dossier `captures/` de chaque programme.
 
 ## Lancer un programme
 
 - Glisser le `.tap` sur la fenêtre d'Oricutron (ou Fichier › Insérer une cassette, puis taper `CLOAD""`).
   Les trois programmes démarrent tout seuls après le chargement.
 - Depuis le Terminal :
-  `/Applications/Oricutron.app/Contents/MacOS/Oricutron "$PWD/serpent.tap"`
+  `/Applications/Oricutron.app/Contents/MacOS/Oricutron "$PWD/serpent/serpent.tap"`
 
 ## Lancer une disquette
 
 Il faut la ROM `microdis.rom` dans le dossier `roms` d'Oricutron, et choisir le
 lecteur Microdisc :
-`/Applications/Oricutron.app/Contents/MacOS/Oricutron -k m -d "$PWD/serpent.dsk"`
+`/Applications/Oricutron.app/Contents/MacOS/Oricutron -k m -d "$PWD/serpent/serpent.dsk"`
 (ou, dans Oricutron, choisir le lecteur Microdisc puis insérer la disquette, et faire un reset).
 
 ## Refaire la disquette
 
 ```
-python3 oric_dsk.py serpent.bas serpent.dsk serpent-titre.hir   # image facultative
+cd serpent
+python3 ../outils/oric_dsk.py serpent.bas serpent.dsk serpent-titre.hir   # image facultative
 ```
 
 Rangement de la disquette (depuis le 2026-11-22) :
@@ -131,9 +143,9 @@ en `$0400` (`CALL #400` lit le secteur dans `$9800`, `CALL #403` l'écrit).
 ## Refaire les cassettes
 
 ```
-python3 oric_tap.py basic demo-hires.bas demo-hires.tap DEMO
-python3 oric_tap.py basic serpent.bas serpent.tap SERPENT
-xa -o titre.bin titre.s && python3 oric_tap.py bin titre.bin titre.tap 0x0800 TITRE
+python3 outils/oric_tap.py basic demo-hires/demo-hires.bas demo-hires/demo-hires.tap DEMO
+python3 outils/oric_tap.py basic serpent/serpent.bas serpent/serpent.tap SERPENT
+cd titre && xa -o titre.bin titre.s && python3 ../outils/oric_tap.py bin titre.bin titre.tap 0x0800 TITRE
 ```
 
 `oric_tap.py` transforme un programme BASIC texte en cassette, avec les codes des
