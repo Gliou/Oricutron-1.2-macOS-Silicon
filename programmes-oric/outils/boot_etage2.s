@@ -2,16 +2,26 @@
 ; chargée en $9900 par boot_microdisc.s. Elle lit le programme BASIC et une
 ; image HIRES sur les pistes 1, 2..., puis lance le BASIC et le programme.
 ; Créé le 2026-11-22 by GliouCNR©70
+; Modifié le 2026-11-23 by GliouCNR©70 - 2e image facultative (écran de victoire
+; du serpent), gardée en mémoire sous HIMEM ; adresses passées par oric_dsk.py.
 ;
 ;   xa -DPTRK=1 -DPSEC=1 -DNSECT=15 -DITRK=1 -DISEC=16 -DISECT=32 \
-;      '-DPEND=$1234' -o etage2.bin boot_etage2.s     (oric_dsk.py s'en charge)
+;      -DJTRK=3 -DJSEC=5 -DJSECT=32 -DBUFH=128 -DIMGH=96 -DIMG2H=120 \
+;      -DHIMEMH=152 '-DPEND=$1234' -o etage2.bin boot_etage2.s
+;      (oric_dsk.py s'en charge)
 ;
 ;   PTRK/PSEC  piste et secteur où commence le programme BASIC, NSECT secteurs
-;              lus en $8000 (24 au plus, jusqu'à $97FF)
+;              lus en BUFH*256 (24 au plus)
 ;   ITRK/ISEC  piste et secteur où commence l'image, ISECT secteurs lus en
-;              $6000-$7FFF (0 = pas d'image) ; le BASIC la recopie en $A000
+;              IMGH*256 (0 = pas d'image) ; le BASIC la recopie en $A000
 ;              après HIRES (routine titre_copie.s)
+;   JTRK/JSEC  2e image (JSECT secteurs, 0 = aucune), lue en IMG2H*256
+;   HIMEMH     octet haut de HIMEM - le BASIC ne touche pas à ce qui est au-dessus
 ;   PEND       fin du programme BASIC (mise dans $9C-$9D)
+;
+;   Une image   - programme $8000, image $6000, HIMEM $9800.
+;   Deux images - programme $4000, image $5800, 2e image $7800-$97FF gardée
+;                pour plus tard, HIMEM $7800.
 ;
 ; Les secteurs se suivent de 1 à 18 puis passent à la piste suivante  - la tête
 ; est déplacée par la commande SEEK du WD1793 ($18 = SEEK, tête chargée, sans
@@ -25,8 +35,7 @@ FDC_SEC  = $0312      ; secteur
 FDC_DAT  = $0313      ; données (et piste visée par SEEK)
 MD_CTRL  = $0314      ; registre de contrôle du Microdisc
 MD_DRQ   = $0318      ; bit 7 à 0 = un octet est prêt
-BUF      = $8000      ; tampon du programme lu
-IMG      = $6000      ; tampon de l'image HIRES
+BUF      = BUFH*256   ; tampon du programme lu
 SECTOR   = $F0        ; variables en page zéro (le BASIC les réinitialise ensuite)
 COUNT    = $F1
 TRIES    = $F2
@@ -35,7 +44,7 @@ TRACK    = $F3
         * = $9900
 
 ; ----- Lecture du programme, puis de l'image -----
-start   lda #>BUF
+start   lda #BUFH
         sta store+2
         lda #PTRK
         sta TRACK
@@ -47,11 +56,21 @@ start   lda #>BUF
         lda #ISECT
         beq noimg
         sta COUNT
-        lda #>IMG
+        lda #IMGH
         sta store+2
         lda #ITRK
         sta TRACK
         lda #ISEC
+        sta SECTOR
+        jsr load
+        lda #JSECT
+        beq noimg
+        sta COUNT
+        lda #IMG2H
+        sta store+2
+        lda #JTRK
+        sta TRACK
+        lda #JSEC
         sta SECTOR
         jsr load
 noimg   lda #0                ; retour sur la piste 0 (Hall of Fame)
@@ -71,9 +90,9 @@ vec     lda $F87C,x
         lda #$04
         sta $024F
         lda #$00              ; au lieu du test mémoire $FA14 - Atmos 48 Ko,
-        sta $0260             ; HIMEM = $9800
+        sta $0260             ; HIMEM = HIMEMH*256 ($9800, ou $7800 avec 2 images)
         sta $0220
-        ldy #$98
+        ldy #HIMEMH
         sta $A6
         sty $A7
         sta $02C1

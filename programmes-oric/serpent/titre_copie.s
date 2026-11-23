@@ -7,6 +7,10 @@
 ;    $0460, juste après la routine du Hall of Fame ; appel - HIRES puis CALL #460)
 ;
 ; Le BASIC mettrait plusieurs minutes avec des PEEK/POKE ; ici c'est immédiat.
+; Modifié le 2026-11-23 by GliouCNR©70 - la routine sert aussi à l'écran de
+; victoire. La page de départ est l'octet #461 (opérande du 1er LDA) et la
+; page des 64 derniers octets l'octet #482 (départ + 31) - le BASIC les pose
+; avant CALL #460 - titre en $5800 (#58/#77), victoire en $7800 (#78/#97).
 ; 8 000 octets = 31 pages entières + 64 octets.
 
         * = $0460

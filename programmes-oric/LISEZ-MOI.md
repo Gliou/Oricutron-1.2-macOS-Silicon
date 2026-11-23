@@ -19,7 +19,7 @@ Les `.tap` sont aussi copiés dans `~/Library/Application Support/Oricutron/tape
 | Programme | Fichiers | Langage | Ce qu'il fait |
 |---|---|---|---|
 | Démo graphique | `demo-hires/` : `demo-hires.bas` → `demo-hires.tap` | BASIC | Mode HIRES : bandes de couleur, cercles, rayons, texte, son (ZAP, PING). Une touche revient au mode texte. |
-| Serpent | `serpent/` : `serpent.bas` → `serpent.tap` | BASIC | Petit jeu : flèches pour diriger, mange les `@`, perdu si on touche le bord, un mur ou sa queue. En couleurs : bord magenta plein, serpent vert, pomme verte (le `@` redessiné), murs en pavés blancs, SCORE cyan, HI-SCORE magenta. Espace pour jouer. **5 niveaux** (voir plus bas). **Hall of Fame** des 10 meilleurs scores, HI-SCORE affiché pendant la partie. |
+| Serpent | `serpent/` : `serpent.bas` → `serpent.tap` | BASIC | Petit jeu : flèches pour diriger, mange les `@`, perdu si on touche le bord, un mur ou sa queue. En couleurs : bord en briques blanches à joints magenta, serpent vert, pomme magenta (le `@` redessiné, en vidéo inverse), murs en pavés blancs, SCORE cyan, HI-SCORE jaune, une ligne vide entre le mur du bas et le score. Espace pour jouer. **5 niveaux** (voir plus bas). **Hall of Fame** des 10 meilleurs scores, avec le nombre de pommes mangées, HI-SCORE affiché pendant la partie. |
 | Écran titre | `titre/` : `titre.s` → `titre.tap` | Assembleur 6502 | Titre double hauteur, arc-en-ciel animé, texte défilant. Une touche rend l'écran BASIC d'avant. |
 
 Le serpent existe aussi en **disquette** `serpent/serpent.dsk` (lecteur Microdisc), qui
@@ -45,15 +45,65 @@ En cassette, le Hall of Fame marche aussi mais n'est gardé que jusqu'à l'extin
   **mémorisé** (murs, position de la porte, `@` déjà mangés) : on le retrouve à
   l'identique, et une porte ouverte le reste. Tout est retiré au hasard à la
   partie suivante ;
-- chaque niveau a des **murs** (pavés blancs) tirés au hasard : 3 au niveau 1, puis 3 de
-  plus à chaque niveau (15 au niveau 5), et plus longs (2 à L+3 cases). Ce sont
+- chaque niveau a des **murs** (pavés blancs) tirés au hasard : 7 au niveau 1, puis 2 de
+  plus à chaque niveau (15 au niveau 5 ; 3, 6, 9, 12 avant le 2026-11-23, jugé trop
+  facile au début), et plus longs (2 à L+3 cases). Ce sont
   des traits droits qui ne touchent ni un autre mur ni le bord, même en
   diagonale : il reste toujours un passage, et la porte est toujours
   accessible (vérifié sur 2 000 tirages simulés). Le départ du serpent et
   le devant de la porte restent libres ;
 - la barre de statut (ligne du haut, celle de CAPS) affiche au centre le
-  niveau et la valeur d'un `@`, par exemple « NIVEAU 5 - @ = 50 » ;
+  niveau, la valeur d'un `@` et le nombre de `@` qu'il **reste** à manger
+  (2026-11-23) : avant l'ouverture de la porte aux niveaux 1 à 4, par exemple
+  « NIVEAU 2 - @ = 20 - RESTE 3 », puis « PORTE OUVERTE » ; au niveau 5,
+  avant que le serpent atteigne 256 anneaux, le plus long que le programme
+  peut garder : à 0, la partie est **gagnée** (« GAGNE ! ») ;
+- 256 anneaux = **gagné** sur n'importe quel niveau (2026-11-23) : un joueur
+  peut redescendre par les portes de gauche aux niveaux 1 à 4 (le serpent
+  garde sa longueur, les `@` y valent moins) et y finir la partie ; seul le
+  niveau 5 affiche le décompte des anneaux ;
 - le tracé des murs prend quelques secondes au niveau 5 (BASIC).
+
+**Robot joueur** (ajouté le 2026-11-23 by GliouCNR©70) : `serpent/bot_serpent.py`
+regarde l'Oric en direct, reconnaît chaque case (bord, murs, pomme, tête et sa
+direction, corps, queue) et envoie les flèches à Oricutron, sans prendre le
+clavier ni la souris. Il vise le **score parfait** : le serpent range ses
+positions dans `X(255)`, donc au plus 256 anneaux ; le robot mange juste les 5
+`@` qui ouvrent la porte aux niveaux 1 à 4 (500 points, longueur 24), puis 232
+`@` à 50 points au niveau 5 : **12 100 points**, et la partie est gagnée.
+
+```
+pip install mss numpy pyobjc-framework-Quartz pyobjc-framework-ScreenCaptureKit pyobjc-framework-CoreMedia pyobjc-framework-libdispatch
+python3 serpent/bot_serpent.py --fenetre --jouer     # conseillé
+python3 serpent/bot_serpent.py                       # montrer la zone avec la souris
+```
+
+- `--fenetre` lit la fenêtre d'Oricutron elle-même par ScreenCaptureKit (60
+  images par seconde) : on peut la cacher ou changer de bureau pendant la
+  partie (mais pas la réduire dans le Dock). L'ancienne capture image par
+  image est restée deux fois bloquée 30 s, ce qui tuait le serpent.
+- Il faut autoriser le Terminal dans Réglages Système › Confidentialité et
+  sécurité › Enregistrement de l'écran.
+- Le jeu ne lit qu'une touche par pas : une touche envoyée après avoir vu le
+  pas k agit au pas k+2. Le robot décide donc un pas à l'avance et appuie au
+  bon moment du pas (après le `WAIT WT` du jeu), soit `WT` + 0,4 pas après
+  l'**arrivée** de l'image. 2026-11-23 : le délai partait d'une heure prise
+  avant d'attendre l'image (jusqu'à 0,1 s plus tôt) ; la touche tombait
+  parfois un pas trop tôt ou trop tard et le serpent mourait au niveau 4 ou
+  5. Corrigé, puis vérifié : partie gagnée à 12 100 sans un seul écart de
+  direction.
+- Un seul robot à la fois : un second lancement s'arrête tout de suite (deux
+  robots envoyaient chacun leurs flèches). Après une défaite, le robot ne s'arrête pas :
+  il attend la partie suivante (Ctrl-C pour l'arrêter) ; à 256 anneaux il rend la main.
+- `BOT_PHOTOS=<dossier>` : le robot photographie l'écran dès que le serpent
+  cesse d'avancer (explosion), pour comprendre une défaite.
+- Si les images n'arrivent plus, un second fil continue d'envoyer les touches
+  et fait avancer le serpent « à l'estime » (tout droit tant que c'est sûr).
+- Stratégie : plus court chemin vers la pomme, seulement s'il peut ensuite
+  rejoindre sa queue ; sinon suivre sa queue par le plus long détour.
+  Vérifié sur un simulateur du niveau 5 : 20 parties sur 20 à 12 100.
+- `--test-gel S` fige volontairement la capture 1,5 s toutes les S secondes
+  (essai de la marche à l'estime).
 
 ![Niveau 5](serpent/captures/serpent-niveau5.jpg)
 
@@ -64,9 +114,12 @@ une telle case s'affiche comme une case vide, et le serpent mourait devant le
 bord gauche ou mangeait le `@` sans le toucher (corrigé le 2026-11-22). Le jeu
 se sert de la vidéo inverse, qui affiche la couleur complémentaire de l'encre :
 encre verte pour le serpent (comme sur l'image titre, depuis le 2026-11-23),
-bloc plein en inverse = magenta pour le bord (la couleur complémentaire du vert), espace
+caractère « briques » en inverse pour le bord : joints magenta (le complément du vert),
+briques blanches (2026-11-23 : un bloc magenta plein se confondait avec la pomme), espace
 en inverse = blanc pour les murs. La nourriture est le caractère `@` redessiné
-en petite pomme, verte sur noir. Le serpent est dessiné lui aussi (caractères
+en grosse pomme, posée en vidéo inverse : magenta avec un peu de blanc dans
+les coins (2026-11-23 : verte, elle se perdait dans un long serpent vert ; une
+pomme magenta sur noir est impossible sans case couleur). Le serpent est dessiné lui aussi (caractères
 redéfinis) : des anneaux à écailles, une tête avec deux yeux et un museau,
 tournée dans le sens de la marche, et une queue en pointe sur le dernier
 anneau.
@@ -77,7 +130,8 @@ voit est exactement ce qui touche.
 
 **Écran de présentation** (ajouté le 2026-11-22 by GliouCNR©70) : sur la
 disquette, le jeu commence par une image HIRES - SERPENT en dégradé jaune/rouge,
-un serpent, un `@`, « un jeu de GliouCNR©70 » - et attend une touche. L'écran
+un serpent, une pomme magenta comme dans le jeu (un `@` jaune avant le
+2026-11-23), « un jeu de GliouCNR©70 » - et attend une touche. L'écran
 reste noir pendant le chargement (le démarrage efface le message de la ROM),
 et ni CAPS ni le curseur ne s'affichent : le démarrage éteint le curseur et le
 verrouillage des majuscules (`$020C`), si bien que la ROM n'a plus jamais de CAPS
@@ -94,6 +148,23 @@ python3 serpent/titre_serpent.py
 ```
 
 ![Écran titre dans Oricutron](serpent/captures/serpent-titre-oricutron.jpg)
+
+**Écran de victoire** (ajouté le 2026-11-23 by GliouCNR©70) : quand le serpent
+atteint 256 anneaux, le jeu reste 3 secondes sur le tableau avec « GAGNE ! »,
+puis, sur la disquette, affiche une image HIRES - GAGNÉ ! en dégradé, une coupe
+« 256 », des pommes, le serpent complet. Dessous, dans les lignes de texte, le
+score (jaune) et les pommes mangées (magenta) ; une petite fanfare joue (sol do
+mi sol - mi sol), puis une touche mène au Hall of Fame. L'image est chargée au
+démarrage avec l'image titre et attend en `$7800-$973F`, au-dessus de HIMEM
+(abaissé à `$7800`), que la partie soit gagnée ; la même routine de copie
+(`CALL #460`) sert aux deux images. Sur cassette, il n'y a que la pause sur
+« GAGNE ! ».
+
+```
+python3 serpent/victoire_serpent.py
+```
+
+![Écran de victoire dans Oricutron](serpent/captures/serpent-victoire-oricutron.jpg)
 
 Captures d'écran prises dans Oricutron : dossier `captures/` de chaque programme.
 
@@ -115,7 +186,7 @@ lecteur Microdisc :
 
 ```
 cd serpent
-python3 ../outils/oric_dsk.py serpent.bas serpent.dsk serpent-titre.hir   # image facultative
+python3 ../outils/oric_dsk.py serpent.bas serpent.dsk serpent-titre.hir serpent-victoire.hir   # images facultatives
 ```
 
 Rangement de la disquette (depuis le 2026-11-22) :
@@ -127,7 +198,12 @@ Rangement de la disquette (depuis le 2026-11-22) :
 | 0 | 3 | répertoire (`SYSTEM.DOS`) |
 | 0 | 4-5 | 2e étape, `boot_etage2.s` |
 | 0 | 18 | données du programme (Hall of Fame) |
-| 1, 2… | à partir de 1 | programme BASIC tokenisé et compacté (6 Ko au plus), puis l'image HIRES (32 secteurs) |
+| 1, 2… | à partir de 1 | programme BASIC tokenisé et compacté (6 Ko au plus), puis l'image titre et l'image de victoire (32 secteurs chacune) |
+
+Au démarrage, avec deux images (2026-11-23), la 2e étape lit le programme en
+`$4000`, l'image titre en `$5800` et l'image de victoire en `$7800`, et fixe
+HIMEM à `$7800` ; avec une seule image : programme en `$8000`, image en `$6000`,
+HIMEM `$9800` comme avant.
 
 Au reset, la ROM du Microdisc lit le secteur 1, puis le répertoire, où elle
 trouve `SYSTEM.DOS`, et exécute le code du secteur 2. Cette 1re étape charge la
@@ -162,6 +238,10 @@ cassette qui se lance toute seule. `xa` est l'assembleur 6502 (Homebrew : `brew 
   10 bas, 11 haut).
 - **Noms de variables BASIC** : la ROM reconnaît les mots-clés partout, même au milieu
   d'un nom. Éviter les noms qui contiennent `TO`, `ON`, `OR`, `FN`, `IF`, `PI`, etc.
+- **`WAIT 0`** (2026-11-23 by GliouCNR©70) : ce n'est pas « pas de pause ». Le
+  compteur peut repasser de 0 à 65535 et le programme se fige 655 s (près de
+  11 minutes). Le serpent se bloquait ainsi au niveau 5 (`WAIT WT` avec WT = 0) ;
+  écrire `IF WT THEN WAIT WT`.
 - **Mode HIRES** : la zone de texte du bas ne fait que 3 lignes ; un `PRINT` de trop
   fait défiler le texte et le fait disparaître.
 - **Écran texte en assembleur** : le début de chaque ligne contient des attributs de

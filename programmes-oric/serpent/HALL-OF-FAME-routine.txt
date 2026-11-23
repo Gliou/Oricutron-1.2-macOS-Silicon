@@ -1,7 +1,7 @@
 LA SAUVEGARDE DU HALL OF FAME DE SERPENT.DSK
 Routine 6502 de lecture / écriture d'un secteur sur le lecteur Microdisc
 Créé le 2026-11-22 by GliouCNR©70 — mis à jour le 2026-11-22 (démarrage sur
-plusieurs pistes)
+plusieurs pistes), puis le 2026-11-23 by GliouCNR©70 (pommes mangées)
 
 ======================================================================
 1. EN DEUX MOTS
@@ -76,7 +76,8 @@ Ce transfert se fait "octet par octet, à la main" (pas de DMA) : le 6502 doit
 - La page 4 ($0400-$04FF) n'est pas utilisée par le BASIC de l'Atmos quand
   il n'y a pas de DOS : c'est l'endroit classique pour un petit programme
   machine appelé par CALL.
-- $9800 est juste au-dessus de HIMEM (le BASIC s'arrête à $97FF). En mode
+- $9800 est au-dessus de HIMEM (le BASIC s'arrête à $77FF depuis le
+  2026-11-23 : $7800-$973F garde l'image de victoire). En mode
   texte, cette zone ne sert à rien (elle ne sert qu'au jeu de caractères
   du mode HIRES) : le BASIC ne l'écrasera jamais.
 
@@ -169,7 +170,10 @@ Colonnes : adresse | octets | instruction | explication
     octets 11-20    joueur n°2
     ...
     octets 91-100   joueur n°10
-    octets 101-255  inutilisés (zéros)
+    octets 101-120  pommes mangées (2026-11-23) : 2 octets (haut, bas)
+                    par joueur, joueur I aux octets 99+2I et 100+2I.
+                    Une disquette d'avant y a des zéros : « - » à l'écran.
+    octets 121-255  inutilisés (zéros)
 
     Le joueur I commence à l'octet  I*10-9.
     Score = octet_haut * 256 + octet_bas  (jusqu'à 65535 points).
@@ -222,12 +226,13 @@ Ligne 60 - au démarrage, relit le Hall of Fame :
       code de démarrage (boot_microdisc.s) qui a posé 68 en $04FF. Chargé
       par cassette, le jeu n'essaie jamais d'accéder au lecteur.
     - CALL #400 lit le secteur ; si pas d'erreur ET signature "H" présente,
-      le sous-programme 950 recopie le tampon dans les tableaux N$() et SC().
+      le sous-programme 950 recopie le tampon dans les tableaux N$(), SC() et NP().
 
 Lignes 950-960 - tampon -> tableaux :
     950 FOR I=1 TO 10:A=#9800+I*10-9:N$(I)=""
     955 FOR J=0 TO 7:N$(I)=N$(I)+CHR$(PEEK(A+J)):NEXT
-    960 SC(I)=PEEK(A+8)*256+PEEK(A+9):NEXT:RETURN
+    960 SC(I)=PEEK(A+8)*256+PEEK(A+9):NP(I)=PEEK(#9863+I*2)*256+
+        PEEK(#9864+I*2):NEXT:RETURN                    + les pommes
 
 Lignes 800-855 - après une partie, si le score bat le 10e :
     cherche la place P, demande le nom (8 lettres, complété par des
@@ -237,7 +242,9 @@ Lignes 800-855 - après une partie, si le score bat le 10e :
 Lignes 900-925 - tableaux -> tampon -> disquette :
     900 POKE #9800,72:FOR I=1 TO 10:A=#9800+I*10-9      signature + adresse
     905 FOR J=0 TO 7:POKE A+J,ASC(MID$(N$(I),J+1,1)):NEXT    le nom
-    910 POKE A+8,INT(SC(I)/256):POKE A+9,SC(I) AND 255:NEXT  le score
+    910 POKE A+8,INT(SC(I)/256):POKE A+9,SC(I) AND 255      le score
+    912 POKE #9863+I*2,INT(NP(I)/256):POKE #9864+I*2,NP(I) AND 255:NEXT
+                                                         les pommes
     915 PRINT ... "SAUVEGARDE SUR LA DISQUETTE...":CALL #403  écriture
     920 IF PEEK(#4FE) THEN PRINT "   ERREUR DISQUE";PEEK(#4FE):WAIT 300
 

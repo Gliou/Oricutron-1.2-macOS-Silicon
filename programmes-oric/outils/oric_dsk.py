@@ -4,9 +4,10 @@ oric_dsk.py — fabrique une disquette .dsk (Microdisc) qui démarre toute seule
 sur un programme BASIC, pour l'Oric Atmos.
 Créé le 2026-11-21 by GliouCNR©70 — secteur de données ajouté le 2026-11-22,
 programme compacté (espaces retirés, oric_tap.compact) et chargement sur
-plusieurs pistes avec image de présentation le 2026-11-22
+plusieurs pistes avec image de présentation le 2026-11-22, 2e image (écran de
+victoire) le 2026-11-23 by GliouCNR©70
 
-  python3 oric_dsk.py  programme.bas  sortie.dsk  [image.hir]
+  python3 oric_dsk.py  programme.bas  sortie.dsk  [image.hir [image2.hir]]
 
 Piste 0 : secteur 1 = en-tête lu par la ROM du Microdisc, secteur 2 = 1re étape
 du démarrage (boot_microdisc.s), secteur 3 = répertoire où la ROM cherche
@@ -15,6 +16,8 @@ pour les données du programme (le Hall of Fame du serpent).
 Pistes 1, 2... (depuis le 2026-11-22) : le programme BASIC tokenisé par
 oric_tap.py (24 secteurs = 6 Ko au plus, lu en $8000), puis l'image HIRES
 facultative (8 000 octets, lue en $6000, que le programme affiche lui-même).
+Avec une 2e image : programme lu en $4000, image en $5800, 2e image en $7800,
+gardée sous HIMEM abaissé à $7800 jusqu'à ce que le programme l'affiche.
 Les deux étapes sont assemblées avec xa. Dans Oricutron :
 
   Oricutron -k m -d sortie.dsk
@@ -100,24 +103,32 @@ def position(n):
 
 
 def main(argv):
-    if len(argv) not in (3, 4):
+    if len(argv) not in (3, 4, 5):
         print(__doc__); return 1
     src, dst = argv[1], argv[2]
     prog = basic_program(open(src, encoding="utf-8").read(), compacter=True)   # sans espaces
     nsect = (len(prog) + 255) // 256
     if nsect > MAX_PROG_SECTORS:
         sys.exit(f"programme trop long : {len(prog)} octets ({MAX_PROG_SECTORS * 256} au plus)")
-    image = b""
-    if len(argv) == 4:
-        image = open(argv[3], "rb").read()
-        if len(image) != 8000:
-            sys.exit(f"{argv[3]} : une image HIRES fait 8000 octets, pas {len(image)}")
-        image += bytes(IMAGE_SECTORS * 256 - len(image))
-    isect = len(image) // 256
+    images = []
+    for nom in argv[3:]:
+        im = open(nom, "rb").read()
+        if len(im) != 8000:
+            sys.exit(f"{nom} : une image HIRES fait 8000 octets, pas {len(im)}")
+        images.append(im + bytes(IMAGE_SECTORS * 256 - len(im)))
+    image = b"".join(images)
+    isect = IMAGE_SECTORS if images else 0
+    jsect = IMAGE_SECTORS if len(images) == 2 else 0
+    # deux images : le programme passe en $4000 (6 Ko au plus, jusqu'à $57FF),
+    # l'image en $5800 et la 2e en $7800-$97FF, au-dessus de HIMEM ($7800)
+    bufh, imgh, img2h, himemh = (0x40, 0x58, 0x78, 0x78) if jsect else (0x80, 0x60, 0x78, 0x98)
     ptrk, psec = position(0)
     itrk, isec = position(nsect)
+    jtrk, jsec = position(nsect + IMAGE_SECTORS)
     etage2 = assembler("boot_etage2.s", f"PTRK={ptrk}", f"PSEC={psec}", f"NSECT={nsect}",
                        f"ITRK={itrk}", f"ISEC={isec}", f"ISECT={isect}",
+                       f"JTRK={jtrk}", f"JSEC={jsec}", f"JSECT={jsect}",
+                       f"BUFH={bufh}", f"IMGH={imgh}", f"IMG2H={img2h}", f"HIMEMH={himemh}",
                        f"PEND=${BASIC_START + len(prog):04X}")
     if len(etage2) > ETAGE2_MAX * 256:
         sys.exit(f"2e étape trop longue : {len(etage2)} octets")
@@ -140,7 +151,8 @@ def main(argv):
             out += track(t, side, pistes.get(t, {}) if side == 0 else {})
     open(dst, "wb").write(out)
     print(f"{dst} : programme BASIC de {len(prog)} octets ({nsect} secteurs, piste {ptrk})"
-          + (f", image HIRES (piste {itrk} secteur {isec})" if image else "") + ", démarrage automatique")
+          + (f", image HIRES (piste {itrk} secteur {isec})" if image else "")
+          + (f", 2e image (piste {jtrk} secteur {jsec})" if jsect else "") + ", démarrage automatique")
     return 0
 
 

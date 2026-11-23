@@ -21,22 +21,29 @@ une comparaison vraie vaut -1.
                                                                  │ et les pose en $0460.
                                                                  │
 14 IF PEEK(#4FF)=68 THEN PAPER 0:INK 6:HIRES:POKE 618,10:        │ Démarré de la disquette (marque 68 en $04FF) ? Alors : passe
-      CALL #460:PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:   │ en HIRES, cache le curseur, recopie l'image de présentation
-      POKE 618,10:POKE 735,0:GOSUB 980:TEXT                      │ ($6000 -> écran $A000) avec CALL #460, écrit APPUIE SUR UNE
-                                                                 │ TOUCHE en bas, attend une touche (980) puis revient en mode
-                                                                 │ TEXTE.
+      POKE #461,#58:POKE #482,#77:CALL #460:PRINT:               │ en HIRES, cache le curseur, recopie l'image de présentation
+      PRINT "         APPUIE SUR UNE TOUCHE";:                   │ ($5800 -> écran $A000) avec CALL #460 - #461 et #482 = pages
+      POKE 618,10:POKE 735,0:GOSUB 980:TEXT                      │ de départ de la copie (modifié le 2026-11-23 by GliouCNR©70 :
+                                                                 │ l'image était en $6000 avant l'écran de victoire), écrit
+                                                                 │ APPUIE SUR UNE TOUCHE en bas, attend une touche (980) puis
+                                                                 │ revient en mode TEXTE.
                                                                  │
 20 CLS:PAPER 0:INK 2:POKE 618,10                                 │ Efface l'écran, fond noir, encre verte, curseur caché (618 =
                                                                  │ 10).
                                                                  │
-30 DIM X(255),Y(255),N$(10),SC(10):W$=CHR$(160):B$=CHR$(255):    │ Tableaux : X(),Y() = positions des anneaux (tampon
-      F$="@"                                                     │ circulaire de 256), N$()/SC() = noms et scores du Hall of
-                                                                 │ Fame. W$ = mur intérieur (espace en inverse, pavé blanc), B$
-                                                                 │ = bord (bloc plein en inverse, magenta), F$ = la pomme
-                                                                 │ (caractère @ redessiné).
+30 DIM X(255),Y(255),N$(10),SC(10),NP(10):W$=CHR$(160):          │ Tableaux : X(),Y() = positions des anneaux (tampon
+      B$=CHR$(255):F$=CHR$(192)                                  │ circulaire de 256), N$()/SC()/NP() = noms, scores et
+                                                                 │ pommes mangées du Hall of Fame. W$ = mur intérieur (espace
+                                                                 │ en inverse, pavé blanc), B$
+                                                                 │ = bord (briques en inverse), F$ = la pomme
+                                                                 │ (caractère @ redessiné, en inverse : magenta sur blanc,
+                                                                 │ pour qu'on la voie dans un long serpent vert).
                                                                  │
-32 FOR I=0 TO 7:POKE #B7F8+I,63:NEXT                             │ Redessine le caractère 127 en bloc plein (8 lignes de 6
-                                                                 │ points allumés = 63).
+32 FOR I=0 TO 7:POKE #B7F8+I,63:NEXT:                            │ Redessine le caractère 127 en briques (2026-11-23) : lignes
+      FOR I=1 TO 3:POKE #B7F8+I,4:POKE #B7FC+I,32:NEXT           │ 0 et 4 pleines (63), joints verticaux décalés (4, puis 32).
+                                                                 │ En inverse, les points allumés sont magenta et le reste
+                                                                 │ blanc : des briques blanches à joints magenta. Le bloc
+                                                                 │ magenta plein d'avant se confondait avec la pomme.
                                                                  │
 34 FOR I=0 TO 7:READ B:POKE #B600+I,B:NEXT                       │ Redessine le caractère @ en petite pomme (8 nombres lus en
                                                                  │ DATA 996).
@@ -48,6 +55,10 @@ une comparaison vraie vaut -1.
                                                                  │
 36 FOR I=0 TO 71:READ B:POKE #B7B0+I,B:NEXT:Z$=CHR$(122)         │ Redessine les caractères 118 à 126 : 4 queues, le corps, 4
                                                                  │ têtes (DATA 997-999). Z$ = un anneau du corps.
+                                                                 │
+37 DIM PZ(12):FOR I=0 TO 12:                                     │ Lettres de « PORTE OUVERTE » préparées une fois pour toutes
+      PZ(I)=ASC(MID$("PORTE OUVERTE",I+1,1)):NEXT                │ (ajouté le 2026-11-23) : la porte qui s'ouvre n'écrit que
+                                                                 │ ces 13 cases (690), vite.
                                                                  │
 40 FOR I=0 TO 92:READ B:POKE #400+I,B:NEXT                       │ Lit les 93 octets de la routine disque du Hall of Fame (DATA
                                                                  │ 1000-1040) et les pose en $0400.
@@ -64,8 +75,8 @@ une comparaison vraie vaut -1.
                                                                  │
 75 GET K$:IF K$<>" " THEN 75                                     │ Attend la barre d'espace.
                                                                  │
-80 S=0:L=1:N=4:EN=0:FOR I=1 TO 5:CR(I)=0:OP(I)=0:EL(I)=0:NEXT:   │ Nouvelle partie : score 0, niveau 1, serpent de 4 anneaux,
-      GOSUB 400                                                  │ entrée par la gauche ; oublie les 5 tableaux (ils seront
+80 S=0:PM=0:L=1:N=4:EN=0:EY=13:FOR I=1 TO 5:CR(I)=0:OP(I)=0:     │ Nouvelle partie : score 0, pommes mangées PM 0, niveau 1, serpent de 4 anneaux,
+      EL(I)=0:NEXT:GOSUB 400                                     │ entrée par la gauche à la ligne 13 (EY) ; oublie les 5 tableaux (ils seront
                                                                  │ retirés au hasard) ; dessine le niveau 1 (400).
                                                                  │
 100 K=PEEK(KB):IF K<128 THEN 150                                 │ BOUCLE DU JEU (écrite pour aller vite). KB = 735 = dernière
@@ -96,18 +107,19 @@ une comparaison vraie vaut -1.
                                                                  │ fréquent, une case vide, est traité tout de suite ; sinon on
                                                                  │ va voir en 155.
                                                                  │
-151 IF NX=37 THEN N=((H-T) AND M)+1+GR:EL(L)=E:L=L+1:EN=0:PING:  │ Case vide dans le bord droit = la porte : on note la
-      GOSUB 400:GOTO 100                                         │ longueur du serpent et les pommes mangées ici, et on passe
-                                                                 │ au niveau suivant en entrant par la gauche.
+151 IF NX=37 THEN N=((H-T) AND M)+1+GR:EL(L)=E:L=L+1:EN=0:EY=NY: │ Case vide dans le bord droit = la porte : on note la
+      PING:GOSUB 400:GOTO 100                                    │ longueur du serpent, les pommes mangées ici et la ligne
+                                                                 │ de passage EY, et on passe au niveau suivant en entrant
+                                                                 │ par la gauche à cette même ligne (modifié le 2026-11-23).
                                                                  │
-152 IF NX=2 THEN N=((H-T) AND M)+1+GR:EL(L)=E:L=L-1:EN=1:PING:   │ Case vide dans le bord gauche = la porte de retour : même
-      GOSUB 400:GOTO 100                                         │ chose vers le niveau précédent, en ressortant par sa porte
-                                                                 │ de droite.
+152 IF NX=2 THEN N=((H-T) AND M)+1+GR:EL(L)=E:L=L-1:EN=1:EY=NY:  │ Case vide dans le bord gauche = la porte de retour : même
+      PING:GOSUB 400:GOTO 100                                    │ chose vers le niveau précédent, en ressortant par sa porte
+                                                                 │ de droite, à la ligne de passage EY.
                                                                  │
 153 GOTO 166                                                     │ Case vide ordinaire : on avance (166).
                                                                  │
-155 IF C=64 THEN 170                                             │ Une pomme (64) : on avance sans bouger la queue, le serpent
-                                                                 │ grandit.
+155 IF C=192 THEN 170                                            │ Une pomme (192, @ en inverse) : on avance sans bouger la
+                                                                 │ queue, le serpent grandit.
                                                                  │
 156 IF C>117 AND C<127 AND NX=X(T) AND NY=Y(T) AND GR=0 THEN 167 │ La case est la queue et elle va bouger (le serpent ne
                                                                  │ grandit pas) : elle sera libre, on avance.
@@ -134,17 +146,31 @@ une comparaison vraie vaut -1.
                                                                  │
 176 IF TC THEN PLOT X(T),Y(T),CHR$(TC):TC=0                      │ Dessine la queue en pointe.
                                                                  │
-180 IF C=64 THEN 185                                             │ Pomme mangée : on compte les points (185).
+180 IF C=192 THEN 185                                            │ Pomme mangée : on compte les points (185).
                                                                  │
-182 WAIT WT:GOTO 100                                             │ Sinon petite pause (WT = 5-L centièmes de seconde : de plus
-                                                                 │ en plus rapide d'un niveau à l'autre) puis tour suivant.
+182 IF WT THEN WAIT WT                                           │ Sinon petite pause (WT = 5-L centièmes de seconde : de plus
+                                                                 │ en plus rapide d'un niveau à l'autre). Pas de WAIT 0 au
+                                                                 │ niveau 5 : WAIT 0 peut figer l'Oric 655 s (corrigé le
+                                                                 │ 2026-11-23).
                                                                  │
-185 S=S+L*10:E=E+1:PING:GOSUB 600:GOSUB 500                      │ Pomme mangée : 10 points par niveau, une pomme de plus dans
-                                                                 │ ce niveau, son PING, score affiché (600), nouvelle pomme
-                                                                 │ (500).
+183 GOTO 100                                                     │ Tour suivant.
+                                                                 │
+185 S=S+L*10:E=E+1:PM=PM+1:PING:GOSUB 600:GOSUB 689:             │ Pomme mangée : 10 points par niveau, une pomme de plus dans
+      GOSUB 500                                                  │ ce niveau et dans la partie (PM, pour le Hall of Fame),
+                                                                 │ son PING, score affiché (600), nombre « RESTE »
+                                                                 │ mis à jour (689), puis seulement la nouvelle pomme (500) :
+                                                                 │ elle reste la dernière chose tracée avant la lecture du
+                                                                 │ clavier (le robot joueur s'en sert pour se synchroniser).
                                                                  │
 190 IF E=5 AND L<5 THEN GOSUB 650                                │ 5e pomme d'un niveau 1 à 4 : la porte de droite s'ouvre
                                                                  │ (650).
+                                                                 │
+191 IF ((H-T) AND M)+1+GR>255 THEN 330                           │ À n'importe quel niveau : le serpent a 256 anneaux, le plus
+                                                                 │ long que X(255),Y(255) peuvent garder (un de plus et la tête
+                                                                 │ écraserait la queue dans le tampon) : partie gagnée (330).
+                                                                 │ Modifié le 2026-11-23 by GliouCNR©70 : avant, au niveau 5
+                                                                 │ seulement ; un joueur redescendu aux niveaux 1 à 4 pouvait
+                                                                 │ dépasser 256 et casser le tampon.
                                                                  │
 195 GOTO 100                                                     │ Tour suivant, sans pause (on vient de manger).
                                                                  │
@@ -155,45 +181,73 @@ une comparaison vraie vaut -1.
                                                                  │
 320 GOTO 70                                                      │ Retour au Hall of Fame.
                                                                  │
+330 ZAP:PLOT 14,12,"  GAGNE !  ":WAIT 300:IF D THEN GOSUB 340    │ Gagné : bruit, message, 3 s sur le tableau, puis (disquette)
+                                                                 │ l'écran de victoire. Modifié le 2026-11-23 by GliouCNR©70.
+                                                                 │
+335 GOTO 310                                                     │ Hall of Fame comme après une partie perdue (310).
+                                                                 │
+340 PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#78:               │ ÉCRAN DE VICTOIRE (ajouté le 2026-11-23 by GliouCNR©70).
+      POKE #482,#97:CALL #460                                    │ HIRES, puis la routine #460 recopie l'image de victoire,
+                                                                 │ chargée au démarrage en $7800-$973F (au-dessus de HIMEM,
+                                                                 │ le BASIC n'y touche pas), dans l'écran $A000.
+                                                                 │
+342 Q$=CHR$(27):PRINT Q$;"C   SCORE";S;Q$;"E";PM;                │ Dans les lignes de texte sous l'image : ESC C = encre jaune
+      "POMMES MANGEES"                                           │ pour le score, ESC E = magenta pour les pommes mangées.
+                                                                 │
+344 PLAY 1,0,0,0:FOR I=1 TO 6:                                   │ Fanfare sur la voie 1 : PLAY 1 allume la voie, MUSIC voie,
+      MUSIC 1,VAL(MID$("344444",I,1)),                           │ octave, note (1 = do, 5 = mi, 8 = sol), volume 12 ; notes
+      VAL(MID$("080105080508",I*2-1,2)),12                       │ sol do mi sol - mi sol, durées (centièmes) dans la 3e
+346 WAIT VAL(MID$("151515301570",I*2-1,2)):NEXT:                 │ chaîne. PLAY 0,0,0,0 coupe le son.
+      PLAY 0,0,0,0                                               │
+                                                                 │
+348 PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:               │ Attend une touche (980), la touche d'avant est oubliée.
+      POKE 618,10:POKE 735,0:GOSUB 980                           │
+                                                                 │
+350 TEXT:PAPER 0:INK 2:POKE 618,10:RETURN                        │ Retour au mode texte (les caractères redessinés reviennent
+                                                                 │ intacts), encre verte, curseur caché.
+                                                                 │
 400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:LY=13:                     │ DESSIN D'UN TABLEAU. Efface l'écran ; le serpent repart d'un
       IF L>1 THEN LY=PD(L-1)+1                                   │ seul anneau, GR = anneaux qui sortiront du mur ; pommes déjà
                                                                  │ mangées ici ; pause WT = 5-L (4 au niveau 1, 0 au niveau 5).
                                                                  │ LY = hauteur d'entrée : celle de la porte de droite du
                                                                  │ tableau précédent (13 au niveau 1).
                                                                  │
-405 FOR I=1 TO 25:PLOT 1,I,2:PLOT 2,I,B$:PLOT 37,I,B$:NEXT       │ Pour chaque ligne : encre verte (attribut 2 en colonne 1),
-                                                                 │ donc serpent et pomme verts ; et un bloc plein en inverse
-                                                                 │ dans les colonnes 2 et 37 (bords gauche et droit) : la
-                                                                 │ couleur complémentaire du vert, magenta.
+405 FOR I=1 TO 24:PLOT 1,I,2:PLOT 2,I,B$:PLOT 37,I,B$:NEXT       │ Pour chaque ligne : encre verte (attribut 2 en colonne 1),
+                                                                 │ donc serpent vert ; et les briques en inverse dans les
+                                                                 │ colonnes 2 et 37 (bords gauche et droit) : joints magenta,
+                                                                 │ la couleur complémentaire du vert, briques blanches.
                                                                  │
-410 FOR I=3 TO 36:PLOT I,1,B$:PLOT I,25,B$:NEXT                  │ Bords du haut et du bas en blocs magenta.
+410 FOR I=3 TO 36:PLOT I,1,B$:PLOT I,24,B$:NEXT                  │ Bords du haut et du bas en briques. Le bas est en ligne 24
+                                                                 │ (25 avant le 2026-11-23) : la ligne 25 reste vide entre le
+                                                                 │ mur du bas et le score.
                                                                  │
 412 IF L>1 THEN FOR I=LY-1 TO LY+1:PLOT 2,I," ":NEXT             │ Niveaux 2 à 5 : ouvre la porte de gauche (3 cases) à la
                                                                  │ hauteur LY.
                                                                  │
 415 PLOT 2,26,6:PLOT 3,26,"SCORE":PLOT 14,26,7:                  │ Barre du bas : SCORE en cyan, NIV en blanc, HI-SCORE en
-      PLOT 15,26,"NIV"+STR$(L):PLOT 21,26,5:                     │ magenta (attributs 6, 7, 5 posés devant chaque mot).
+      PLOT 15,26,"NIV"+STR$(L):PLOT 21,26,3:                     │ jaune (attributs 6, 7, 3 posés devant chaque mot).
       PLOT 22,26,"HI-SCORE"                                      │
                                                                  │
 417 PLOT 30,26,STR$(SC(1)):GOSUB 600                             │ Affiche le meilleur score du Hall of Fame, puis le score
                                                                  │ (600).
                                                                  │
-420 M$="NIVEAU"+STR$(L)+" - @ ="+STR$(L*10):GOSUB 660            │ Écrit « NIVEAU n - pomme = points » au centre de la barre de
-                                                                 │ statut (660).
+420 GOSUB 680                                                    │ Écrit « NIVEAU n - pomme = points - RESTE n » au centre de
+                                                                 │ la barre de statut (680).
                                                                  │
 422 IF CR(L) THEN 472                                            │ Tableau déjà visité : on le redessine tel quel (472).
                                                                  │
-423 CR(L)=1:PD(L)=3+INT(RND(1)*19):PY=PD(L):NW(L)=0              │ Première visite : on le marque créé, on tire la hauteur de
-                                                                 │ sa porte de droite (lignes 3 à 21) et on remet son compteur
+423 CR(L)=1:PD(L)=3+INT(RND(1)*18):PY=PD(L):NW(L)=0              │ Première visite : on le marque créé, on tire la hauteur de
+                                                                 │ sa porte de droite (lignes 3 à 20) et on remet son compteur
                                                                  │ de murs à 0.
                                                                  │
-425 FOR W=1 TO L*3:FOR A=1 TO 30                                 │ On veut 3 murs par niveau (3, 6 ... 15), et on essaie 30
+425 FOR W=1 TO 5+2*L:FOR A=1 TO 30                               │ On veut 5+2L murs (7, 9, 11, 13, 15 ; 3L avant le
+                                                                 │ 2026-11-23, trop peu au début), et on essaie 30
                                                                  │ fois au plus de placer chacun.
                                                                  │
 430 V=INT(RND(1)*2):U=1-V:Q=2+INT(RND(1)*(L+2))                  │ Tire un mur : V = 1 vertical, 0 horizontal (U = l'inverse) ;
                                                                  │ Q = longueur, de 2 à L+3 cases.
                                                                  │
-435 X1=4+INT(RND(1)*(33-Q*U-V)):Y1=3+INT(RND(1)*(22-Q*V-U))      │ Tire sa première case, en laissant une case libre contre
+435 X1=4+INT(RND(1)*(33-Q*U-V)):Y1=3+INT(RND(1)*(21-Q*V-U))      │ Tire sa première case, en laissant une case libre contre
                                                                  │ chaque bord.
                                                                  │
 440 X2=X1+(Q-1)*U:Y2=Y1+(Q-1)*V:G=1                              │ Calcule sa dernière case ; G = 1 : place libre jusqu'à
@@ -230,9 +284,10 @@ une comparaison vraie vaut -1.
                                                                  │
 474 IF OP(L) THEN FOR I=PY TO PY+2:PLOT 37,I," ":NEXT            │ Porte de droite déjà ouverte ? On la rouvre (3 cases vides).
                                                                  │
-475 X(0)=3:Y(0)=LY:DX=1:DY=0:IF EN THEN X(0)=36:Y(0)=PY+1:DX=-1  │ Position de départ : à gauche à la hauteur LY en allant à
-                                                                 │ droite ; si on revient d'un niveau plus haut, à droite
-                                                                 │ devant la porte, en allant à gauche.
+475 X(0)=3:Y(0)=EY:DX=1:DY=0:IF EN THEN X(0)=36:Y(0)=EY:DX=-1    │ Position de départ : à gauche, à la ligne EY où la porte a
+                                                                 │ été passée (haut, milieu ou bas), en allant à droite ; si
+                                                                 │ on revient d'un niveau plus haut, à droite devant la
+                                                                 │ porte, à la ligne EY, en allant à gauche.
                                                                  │
 477 H$=CHR$(123-(DX<0)):PLOT X(0),Y(0),H$:TM=0:TC=0              │ Dessine la tête (tournée à droite ou à gauche) et la garde
                                                                  │ dans H$ ; rien à redessiner pour la queue.
@@ -242,7 +297,7 @@ une comparaison vraie vaut -1.
                                                                  │
 490 GOSUB 500:RETURN                                             │ Pose une pomme (500) et revient au jeu.
                                                                  │
-500 FX=INT(RND(1)*34)+3:FY=INT(RND(1)*23)+2                      │ POSE D'UNE POMME : tire une case au hasard dans le
+500 FX=INT(RND(1)*34)+3:FY=INT(RND(1)*22)+2                      │ POSE D'UNE POMME : tire une case au hasard dans le
                                                                  │ terrain...
                                                                  │
 510 IF SCRN(FX,FY)<>32 THEN 500                                  │ ...recommence si elle n'est pas vide...
@@ -267,6 +322,30 @@ une comparaison vraie vaut -1.
 670 FOR I=#BB82 TO #BBA7:POKE I,32:NEXT:RETURN                   │ Efface la barre de statut (colonnes 2 à 39, ce qui fait
                                                                  │ disparaître CAPS).
                                                                  │
+680 GOSUB 692:M$="NIVEAU"+STR$(L)+" - @ ="+STR$(L*10)+" - "      │ BARRE DE STATUT ENTIÈRE (en entrant dans un tableau, 420) :
+                                                                 │ calcule le reste (692), puis niveau et valeur d'une pomme...
+                                                                 │
+684 T$="RESTE "+R$+"    ":IF L<5 AND E>4 THEN T$="PORTE OUVERTE" │ ...puis une zone de 13 cases : « RESTE n », ou « PORTE
+                                                                 │ OUVERTE » si elle l'est déjà...
+                                                                 │
+686 M$=M$+T$:GOSUB 660:RA=A+LEN(M$)-13:RETURN                    │ ...écrit le tout au centre (660) et retient en RA l'adresse
+                                                                 │ de la zone de 13 cases.
+                                                                 │
+689 IF L<5 AND E>5 THEN RETURN                                   │ POMME MANGÉE (185). Pomme de plus, porte déjà ouverte :
+                                                                 │ rien ne change dans la barre.
+                                                                 │
+690 IF L<5 AND E>4 THEN FOR I=0 TO 12:POKE RA+I,PZ(I):NEXT:      │ 5e pomme d'un niveau 1 à 4 : « PORTE OUVERTE » dans la zone,
+      RETURN                                                     │ 13 POKE seulement (lettres préparées ligne 37).
+                                                                 │
+691 GOSUB 692:POKE RA+6,ASC(R$):POKE RA+7,ASC(MID$(R$,2)):       │ Sinon seulement le nombre : 3 POKE. Réécrire toute la barre
+      POKE RA+8,ASC(RIGHT$(R$,1)):RETURN                         │ à chaque pomme ralentissait trop le jeu.
+                                                                 │
+692 R=5-E:IF L=5 THEN R=256-(((H-T) AND M)+1+GR)                 │ Reste : pommes avant la porte (niveaux 1 à 4) ; au niveau 5,
+                                                                 │ anneaux avant 256 (longueur = tampon + anneaux encore dans
+                                                                 │ le mur).
+                                                                 │
+695 R$=LEFT$(MID$(STR$(R),2)+"  ",3):RETURN                      │ Le nombre sur 3 cases, calé à gauche (« 5  », « 232 »).
+                                                                 │
 700 CLS:GOSUB 670:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"          │ AFFICHAGE DU HALL OF FAME : barre de statut et écran
                                                                  │ effacés, titre en cyan (attribut 6)...
                                                                  │
@@ -274,9 +353,16 @@ une comparaison vraie vaut -1.
                                                                  │
 710 FOR I=1 TO 10:R=7+I                                          │ ...puis les 10 lignes, à partir de la ligne 8 de l'écran :
                                                                  │
-715 PLOT 8,R,7:PLOT 9,R,RIGHT$(" "+STR$(I),3)+". "+N$(I)         │ rang et nom en blanc (7),
+715 PLOT 5,R,7:PLOT 6,R,RIGHT$(" "+STR$(I),3)+". "+N$(I)         │ rang et nom en blanc (7),
                                                                  │
-720 PLOT 23,R,3:PLOT 24,R,RIGHT$("    "+STR$(SC(I)),6)           │ score en jaune, aligné à droite sur 6 caractères.
+720 PLOT 20,R,3:PLOT 21,R,RIGHT$("    "+STR$(SC(I)),6):          │ score en jaune, aligné à droite sur 6 caractères, puis
+      PLOT 27,R,2                                                │ encre verte (2) pour les pommes...
+                                                                 │
+722 IF NP(I) THEN PLOT 28,R,RIGHT$("   "+STR$(NP(I)),4)+" "+F$   │ ...nombre de pommes mangées et la pomme du jeu (F$, @ en
+                                                                 │ inverse : magenta sur blanc, comme sur le terrain ; ajouté
+                                                                 │ le 2026-11-23)...
+                                                                 │
+723 IF NP(I)=0 THEN PLOT 31,R,"-"                                │ ...ou « - » pour un record d'avant, sans ce nombre.
                                                                  │
 725 NEXT:POKE 735,0:RETURN                                       │ Fin de la liste ; oublie les touches déjà tapées.
                                                                  │
@@ -308,9 +394,9 @@ une comparaison vraie vaut -1.
 835 NM$=LEFT$(NM$+"        ",8)                                  │ Complète le nom par des espaces pour qu'il fasse 8 lettres.
                                                                  │
 840 IF P<10 THEN FOR I=10 TO P+1 STEP -1:N$(I)=N$(I-1):          │ Décale vers le bas les scores moins bons (le 10e
-      SC(I)=SC(I-1):NEXT                                         │ disparaît)...
+      SC(I)=SC(I-1):NP(I)=NP(I-1):NEXT                           │ disparaît)...
                                                                  │
-845 N$(P)=NM$:SC(P)=S                                            │ ...et range le nouveau à sa place.
+845 N$(P)=NM$:SC(P)=S:NP(P)=PM                                   │ ...et range le nouveau à sa place, avec ses pommes.
                                                                  │
 850 IF D THEN GOSUB 900                                          │ Sur disquette : sauvegarde (900).
                                                                  │
@@ -321,7 +407,10 @@ une comparaison vraie vaut -1.
                                                                  │
 905 FOR J=0 TO 7:POKE A+J,ASC(MID$(N$(I),J+1,1)):NEXT            │ ...les 8 lettres du nom...
                                                                  │
-910 POKE A+8,INT(SC(I)/256):POKE A+9,SC(I) AND 255:NEXT          │ ...puis le score sur 2 octets (haut, bas).
+910 POKE A+8,INT(SC(I)/256):POKE A+9,SC(I) AND 255               │ ...puis le score sur 2 octets (haut, bas)...
+                                                                 │
+912 POKE #9863+I*2,INT(NP(I)/256):POKE #9864+I*2,                │ ...et les pommes mangées sur 2 octets, aux octets 101 à 120
+      NP(I) AND 255:NEXT                                         │ du secteur, libres jusque-là (2026-11-23).
                                                                  │
 915 PRINT:PRINT "   SAUVEGARDE...":CALL #403                     │ Écrit le tampon dans le secteur 18 de la piste 0 (CALL #403,
                                                                  │ routine de hof_disque.s).
@@ -336,7 +425,8 @@ une comparaison vraie vaut -1.
                                                                  │
 955 FOR J=0 TO 7:N$(I)=N$(I)+CHR$(PEEK(A+J)):NEXT                │ ...lettre par lettre...
                                                                  │
-960 SC(I)=PEEK(A+8)*256+PEEK(A+9):NEXT:RETURN                    │ ...et les 10 scores (octet haut x 256 + octet bas).
+960 SC(I)=PEEK(A+8)*256+PEEK(A+9):                               │ ...et les 10 scores (octet haut x 256 + octet bas), et les
+      NP(I)=PEEK(#9863+I*2)*256+PEEK(#9864+I*2):NEXT:RETURN      │ pommes mangées (0 sur une disquette d'avant : « - »).
                                                                  │
 980 IF PEEK(735)<128 THEN 980                                    │ ATTENTE D'UNE TOUCHE sans GET (GET rallume le curseur) : on
                                                                  │ guette le bit 7 de 735...
@@ -349,8 +439,10 @@ une comparaison vraie vaut -1.
 995 DATA 247,238,112,4,238,115,4,202,208,238,185,0,127,153,0,191 │ Routine titre_copie.s, 2e partie (44 octets en tout).
       ,200,192,64,208,245,96                                     │
                                                                  │
-996 DATA 6,8,27,63,63,63,30,12                                   │ Dessin de la pomme : 8 lignes de 6 points (32,16,8,4,2,1 de
-                                                                 │ gauche à droite).
+996 DATA 6,12,59,63,63,63,63,30                                  │ Dessin de la pomme : 8 lignes de 6 points (32,16,8,4,2,1 de
+                                                                 │ gauche à droite). Grosse pomme (2026-11-23) : affichée en
+                                                                 │ inverse, ses points sont magenta et le reste blanc, alors
+                                                                 │ elle remplit presque toute la case.
                                                                  │
 997 DATA 3,7,15,63,63,15,7,3,48,56,60,63,63,60,56,48,12,12,30,30 │ Dessin des 4 queues (caractères 118 à 121).
       ,30,63,63,30,30,63,63,30,30,30,12,12                       │

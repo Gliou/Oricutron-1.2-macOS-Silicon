@@ -2,7 +2,7 @@
 """
 titre_serpent.py — dessine l'écran de présentation du jeu SERPENT au format
 HIRES de l'Oric Atmos (240 x 200 pixels, 8 000 octets, adresse $A000).
-Créé le 2026-11-22 by GliouCNR©70
+Créé le 2026-11-22 by GliouCNR©70 — modifié le 2026-11-23 (pomme magenta)
 
   python3 titre_serpent.py            (il faut Pillow : pip install pillow)
 
@@ -95,9 +95,19 @@ def dessiner():
     d.line((lx, hy, lx + 10, hy), fill=ROUGE)
     d.line((lx + 10, hy, lx + 14, hy - 3), fill=ROUGE)
     d.line((lx + 10, hy, lx + 14, hy + 3), fill=ROUGE)
-    # la pomme @ jaune, au-dessus de la queue
-    fa = police(("/System/Library/Fonts/Helvetica.ttc", 1), 30)
-    d.text((40, 70), "@", font=fa, fill=JAUNE)
+    # la pomme, au-dessus de la queue : magenta comme dans le jeu (modifié le
+    # 2026-11-23 by GliouCNR©70, c'était un @ jaune). Une seule encre par
+    # ligne : le corps (magenta, lignes 70-94) et la queue + la feuille (vert,
+    # lignes 59-69) n'ont aucune ligne en commun.
+    d.ellipse((40, 70, 58, 94), fill=MAGENTA)                 # lobe gauche
+    d.ellipse((50, 70, 68, 94), fill=MAGENTA)                 # lobe droit
+    d.rectangle((47, 74, 61, 92), fill=MAGENTA)               # comble le milieu
+    d.polygon([(51, 70), (54, 73), (57, 70)], fill=NOIR)      # creux du haut
+    d.polygon([(51, 94), (54, 92), (57, 94)], fill=NOIR)      # creux du bas
+    d.arc((44, 75, 54, 89), 160, 230, fill=NOIR, width=2)     # reflet
+    d.line((54, 69, 53, 64), fill=VERT, width=2)              # queue
+    d.line((53, 64, 54, 60), fill=VERT, width=2)
+    d.polygon([(55, 64), (59, 60), (65, 59), (62, 63)], fill=VERT)   # feuille
 
     # ---- Développeur ----
     ft = police(FONT_TEXTE, 13)
