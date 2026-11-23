@@ -19,7 +19,7 @@ Les `.tap` sont aussi copiés dans `~/Library/Application Support/Oricutron/tape
 | Programme | Fichiers | Langage | Ce qu'il fait |
 |---|---|---|---|
 | Démo graphique | `demo-hires/` : `demo-hires.bas` → `demo-hires.tap` | BASIC | Mode HIRES : bandes de couleur, cercles, rayons, texte, son (ZAP, PING). Une touche revient au mode texte. |
-| Serpent | `serpent/` : `serpent.bas` → `serpent.tap` | BASIC | Petit jeu : flèches pour diriger, mange les `@`, perdu si on touche le bord, un mur ou sa queue. En couleurs : bord rouge plein, serpent cyan, pomme cyan (le `@` redessiné), murs en pavés blancs, SCORE cyan, HI-SCORE magenta. Espace pour jouer. **5 niveaux** (voir plus bas). **Hall of Fame** des 10 meilleurs scores, HI-SCORE affiché pendant la partie. |
+| Serpent | `serpent/` : `serpent.bas` → `serpent.tap` | BASIC | Petit jeu : flèches pour diriger, mange les `@`, perdu si on touche le bord, un mur ou sa queue. En couleurs : bord magenta plein, serpent vert, pomme verte (le `@` redessiné), murs en pavés blancs, SCORE cyan, HI-SCORE magenta. Espace pour jouer. **5 niveaux** (voir plus bas). **Hall of Fame** des 10 meilleurs scores, HI-SCORE affiché pendant la partie. |
 | Écran titre | `titre/` : `titre.s` → `titre.tap` | Assembleur 6502 | Titre double hauteur, arc-en-ciel animé, texte défilant. Une touche rend l'écran BASIC d'avant. |
 
 Le serpent existe aussi en **disquette** `serpent/serpent.dsk` (lecteur Microdisc), qui
@@ -63,9 +63,10 @@ Les couleurs du terrain n'utilisent **aucune case couleur** (attribut série) :
 une telle case s'affiche comme une case vide, et le serpent mourait devant le
 bord gauche ou mangeait le `@` sans le toucher (corrigé le 2026-11-22). Le jeu
 se sert de la vidéo inverse, qui affiche la couleur complémentaire de l'encre :
-encre cyan pour le serpent, bloc plein en inverse = rouge pour le bord, espace
+encre verte pour le serpent (comme sur l'image titre, depuis le 2026-11-23),
+bloc plein en inverse = magenta pour le bord (la couleur complémentaire du vert), espace
 en inverse = blanc pour les murs. La nourriture est le caractère `@` redessiné
-en petite pomme, cyan sur noir. Le serpent est dessiné lui aussi (caractères
+en petite pomme, verte sur noir. Le serpent est dessiné lui aussi (caractères
 redéfinis) : des anneaux à écailles, une tête avec deux yeux et un museau,
 tournée dans le sens de la marche, et une queue en pointe sur le dernier
 anneau.

@@ -1,5 +1,5 @@
 SERPENT.BAS COMMENTÉ — le programme BASIC du jeu, ligne par ligne
-Créé le 2026-11-22 by GliouCNR©70
+Créé le 2026-11-22 by GliouCNR©70 — modifié le 2026-11-23 by GliouCNR©70
 
 À gauche : le programme tel qu'il est dans serpent.bas (lignes rangées par
 numéro, comme l'Oric les range). Les lignes trop longues sont coupées après
@@ -32,7 +32,7 @@ une comparaison vraie vaut -1.
 30 DIM X(255),Y(255),N$(10),SC(10):W$=CHR$(160):B$=CHR$(255):    │ Tableaux : X(),Y() = positions des anneaux (tampon
       F$="@"                                                     │ circulaire de 256), N$()/SC() = noms et scores du Hall of
                                                                  │ Fame. W$ = mur intérieur (espace en inverse, pavé blanc), B$
-                                                                 │ = bord (bloc plein en inverse, rouge), F$ = la pomme
+                                                                 │ = bord (bloc plein en inverse, magenta), F$ = la pomme
                                                                  │ (caractère @ redessiné).
                                                                  │
 32 FOR I=0 TO 7:POKE #B7F8+I,63:NEXT                             │ Redessine le caractère 127 en bloc plein (8 lignes de 6
@@ -112,7 +112,7 @@ une comparaison vraie vaut -1.
 156 IF C>117 AND C<127 AND NX=X(T) AND NY=Y(T) AND GR=0 THEN 167 │ La case est la queue et elle va bouger (le serpent ne
                                                                  │ grandit pas) : elle sera libre, on avance.
                                                                  │
-157 GOTO 300                                                     │ Tout le reste (bord rouge, mur blanc, corps du serpent) :
+157 GOTO 300                                                     │ Tout le reste (bord magenta, mur blanc, corps du serpent) :
                                                                  │ perdu (300).
                                                                  │
 166 IF GR THEN GR=GR-1:GOTO 170                                  │ Le corps sort encore du mur d'entrée (GR anneaux à sortir) :
@@ -161,11 +161,12 @@ une comparaison vraie vaut -1.
                                                                  │ LY = hauteur d'entrée : celle de la porte de droite du
                                                                  │ tableau précédent (13 au niveau 1).
                                                                  │
-405 FOR I=1 TO 25:PLOT 1,I,6:PLOT 2,I,B$:PLOT 37,I,B$:NEXT       │ Pour chaque ligne : encre cyan (attribut 6 en colonne 1), et
-                                                                 │ un bloc rouge dans les colonnes 2 et 37 (bords gauche et
-                                                                 │ droit).
+405 FOR I=1 TO 25:PLOT 1,I,2:PLOT 2,I,B$:PLOT 37,I,B$:NEXT       │ Pour chaque ligne : encre verte (attribut 2 en colonne 1),
+                                                                 │ donc serpent et pomme verts ; et un bloc plein en inverse
+                                                                 │ dans les colonnes 2 et 37 (bords gauche et droit) : la
+                                                                 │ couleur complémentaire du vert, magenta.
                                                                  │
-410 FOR I=3 TO 36:PLOT I,1,B$:PLOT I,25,B$:NEXT                  │ Bords du haut et du bas en blocs rouges.
+410 FOR I=3 TO 36:PLOT I,1,B$:PLOT I,25,B$:NEXT                  │ Bords du haut et du bas en blocs magenta.
                                                                  │
 412 IF L>1 THEN FOR I=LY-1 TO LY+1:PLOT 2,I," ":NEXT             │ Niveaux 2 à 5 : ouvre la porte de gauche (3 cases) à la
                                                                  │ hauteur LY.

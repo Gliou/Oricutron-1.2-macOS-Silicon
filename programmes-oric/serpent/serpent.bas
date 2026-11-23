@@ -1,18 +1,19 @@
 # SERPENT — petit jeu en BASIC pour Oric Atmos
 # Créé le 2026-11-21 by GliouCNR©70 — Hall of Fame ajouté le 2026-11-22,
 # 5 niveaux, porte et murs ajoutés le 2026-11-22 by GliouCNR©70
+# Modifié le 2026-11-23 by GliouCNR©70 — serpent vert (encre 2), bord magenta
 # Flèches du clavier pour diriger le serpent, mange les @ : 10 points au
 # niveau 1, 20 au niveau 2... 50 au niveau 5.
-# Perdu si le serpent touche le bord (rouge), un mur (pavé blanc) ou sa queue (O).
+# Perdu si le serpent touche le bord (magenta), un mur (pavé blanc) ou sa queue (O).
 # Couleurs (ajoutées le 2026-11-22, refaites le 2026-11-22 by GliouCNR©70) :
 # AUCUNE case couleur (attribut) dans le terrain - une case attribut s'affiche
 # comme une case vide et faussait les collisions (mort devant le bord gauche,
 # @ mangé sans le toucher). On se sert de la vidéo inverse (bit 7), qui affiche
-# la couleur complémentaire : encre cyan (6) posée en colonne 1 de chaque ligne,
-# donc serpent O cyan ; bloc plein (caractère 127 redéfini, ligne 32) en
-# inverse = CHR$(255) = rouge plein pour le bord ; espace inverse CHR$(160) =
+# la couleur complémentaire : encre verte (2) posée en colonne 1 de chaque ligne,
+# donc serpent vert (comme sur l'image titre) ; bloc plein (caractère 127
+# redéfini, ligne 32) en inverse = CHR$(255) = magenta plein pour le bord ; espace inverse CHR$(160) =
 # blanc plein pour les murs intérieurs. La nourriture est le caractère @
-# redessiné en pomme (ligne 34, DATA 997), cyan sur noir ; « @ = 10 » de la
+# redessiné en pomme (ligne 34, DATA 997), verte sur noir ; « @ = 10 » de la
 # barre de statut montre donc aussi la pomme. SCRN rend ces codes : 255 bord,
 # 160 mur, 118-121 queue du serpent, 122 corps, 123-126 tête, 64 pomme.
 # Serpent dessiné (2026-11-22) : à chaque pas, l'ancienne tête devient un
@@ -129,7 +130,7 @@
 310 IF S>SC(10) THEN GOSUB 800
 320 GOTO 70
 400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:LY=13:IF L>1 THEN LY=PD(L-1)+1
-405 FOR I=1 TO 25:PLOT 1,I,6:PLOT 2,I,B$:PLOT 37,I,B$:NEXT
+405 FOR I=1 TO 25:PLOT 1,I,2:PLOT 2,I,B$:PLOT 37,I,B$:NEXT
 410 FOR I=3 TO 36:PLOT I,1,B$:PLOT I,25,B$:NEXT
 415 PLOT 2,26,6:PLOT 3,26,"SCORE":PLOT 14,26,7:PLOT 15,26,"NIV"+STR$(L):PLOT 21,26,5:PLOT 22,26,"HI-SCORE"
 412 IF L>1 THEN FOR I=LY-1 TO LY+1:PLOT 2,I," ":NEXT
