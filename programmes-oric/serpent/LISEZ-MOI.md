@@ -1,0 +1,255 @@
+# Serpent — jeu pour Oric Atmos
+
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@`*
+
+Petit jeu en BASIC : on dirige un serpent avec les flèches, il mange les pommes
+et grandit ; perdu s'il touche le bord, un mur ou sa queue. Espace pour jouer.
+**5 niveaux** reliés par des portes, **Hall of Fame** des 10 meilleurs scores
+(avec le nombre de pommes mangées), écran titre et écran de victoire en HIRES
+sur la disquette, et un **robot** qui joue tout seul.
+
+![Serpent en couleurs](captures/serpent-couleurs.jpg)
+
+## Fichiers
+
+| Fichier | Rôle |
+|---|---|
+| `serpent.bas` | le programme BASIC (source) |
+| `serpent.tap` | la cassette, prête à charger |
+| `serpent.dsk` | la disquette Microdisc, qui démarre toute seule (Hall of Fame sauvegardé) |
+| `serpent-commente.txt` | le programme commenté ligne par ligne |
+| `titre_serpent.py` → `serpent-titre.hir` | écran titre HIRES |
+| `victoire_serpent.py` → `serpent-victoire.hir` | écran de victoire HIRES |
+| `titre_copie.s` | routine 6502 qui recopie une image HIRES à l'écran (`CALL #460`) |
+| `hof_disque.s`, `HALL-OF-FAME-routine.txt` | lecture/écriture du Hall of Fame sur la disquette, et sa documentation |
+| `bot_serpent.py` | le robot joueur |
+| `simu_aller_retour.py` | simulateur de parties complètes pour tester le robot |
+| `captures/` | captures d'écran prises dans Oricutron |
+
+## Le jeu
+
+En couleurs : bord en briques blanches à joints magenta, serpent vert, pomme
+magenta (le `@` redessiné, en vidéo inverse), murs en pavés blancs, SCORE cyan,
+HI-SCORE jaune, une ligne vide entre le mur du bas et le score. HI-SCORE est
+affiché pendant la partie.
+
+### Les 5 niveaux (ajoutés le 2026-11-22)
+
+- une <img src="captures/pomme.png" alt="pomme" height="14"> vaut 10 points au niveau 1, 20 au niveau 2… 50 au niveau 5 ;
+- aux niveaux 1 à 4, après 5 <img src="captures/pomme.png" alt="pomme" height="14"> mangées, une **porte** de 3 cases s'ouvre dans
+  le bord droit, à une hauteur tirée au hasard à chaque niveau (bruit ZAP) ; il
+  reste toujours au moins une case du bord au-dessus et en dessous. Y entrer
+  fait passer au niveau suivant. Le serpent garde sa longueur et le score :
+  dans le nouveau tableau, sa tête apparaît à la hauteur exacte où elle a passé
+  la porte, et le corps sort du mur derrière elle. Le niveau 5 n'a pas de porte
+  à droite ;
+- on peut **revenir** aux tableaux précédents : les niveaux 2 à 5 ont une porte
+  à gauche, toujours ouverte, à la même hauteur que la porte de droite du
+  tableau d'avant ; elle ramène au tableau d'avant, où le serpent ressort par
+  la porte de droite. Chaque tableau est tiré au hasard la première fois puis
+  **mémorisé** (murs, position de la porte, <img src="captures/pomme.png" alt="pomme" height="14"> déjà mangées) : on le retrouve à
+  l'identique, et une porte ouverte le reste. Tout est retiré au hasard à la
+  partie suivante ;
+- chaque niveau a des **murs** (pavés blancs) tirés au hasard : 7 au niveau 1,
+  puis 2 de plus à chaque niveau (15 au niveau 5 ; 3, 6, 9, 12 avant le
+  2026-11-23, jugé trop facile au début), et plus longs (2 à L+3 cases). Ce
+  sont des traits droits qui ne touchent ni un autre mur ni le bord, même en
+  diagonale : il reste toujours un passage, et la porte est toujours accessible
+  (vérifié sur 2 000 tirages simulés). Le départ du serpent et le devant de la
+  porte restent libres ;
+- la barre de statut (ligne du haut, celle de CAPS) affiche au centre le
+  niveau, la valeur d'une <img src="captures/pomme.png" alt="pomme" height="14"> et le nombre de <img src="captures/pomme.png" alt="pomme" height="14"> qu'il **reste** à manger
+  (2026-11-23) : avant l'ouverture de la porte aux niveaux 1 à 4, par exemple
+  « NIVEAU 2 - <img src="captures/pomme.png" alt="pomme" height="14"> = 20 - RESTE 3 », puis « PORTE OUVERTE » ; au niveau 5, les
+  anneaux qui manquent pour atteindre 256 ;
+- **256 anneaux = gagné**, sur n'importe quel niveau (2026-11-23) : c'est le
+  plus long que le programme peut garder (positions dans `X(255)`, `Y(255)`).
+  Le serpent part de 4 anneaux, la partie parfaite mange donc 252 pommes ;
+- le tracé des murs prend quelques secondes au niveau 5 (BASIC).
+
+![Niveau 5](captures/serpent-niveau5.jpg)
+
+### Couleurs et dessins
+
+Les couleurs du terrain n'utilisent **aucune case couleur** (attribut série) :
+une telle case s'affiche comme une case vide, et le serpent mourait devant le
+bord gauche ou mangeait la <img src="captures/pomme.png" alt="pomme" height="14"> sans la toucher (corrigé le 2026-11-22). Le jeu
+se sert de la vidéo inverse, qui affiche la couleur complémentaire de l'encre :
+encre verte pour le serpent (comme sur l'image titre, depuis le 2026-11-23),
+caractère « briques » en inverse pour le bord : joints magenta (le complément
+du vert), briques blanches (2026-11-23 : un bloc magenta plein se confondait
+avec la pomme), espace en inverse = blanc pour les murs. La nourriture est le
+caractère `@` redessiné en grosse pomme, posée en vidéo inverse : magenta avec
+un peu de blanc dans les coins (2026-11-23 : verte, elle se perdait dans un
+long serpent vert ; une pomme magenta sur noir est impossible sans case
+couleur). Le serpent est dessiné lui aussi (caractères redéfinis) : des anneaux
+à écailles, une tête avec deux yeux et un museau, tournée dans le sens de la
+marche, et une queue en pointe sur le dernier anneau. Ce qu'on voit est
+exactement ce qui touche.
+
+![Dessin du serpent, agrandi](captures/serpent-dessin.png)
+
+### Hall of Fame
+
+Les 10 meilleurs scores, avec le nombre de pommes mangées et la pomme magenta
+du jeu. Sur la disquette, il est **sauvegardé** : quand un joueur entre au
+classement, son nom, son score et ses pommes sont écrits sur la piste 0,
+secteur 18, et relus au démarrage suivant. Oricutron réécrit le fichier `.dsk`
+tout seul (`diskautosave = yes`). En cassette, le Hall of Fame marche aussi mais
+n'est gardé que jusqu'à l'extinction. Détails : `HALL-OF-FAME-routine.txt`.
+
+![Hall of Fame](captures/serpent-hall-of-fame.jpg)
+
+### Écran de présentation (2026-11-22)
+
+Sur la disquette, le jeu commence par une image HIRES - SERPENT en dégradé
+jaune/rouge, un serpent, une pomme magenta comme dans le jeu (un `@` jaune
+avant le 2026-11-23), « un jeu de GliouCNR©70 » - et attend une touche. L'écran
+reste noir pendant le chargement (le démarrage efface le message de la ROM), et
+ni CAPS ni le curseur ne s'affichent : le démarrage éteint le curseur et le
+verrouillage des majuscules (`$020C`), si bien que la ROM n'a plus jamais de
+CAPS à réafficher, même après `TEXT`. Le nom tapé pour le Hall of Fame est
+remis en majuscules par le programme.
+
+L'image est dessinée par `titre_serpent.py` (Python + Pillow,
+`pip install pillow`) au format HIRES de l'Oric (`serpent-titre.hir`, 8 000
+octets) ; l'aperçu `captures/serpent-titre.png` est recalculé à partir de ces
+octets. Une ligne HIRES n'a qu'une couleur d'encre à la fois : le dessin laisse
+des cases vides de 6 pixels où le convertisseur pose les changements de couleur.
+
+```
+python3 titre_serpent.py
+```
+
+![Écran titre dans Oricutron](captures/serpent-titre-oricutron.jpg)
+
+### Écran de victoire (2026-11-23)
+
+Quand le serpent atteint 256 anneaux, le jeu reste 3 secondes sur le tableau
+avec « GAGNE ! », puis, sur la disquette, affiche une image HIRES - GAGNÉ ! en
+dégradé, une coupe « 256 », des pommes, le serpent complet. Dessous, dans les
+lignes de texte, le score (jaune) et les pommes mangées (magenta) ; une petite
+fanfare joue (sol do mi sol - mi sol), puis une touche mène au Hall of Fame.
+L'image est chargée au démarrage avec l'image titre et attend en
+`$7800-$973F`, au-dessus de HIMEM (abaissé à `$7800`), que la partie soit
+gagnée ; la même routine de copie (`CALL #460`) sert aux deux images. Sur
+cassette, il n'y a que la pause sur « GAGNE ! ».
+
+```
+python3 victoire_serpent.py
+```
+
+![Écran de victoire dans Oricutron](captures/serpent-victoire-oricutron.jpg)
+
+## Lancer le jeu
+
+Cassette :
+`/Applications/Oricutron.app/Contents/MacOS/Oricutron "$PWD/serpent.tap"`
+
+Disquette (il faut la ROM `microdis.rom` dans le dossier `roms` d'Oricutron) :
+`/Applications/Oricutron.app/Contents/MacOS/Oricutron -k m -d "$PWD/serpent.dsk"`
+
+La cassette et la disquette sont aussi copiées dans
+`~/Library/Application Support/Oricutron/tapes` et `.../disks`.
+
+## Refaire la cassette et la disquette
+
+```
+python3 ../outils/oric_tap.py basic serpent.bas serpent.tap SERPENT
+python3 ../outils/oric_dsk.py serpent.bas serpent.dsk serpent-titre.hir serpent-victoire.hir
+```
+
+Refaire la disquette **efface le Hall of Fame** (secteur 18 vide) : pour garder
+celui d'une disquette existante, recopier son secteur 18 dans la nouvelle.
+Le rangement de la disquette et le démarrage sont décrits dans
+[`../outils/LISEZ-MOI.md`](../outils/LISEZ-MOI.md). Le serpent lit et écrit son
+secteur avec une petite routine machine, `hof_disque.s`, recopiée dans les
+lignes `DATA` 1000+ de `serpent.bas` et placée en `$0400` (`CALL #400` lit le
+secteur dans `$9800`, `CALL #403` l'écrit).
+
+Avec deux images, le programme BASIC ne doit pas dépasser 6 Ko (il en fait
+environ 5,3).
+
+## Le robot joueur (2026-11-23)
+
+`bot_serpent.py` regarde l'Oric en direct, reconnaît chaque case (bord, murs,
+pomme, tête et sa direction, corps, queue) et envoie les flèches à Oricutron,
+sans prendre le clavier ni la souris. Par défaut, il vise le **score parfait** :
+il mange juste les 5 <img src="captures/pomme.png" alt="pomme" height="14"> qui ouvrent la porte aux niveaux 1 à 4 (500 points,
+longueur 24), puis 232 <img src="captures/pomme.png" alt="pomme" height="14"> à 50 points au niveau 5 : **12 100 points**, et la
+partie est gagnée.
+
+![Le robot à 12 100 points](captures/serpent-robot-12100.png)
+
+```
+pip install mss numpy pyobjc-framework-Quartz pyobjc-framework-ScreenCaptureKit pyobjc-framework-CoreMedia pyobjc-framework-libdispatch
+python3 bot_serpent.py --fenetre --jouer                    # score parfait
+python3 bot_serpent.py --fenetre --jouer --aller-retour 8   # tous les niveaux
+python3 bot_serpent.py                                      # montrer la zone avec la souris
+```
+
+- `--fenetre` lit la fenêtre d'Oricutron elle-même par ScreenCaptureKit (60
+  images par seconde) : on peut la cacher ou changer de bureau pendant la
+  partie (mais pas la réduire dans le Dock). L'ancienne capture image par
+  image est restée deux fois bloquée 30 s, ce qui tuait le serpent.
+- Il faut autoriser le Terminal dans Réglages Système › Confidentialité et
+  sécurité › Enregistrement de l'écran.
+- Stratégie : plus court chemin vers la pomme, seulement s'il peut ensuite
+  rejoindre sa queue ; sinon suivre sa queue par le plus long détour.
+  Vérifié sur un simulateur du niveau 5 : 20 parties sur 20 à 12 100.
+- Le jeu ne lit qu'une touche par pas : une touche envoyée après avoir vu le
+  pas k agit au pas k+2. Le robot décide donc un pas à l'avance et appuie au
+  bon moment du pas (après le `WAIT WT` du jeu), compté depuis l'**arrivée** de
+  l'image (2026-11-23 : il partait d'une heure prise avant d'attendre l'image,
+  jusqu'à 0,1 s plus tôt, et la touche tombait parfois un pas trop tôt ou trop
+  tard). Depuis le 2026-11-24, ce moment se **règle tout seul** : une touche
+  trop tard fait appuyer plus tôt la fois suivante, trop tôt plus tard.
+- Si les images n'arrivent plus, un second fil continue d'envoyer les touches
+  et fait avancer le serpent « à l'estime » (tout droit tant que c'est sûr).
+- Un seul robot à la fois : un second lancement s'arrête tout de suite (deux
+  robots envoyaient chacun leurs flèches). Après une défaite, le robot ne
+  s'arrête pas : il attend la partie suivante (Ctrl-C pour l'arrêter) ; à 256
+  anneaux il rend la main.
+- `BOT_PHOTOS=<dossier>` : le robot photographie l'écran dès que le serpent
+  cesse d'avancer (explosion), pour comprendre une défaite.
+- `--test-gel S` fige volontairement la capture 1,5 s toutes les S secondes
+  (essai de la marche à l'estime).
+
+### Aller-retour sur tous les niveaux (2026-11-23)
+
+`--aller-retour N` : au lieu de foncer au niveau 5, le robot mange N <img src="captures/pomme.png" alt="pomme" height="14"> par
+visite puis change de tableau - vers la droite jusqu'au niveau 5, puis par la
+porte de gauche jusqu'au niveau 1, et ainsi de suite. Au-delà de
+`--aller-retour-max` anneaux (120) il reste dans le tableau où il est et y finit
+la partie : un serpent très long qui entre dans un tableau doit se dérouler
+depuis la porte, queue bloquée à l'entrée, et s'enfermait souvent.
+`simu_aller_retour.py` simule des parties complètes :
+
+```
+python3 simu_aller_retour.py . 8 0 30 120     # 30 parties sur 30 gagnées
+```
+
+(12 sur 20 avec une limite de 170.) En vrai, avec 8 <img src="captures/pomme.png" alt="pomme" height="14"> par visite : niveaux
+1-2-3-4-5-4-3-2-1-2-3-4-5-4-3, partie **gagnée au niveau 3** (7 640 points, 252
+pommes), sans un écart de direction.
+
+![Robot en aller-retour, gagné au niveau 3](captures/serpent-robot-aller-retour.jpg)
+
+### Vitesse d'Oricutron (2026-11-24)
+
+`--mhz N` si Oricutron est accéléré (F1 › Overclock) : les `WAIT` du jeu y
+durent N fois moins. Au-delà de 2 MHz, le robot décide deux pas à l'avance au
+lieu d'un. Résultats :
+
+| Vitesse | Niveaux 1 à 4 | Niveau 5 |
+|---|---|---|
+| 1 MHz (vrai Atmos) | oui | oui |
+| 2 MHz | oui (pas de 80 à 110 ms) | non (60 ms, plus de pause) |
+| 4 MHz | non | non |
+
+Le temps de calcul n'y est pour rien (5 ms) : c'est le flottement de l'image.
+Oricutron dessine 50 images/s, l'écran en donne 60 et en saute parfois une, si
+bien que l'instant où le jeu relit le clavier, vu depuis l'image, varie de plus
+de 40 ms. Sous ~80 ms par pas, aucun réglage ne tient. Au-delà de 8 MHz,
+plusieurs pas passent entre deux images d'Oricutron : personne ne pourrait
+choisir sa case.
