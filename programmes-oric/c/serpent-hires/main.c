@@ -8,7 +8,8 @@
 **   clavier.c/h touches lues par la ROM, attentes
 **   niveau.c/h  les 5 tableaux : bord, portes, murs, pommes
 **   jeu.c/h     une partie
-**   hof.c/h     Hall of Fame, volume, records, écran de victoire
+**   hof.c/h     Hall of Fame, volume, records
+**   images.c/h  écran titre et écran de victoire en HIRES (images du BASIC)
 ** Compilation : ./faire.sh (voir LISEZ-MOI.md).
 */
 #include <stdlib.h>
@@ -18,31 +19,30 @@
 #include "son.h"
 #include "jeu.h"
 #include "hof.h"
+#include "images.h"
 
 int main(void)
 {
-    unsigned char musique = MUS_COMPTINE;
-
     ecran_prepare();
     son_installe();
     hof_raz();
+    son_volume(volume);
+    ecran_titre();                      /* la comptine démarre avec l'image */
     ecran_texte();
     for (;;) {
-        son_volume(volume);
-        son_musique(musique);
-        hof_ecran();
+        hof_ecran();                    /* la musique joue déjà, volume réglé */
         son_stop();
         srand(DEEK(HORLOGE));
         if (partie(hof_meilleur()) == GAGNE) {
+            ecran_victoire(score, pommes_mangees);   /* fanfare sur l'image seulement */
             ecran_texte();
-            victoire(score, pommes_mangees);
-            musique = MUS_COMPTINE;
+            hof_record(score, pommes_mangees);
+            son_musique(MUS_COMPTINE);
         } else {
             ecran_texte();
-            musique = MUS_PERDU;
+            hof_record(score, pommes_mangees);
+            son_musique(MUS_PERDU);     /* air « perdu » sur le Hall of Fame */
         }
-        hof_record(score, pommes_mangees);
-        texte_efface();
     }
     return 0;
 }

@@ -6,8 +6,9 @@
 ** couleurs sont les complémentaires : encre verte -> magenta, fond noir ->
 ** blanc. Un octet < 32 est un attribut (0-7 encre, 16-23 fond), affiché comme
 ** une case de fond. Chaque ligne commence par l'encre verte (octet 0) et le
-** fond noir (octet 1) : serpent vert ; pomme, briques et murs en inverse
-** (magenta et blanc), comme dans le Serpent en BASIC.
+** fond noir (octet 1) : serpent vert ; briques et murs en inverse (magenta
+** et blanc), comme dans le Serpent en BASIC. Modifié le 2026-11-24 by
+** GliouCNR©70 : pomme jaune sur fond noir, entre deux cases d'attributs.
 */
 #include <string.h>
 #include "config.h"
@@ -17,7 +18,7 @@
 static const unsigned char tete_d[6]  = { 0x1C, 0x3E, 0x37, 0x3F, 0x3E, 0x1C };
 static const unsigned char queue_g[6] = { 0x03, 0x0F, 0x3F, 0x3F, 0x0F, 0x03 };
 static const unsigned char corps[6]   = { 0x1E, 0x33, 0x2D, 0x2D, 0x33, 0x1E };
-static const unsigned char pomme[6]   = { 0x06, 0x1E, 0x3F, 0x3F, 0x3F, 0x1E }; /* en inverse */
+static const unsigned char pomme[6]   = { 0x06, 0x1E, 0x3F, 0x3F, 0x3F, 0x1E };
 static const unsigned char brique[6]  = { 0x3F, 0x04, 0x04, 0x3F, 0x20, 0x20 }; /* joints, en inverse */
 
 /* Les mêmes en caractères 6 x 8 pour les lignes de texte (repris du BASIC) */
@@ -28,6 +29,12 @@ static unsigned char dessins[D_NOMBRE][6];
 static unsigned char inverse[D_NOMBRE];       /* 0x40 normal, 0xC0 inverse */
 static unsigned char* adr_case[HAUTEUR];       /* 1re ligne de chaque rangée */
 static char tampon[7];
+
+/* Pomme jaune (2026-11-24 by GliouCNR©70) : la case à sa gauche porte
+** l'attribut « encre jaune » et celle à sa droite « encre verte » (cases
+** noires). Dès qu'on dessine dans l'une des trois cases, les attributs sont
+** enlevés et la pomme redevient verte (jamais de blanc). */
+static unsigned char jaune, jx, jy;
 
 typedef void (*routine)(void);
 #define ROM_HIRES ((routine)0xF920)   /* passe en HIRES (sans le test de $EC33) */
@@ -74,7 +81,7 @@ void ecran_prepare(void)
     tourne(queue_g, dessins[D_QUEUE_H], 1);
     tourne(queue_g, dessins[D_QUEUE_B], 0);
     for (i = 0; i < D_NOMBRE; ++i) inverse[i] = 0x40;
-    inverse[D_BORD] = inverse[D_MUR] = inverse[D_POMME] = 0xC0;
+    inverse[D_BORD] = inverse[D_MUR] = 0xC0;
     for (i = 0; i < HAUTEUR; ++i)
         adr_case[i] = (unsigned char*)HIRES_ECRAN + (unsigned int)i * (COTE * 40) + 2;
     POKE(0x020C, 0x7F);                      /* CAPS éteint (rien en haut) */
@@ -88,22 +95,30 @@ static void curseur_cache(void)
     POKE(0x026A, PEEK(0x026A) & 0xFE);
 }
 
+void ecran_hires_seul(void)
+{
+    unsigned char l;
+    if (!(PEEK(0x02C0) & 1)) {
+        ROM_HIRES();
+        POKE(0x02C0, PEEK(0x02C0) | 1);      /* « HIRES actif » pour la ROM */
+    }
+    curseur_cache();
+    for (l = 0; l < 3; ++l) hires_efface_ligne(l);
+    memcpy((unsigned char*)JEU_HIRES + '@' * 8, car_pomme, 8);
+    memcpy((unsigned char*)JEU_HIRES + 123 * 8, car_tete, 8);
+}
+
 void ecran_hires(void)
 {
     unsigned char l;
     unsigned char* p = (unsigned char*)HIRES_ECRAN;
-    ROM_HIRES();
-    POKE(0x02C0, PEEK(0x02C0) | 1);          /* « HIRES actif » pour la ROM */
-    curseur_cache();
+    ecran_hires_seul();
     for (l = 0; l < 200; ++l) {
         p[0] = 2;                            /* encre verte */
         p[1] = 16;                           /* fond noir   */
         memset(p + 2, 0x40, 38);
         p += 40;
     }
-    for (l = 0; l < 3; ++l) hires_efface_ligne(l);
-    memcpy((unsigned char*)JEU_HIRES + '@' * 8, car_pomme, 8);
-    memcpy((unsigned char*)JEU_HIRES + 123 * 8, car_tete, 8);
 }
 
 void ecran_texte(void)
@@ -116,11 +131,38 @@ void ecran_texte(void)
     texte_efface();
 }
 
-void case_dessine(unsigned char x, unsigned char y, unsigned char d)
+static void remplit(unsigned char* p, unsigned char v)
+{
+    p[0] = p[40] = p[80] = p[120] = p[160] = p[200] = v;
+}
+
+static void pomme_eteint(void)
+{
+    unsigned char* p = adr_case[jy] + jx;
+    unsigned char i;
+    jaune = 0;
+    remplit(p - 1, 0x40);
+    remplit(p + 1, 0x40);
+    for (i = 0; i < 6; ++i) p[i * 40] = pomme[i] | 0x40;   /* pomme verte */
+}
+
+void pomme_jaune(unsigned char x, unsigned char y)
 {
     unsigned char* p = adr_case[y] + x;
+    unsigned char i;
+    remplit(p - 1, 3);                        /* encre jaune */
+    for (i = 0; i < 6; ++i) p[i * 40] = pomme[i] | 0x40;
+    remplit(p + 1, 2);                        /* encre verte à nouveau */
+    jaune = 1; jx = x; jy = y;
+}
+
+void case_dessine(unsigned char x, unsigned char y, unsigned char d)
+{
+    unsigned char* p;
     const unsigned char* m = dessins[d];
     unsigned char inv = inverse[d];
+    if (jaune && y == jy && x + 1 >= jx && x <= jx + 1) pomme_eteint();
+    p = adr_case[y] + x;
     p[0]   = m[0] | inv;
     p[40]  = m[1] | inv;
     p[80]  = m[2] | inv;
@@ -133,6 +175,7 @@ void terrain_vide(void)
 {
     unsigned char l;
     unsigned char* p = (unsigned char*)HIRES_ECRAN + 2;
+    jaune = 0;
     for (l = 0; l < HAUTEUR * COTE; ++l) {
         memset(p, 0x40, LARGEUR);
         p += 40;
@@ -154,6 +197,35 @@ void hires_ecrit(unsigned char x, unsigned char l, const char* s)
 void hires_octet(unsigned char x, unsigned char l, unsigned char c)
 {
     POKE(TEXTE_HIRES + l * 40 + x, c);
+}
+
+static char ligne[41];
+static unsigned char lg;
+
+void ligne_texte(const char* s)
+{
+    while (*s && lg < 38) ligne[lg++] = *s++;
+}
+
+void ligne_car(unsigned char c)
+{
+    if (lg < 38) ligne[lg++] = c;
+}
+
+void ligne_nombre(unsigned int n, unsigned char largeur)
+{
+    unsigned char d = lg;
+    ligne_texte(nombre(n, 1));
+    while (lg - d < largeur) ligne_car(' ');
+}
+
+void ligne_pose(unsigned char l)
+{
+    /* centrée sur le terrain (octets 2 à 39 de l'écran) */
+    ligne[lg] = 0;
+    hires_efface_ligne(l);
+    hires_ecrit((42 - lg) / 2, l, ligne);
+    lg = 0;
 }
 
 void texte_efface(void)

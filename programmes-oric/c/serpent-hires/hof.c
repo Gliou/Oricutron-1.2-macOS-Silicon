@@ -6,6 +6,7 @@
 ** suivies de la pomme ; barre du volume réglée avec les flèches, un PING à
 ** chaque réglage. Le Hall of Fame livré est fait d'« ORIC » aux scores
 ** minimum des portes. (Pas encore sauvegardé sur disquette.)
+** L'écran de victoire est passé dans images.c (image HIRES, 2026-11-24).
 */
 #include <string.h>
 #include "config.h"
@@ -72,7 +73,8 @@ void hof_ecran(void)
             texte_ecrit(26, r, nombre(pommes[i] + 4, 4));
             texte_octet(31, r, 123);
             texte_ecrit(32, r, nombre(pommes[i], 4));
-            texte_octet(37, r, '@' | 0x80);
+            texte_octet(36, r, 3);           /* pomme jaune */
+            texte_octet(37, r, '@');
         } else {
             texte_ecrit(29, r, "-");
             texte_ecrit(35, r, "-");
@@ -133,26 +135,4 @@ void hof_record(unsigned int score, unsigned int nb_pommes)
     strcpy(noms[p], nom);
     scores[p] = score;
     pommes[p] = nb_pommes;
-}
-
-void victoire(unsigned int score, unsigned int nb_pommes)
-{
-    texte_efface();
-    son_musique(MUS_FANFARE);
-    texte_octet(14, 8, 3);
-    texte_octet(15, 8, 12);                  /* clignotant */
-    texte_ecrit(16, 8, "GAGNE !");
-    texte_octet(9, 11, 2);
-    texte_ecrit(10, 11, nombre(GAGNE_LONG, 3));
-    texte_ecrit(14, 11, "ANNEAUX : SERPENT COMPLET");
-    texte_octet(12, 14, 3);
-    texte_ecrit(13, 14, "SCORE");
-    texte_ecrit(19, 14, nombre(score, 5));
-    texte_octet(12, 16, 5);
-    texte_ecrit(13, 16, "POMMES");
-    texte_ecrit(20, 16, nombre(nb_pommes, 4));
-    texte_ecrit(9, 22, "APPUIE SUR UNE TOUCHE");
-    POKE(TOUCHE, 0);
-    attend_touche();
-    son_stop();
 }

@@ -13,16 +13,25 @@ enum {
 };
 
 void ecran_prepare(void);       /* dessins calculés (rotations) - une fois */
+void ecran_hires_seul(void);    /* passe en HIRES (image laissée telle quelle) */
 void ecran_hires(void);         /* passe en HIRES, terrain noir, encre verte */
 void ecran_texte(void);         /* revient en mode texte, écran vidé        */
 
 void case_dessine(unsigned char x, unsigned char y, unsigned char dessin);
 void terrain_vide(void);        /* toutes les cases vides (noir) */
+void pomme_jaune(unsigned char x, unsigned char y);  /* cases x-1 et x+1 libres */
 
 /* Lignes de texte sous l'image HIRES (ligne 0, 1 ou 2) */
 void hires_efface_ligne(unsigned char l);
 void hires_ecrit(unsigned char x, unsigned char l, const char* s);
 void hires_octet(unsigned char x, unsigned char l, unsigned char c);
+
+/* Ligne de texte HIRES construite morceau par morceau (attributs compris),
+** puis écrite centrée sous le terrain (ajouté le 2026-11-24 by GliouCNR©70) */
+void ligne_texte(const char* s);
+void ligne_car(unsigned char c);                       /* caractère ou attribut */
+void ligne_nombre(unsigned int n, unsigned char largeur); /* calé à gauche */
+void ligne_pose(unsigned char l);                      /* centrée, ligne 0-2 */
 
 /* Écran texte (mode TEXT) */
 void texte_efface(void);

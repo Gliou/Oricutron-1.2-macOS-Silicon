@@ -10,6 +10,5 @@ void hof_raz(void);                          /* le Hall of Fame livré (ORIC) */
 unsigned int hof_meilleur(void);
 void hof_ecran(void);                        /* affiche, règle le volume, attend Espace */
 void hof_record(unsigned int score, unsigned int pommes);  /* demande le nom si record */
-void victoire(unsigned int score, unsigned int pommes);
 
 #endif

@@ -16,8 +16,12 @@
 
 #define NCASES (LARGEUR * HAUTEUR)
 
-static unsigned char dist[NCASES];
-static unsigned int file[NCASES];
+/* Pour tenir en mémoire avec les images : les distances sont rangées dans la
+** mémoire libre entre le moteur de son et le jeu de caractères ($9000-$94E5),
+** comme la file d'attente du parcours ($9500-$96FF), qui tourne sur 256
+** places (le front du parcours n'en demande jamais autant sur ce terrain). */
+#define dist ((unsigned char*)0x9000)
+#define file ((unsigned int*)0x9500)
 static unsigned char der_x = 255, der_y, der_niv;
 
 static const signed char ddx[4] = { -1, 1, 0, 0 };
@@ -27,12 +31,12 @@ static const unsigned char tch[4] = { T_GAUCHE, T_DROITE, T_BAS, T_HAUT };
 static void parcours(unsigned int cible)
 {
     const unsigned char* g = &grille[0][0];
-    unsigned int deb = 0, fin = 0, c, v;
-    unsigned char d;
+    unsigned int c, v;
+    unsigned char deb = 0, fin = 0, d;
     memset(dist, 255, NCASES);
     dist[cible] = 0;
     file[fin++] = cible;
-    while (deb < fin) {
+    while (deb != fin) {
         c = file[deb++];
         d = dist[c] + 1;
         if (d > 250) continue;

@@ -1,6 +1,6 @@
 # Serpent en C et en HIRES
 
-*Créé le 2026-11-24 by GliouCNR©70*
+*Créé le 2026-11-24 by GliouCNR©70 — modifié le 2026-11-24 : écran titre et écran de victoire en HIRES, barres de statut centrées*
 
 Le jeu du [Serpent BASIC](../../serpent/) refait en **C** (cc65) et dessiné en
 **HIRES** (240 x 200 points). Mêmes règles : on dirige le serpent avec les
@@ -13,16 +13,28 @@ queue ; **gagné à 256 anneaux**.
 
 - **Cases de 6 x 6 points** au lieu des caractères 6 x 8 : terrain de 36 x 31
   cases au lieu de 34 x 22, avec des dessins faits pour le HIRES : briques du
-  bord, pavés blancs, pomme magenta, serpent vert dont la tête et la pointe de
-  la queue sont tournées dans le sens de la marche.
+  bord, pavés blancs, serpent vert dont la tête et la pointe de la queue sont
+  tournées dans le sens de la marche, **pomme jaune** sur fond noir.
+- La pomme jaune : en HIRES, la couleur des points vient de l'encre réglée
+  plus tôt sur la ligne (et chaque ligne commence en vert, pour le serpent).
+  La case à gauche de la pomme porte donc l'attribut « encre jaune » et celle
+  à droite « encre verte » : deux cases noires, et la pomme n'est posée
+  qu'avec une case libre de chaque côté. Si le serpent passe dans l'une de ces
+  cases, les attributs sont enlevés et la pomme devient verte (jamais de
+  blanc).
 - Le C est **bien plus rapide** que le BASIC : la vitesse du serpent est réglée
   par l'horloge de l'Oric (16 centièmes de seconde par pas au niveau 1,
   10 au niveau 5), sans pause quand il mange.
 - Deux flèches peuvent être tapées d'avance (virage rapide).
-- Barres de statut dans les 3 lignes de texte sous l'image HIRES :
-  `NIVEAU 1 - @=10 - RESTE 5` (puis `PORTE OUVERTE`, puis le compte des
-  anneaux qui manquent), et `SCORE`, la tête et la taille du serpent,
-  `HI-SCORE`.
+- Barres de statut dans les 3 lignes de texte sous l'image HIRES, centrées
+  sous le terrain : `NIVEAU 1 - @=10 - RESTE 5` (puis `PORTE OUVERTE`, puis
+  le compte des anneaux qui manquent), et `SCORE`, la tête et la taille du
+  serpent, `HI-SCORE`.
+- **Écran titre et écran de victoire** : les deux images HIRES du Serpent
+  BASIC (`serpent-titre.hir`, `serpent-victoire.hir`), rangées dans le
+  programme. Le titre s'affiche au démarrage avec la comptine et « APPUIE SUR
+  ESPACE » ; l'image de victoire avec la fanfare (seulement sur elle), le score
+  et les pommes mangées dessous.
 - Hall of Fame et réglage du volume comme dans le Serpent BASIC (avec la
   longueur atteinte), en mode texte. **Pas encore sauvegardé** : il repart
   du Hall of Fame livré à chaque chargement.
@@ -43,7 +55,9 @@ Le programme est découpé en modules, que `main.c` importe par leurs `.h` :
 | `clavier.c` / `.h` | touches lues par la ROM (`$02DF`), attentes |
 | `niveau.c` / `.h` | les 5 tableaux : bord, portes, murs tirés au hasard et gardés, pommes |
 | `jeu.c` / `.h` | une partie |
-| `hof.c` / `.h` | Hall of Fame, volume, saisie du nom, écran de victoire |
+| `hof.c` / `.h` | Hall of Fame, volume, saisie du nom |
+| `images.c` / `.h` | écran titre et écran de victoire en HIRES |
+| `images_bin.h` | les deux images (fabriqué par `faire.sh`) |
 | `pilote.c` / `.h` | pilote automatique, seulement dans la version de test |
 | `faire.sh` | construit `serpent.tap` (ou `serpent-test.tap`) |
 | `serpent.tap` | le jeu, prêt à charger |
@@ -68,7 +82,7 @@ sert à vérifier les portes, les niveaux et la victoire sans jouer.
 
 | Adresses | Contenu |
 |---|---|
-| `$0501-$3Axx` | programme C et ses variables |
+| `$0501-$78D9` | programme C (dont les 2 images, 16 000 octets) et ses variables |
 | `$8300-$8AFF` | pile du C (2 Ko) |
 | `$8B00-$8FCE` | moteur de son |
 | `$9800-$9FFF` | jeu de caractères du mode HIRES |

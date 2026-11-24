@@ -113,11 +113,12 @@ void porte_ouvre(unsigned char l)
 void pomme_pose(void)
 {
     unsigned char x, y;
-    do {
-        x = 1 + rand() % (LARGEUR - 2);
+    do {                                     /* avec une case libre de chaque côté */
+        x = 2 + rand() % (LARGEUR - 4);      /* (pour les attributs de couleur)    */
         y = 1 + rand() % (HAUTEUR - 2);
-    } while (grille[y][x] != VIDE);
+    } while (grille[y][x] != VIDE || grille[y][x - 1] != VIDE || grille[y][x + 1] != VIDE);
     pomme_x = x;
     pomme_y = y;
-    case_pose(x, y, POMME, D_POMME);
+    grille[y][x] = POMME;
+    pomme_jaune(x, y);
 }

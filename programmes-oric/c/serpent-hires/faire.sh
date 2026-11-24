@@ -4,6 +4,8 @@
 #
 # 1. réassemble le moteur de son du Serpent BASIC (../../serpent/son.s) en
 #    $8B00 avec xa, et le range dans son_bin.h (tableau C) ;
+#    range aussi les images HIRES titre et victoire du Serpent BASIC dans
+#    images_bin.h (modifié le 2026-11-24 by GliouCNR©70) ;
 # 2. compile et relie tous les modules .c (cl65 -t atmos) :
 #    - __RAMEND__ = $8B00 : le C (programme, variables, pile de 2 Ko) reste
 #      sous le moteur de son ($8B00-$8FCE) et sous le jeu de caractères du
@@ -31,6 +33,20 @@ with open('son_bin.h', 'w', encoding='utf-8') as f:
 print('moteur de son :', len(b), 'octets en $' + sys.argv[1])
 EOF
 
+# images HIRES du Serpent BASIC (titre, victoire) -> images_bin.h
+python3 - <<'EOF'
+with open('images_bin.h', 'w', encoding='utf-8') as f:
+    f.write('/* images_bin.h - FABRIQUÉ par faire.sh (ne pas modifier) : les images HIRES\n')
+    f.write('** ../../serpent/serpent-titre.hir et serpent-victoire.hir. by GliouCNR©70 */\n')
+    for nom, fichier in (('titre_bin', 'serpent-titre.hir'), ('victoire_bin', 'serpent-victoire.hir')):
+        b = open('../../serpent/' + fichier, 'rb').read()
+        f.write('static const unsigned char %s[%d] = {\n' % (nom, len(b)))
+        for i in range(0, len(b), 20):
+            f.write('    ' + ','.join(str(x) for x in b[i:i+20]) + ',\n')
+        f.write('};\n')
+print('images : titre et victoire, 2 x 8000 octets')
+EOF
+
 # ./faire.sh test : version de test (serpent-test.tap) - pilote automatique,
 # porte ouverte après 1 pomme, victoire à 40 anneaux.
 SORTIE=serpent
@@ -41,6 +57,6 @@ if [ "$1" = test ]; then
 fi
 cl65 -t atmos -O $OPTIONS -o $SORTIE.tap -m $SORTIE.map \
      --ld-args -D,__RAMEND__=\$$SON_ADR,-D,__AUTORUN__=\$C7 \
-     main.c ecran.c son.c clavier.c niveau.c jeu.c hof.c pilote.c
+     main.c ecran.c son.c clavier.c niveau.c jeu.c hof.c images.c pilote.c
 rm -f *.o
 ls -l $SORTIE.tap

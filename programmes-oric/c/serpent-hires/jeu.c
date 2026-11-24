@@ -45,56 +45,63 @@ static unsigned char couleur(unsigned int reste)
     return 1;                                /* rouge  */
 }
 
-/* ----- Barre du haut : NIVEAU 2 - @=20 - RESTE 3 / PORTE OUVERTE ----- */
+/* ----- Barre du haut : NIVEAU 2 - @=20 - RESTE 3 / PORTE OUVERTE -----
+** Lignes construites en entier puis centrées (2026-11-24 by GliouCNR©70),
+** recentrées à chaque mise à jour (nombres sans espaces autour). */
 static void barre_haut(void)
 {
     unsigned char e = niveaux[niv].pommes;
     unsigned int r;
-    hires_efface_ligne(0);
-    hires_ecrit(2, 0, "NIVEAU");
-    hires_ecrit(9, 0, nombre(niv, 1));
-    hires_ecrit(11, 0, "-");
-    hires_octet(13, 0, 2);                   /* encre verte : pomme inverse = magenta */
-    hires_octet(14, 0, '@' | 0x80);
-    hires_octet(15, 0, 7);
-    hires_ecrit(16, 0, "=");
-    hires_ecrit(17, 0, nombre(niv * 10, 2));
-    hires_ecrit(20, 0, "-");
+    ligne_texte("NIVEAU ");
+    ligne_nombre(niv, 1);
+    ligne_texte(" - ");
+    ligne_car(3);                            /* pomme jaune */
+    ligne_car('@');
+    ligne_car(7);
+    ligne_texte("=");
+    ligne_nombre(niv * 10, 1);
+    ligne_texte(" - ");
     if (!compte && e >= POMMES_PORTE) {
-        hires_octet(22, 0, 1);               /* rouge */
-        hires_ecrit(23, 0, "PORTE OUVERTE");
-        return;
+        ligne_car(1);                        /* rouge */
+        ligne_texte("PORTE OUVERTE");
+    } else {
+        if (compte) {
+            r = GAGNE_LONG - taille();
+            ligne_car(couleur(r));
+        } else {
+            r = POMMES_PORTE - e;
+            ligne_car(7);
+        }
+        ligne_texte("RESTE ");
+        ligne_nombre(r, 1);
     }
-    hires_ecrit(23, 0, "RESTE");
-    if (compte) {
-        r = GAGNE_LONG - taille();
-        hires_octet(28, 0, couleur(r));
-    } else
-        r = POMMES_PORTE - e;
-    hires_ecrit(29, 0, nombre(r, 3) );
+    ligne_pose(0);
 }
 
 /* ----- Barre du bas : SCORE, tête + taille, HI-SCORE ----- */
 static void barre_bas(void)
 {
     unsigned int n = taille();
-    hires_octet(1, 2, 6);
-    hires_ecrit(2, 2, "SCORE");
-    hires_ecrit(8, 2, nombre(score, 5));
-    hires_octet(14, 2, 2);
-    hires_octet(15, 2, 123);                 /* tête du serpent */
-    hires_octet(16, 2, couleur(GAGNE_LONG - n));
-    hires_ecrit(17, 2, nombre(n, 3));
-    hires_octet(21, 2, 3);
-    hires_ecrit(22, 2, "HI-SCORE");
-    hires_ecrit(31, 2, nombre(score > hi ? score : hi, 5));
+    ligne_car(6);                            /* cyan */
+    ligne_texte("SCORE ");
+    ligne_nombre(score, 1);
+    ligne_car(' ');
+    ligne_car(2);
+    ligne_car(123);                          /* tête du serpent */
+    ligne_car(couleur(GAGNE_LONG - n));
+    ligne_nombre(n, 1);
+    ligne_car(' ');
+    ligne_car(3);                            /* jaune */
+    ligne_texte("HI-SCORE ");
+    ligne_nombre(score > hi ? score : hi, 1);
+    ligne_pose(2);
 }
 
 static void message(const char* s)
 {
-    hires_efface_ligne(1);
-    hires_octet(1, 1, 7);
-    hires_ecrit((40 - strlen(s)) / 2, 1, s);
+    ligne_car(7);
+    ligne_texte(s);
+    ligne_pose(1);
 }
 
 static unsigned char dessin_tete(void)
