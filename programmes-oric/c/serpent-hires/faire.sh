@@ -1,6 +1,7 @@
 #!/bin/sh
-# faire.sh - construit serpent.tap (SERPENT en C et en HIRES) avec cc65.
-# Créé le 2026-11-24 by GliouCNR©70
+# faire.sh - construit serpent-c.tap (SERPENT en C et en HIRES) avec cc65.
+# Créé le 2026-11-24 by GliouCNR©70 - modifié le 2026-11-24 : le jeu s'appelle
+# serpent-c.tap partout (dépôt et dossier tapes d'Oricutron).
 #
 # 1. réassemble le moteur de son du Serpent BASIC (../../serpent/son.s) en
 #    $8B00 avec xa, et le range dans son_bin.h (tableau C) ;
@@ -49,14 +50,14 @@ with open('images_bin.h', 'w', encoding='utf-8') as f:
 print('images : titre et victoire, 2 x 8000 octets')
 EOF
 
-# ./faire.sh test : version de test (serpent-test.tap) - pilote automatique,
+# ./faire.sh test : version de test (serpent-c-test.tap) - pilote automatique,
 # porte ouverte après 1 pomme, victoire à 40 anneaux.
 # (pile du C réduite à 1,5 Ko pour la version de test, qui a le pilote en plus)
-SORTIE=serpent
+SORTIE=serpent-c
 OPTIONS=
 PILE=0800
 if [ "$1" = test ]; then
-    SORTIE=serpent-test
+    SORTIE=serpent-c-test
     OPTIONS="-DPILOTE -DPOMMES_PORTE=1 -DGAGNE_LONG=40"
     PILE=0600
 fi
@@ -67,10 +68,9 @@ rm -f *.o
 ls -l $SORTIE.tap
 
 # Copie dans le dossier des cassettes d'Oricutron (ajouté le 2026-11-24 by
-# GliouCNR©70), sous le nom serpent-c.tap pour ne pas écraser le serpent.tap
-# du Serpent BASIC.
+# GliouCNR©70) ; le nom serpent-c.tap n'écrase pas le serpent.tap du BASIC.
 BANDES="$HOME/Library/Application Support/Oricutron/tapes"
-if [ "$SORTIE" = serpent ] && [ -d "$BANDES" ]; then
-    cp serpent.tap "$BANDES/serpent-c.tap"
+if [ "$SORTIE" = serpent-c ] && [ -d "$BANDES" ]; then
+    cp serpent-c.tap "$BANDES/serpent-c.tap"
     echo "copié dans $BANDES/serpent-c.tap"
 fi

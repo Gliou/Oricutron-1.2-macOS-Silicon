@@ -1,6 +1,6 @@
 # Serpent en C et en HIRES
 
-*Créé le 2026-11-24 by GliouCNR©70 — modifié le 2026-11-24 : écran titre et écran de victoire en HIRES, barres de statut centrées*
+*Créé le 2026-11-24 by GliouCNR©70 — modifié le 2026-11-24 : écran titre et écran de victoire en HIRES, barres de statut centrées ; le jeu s'appelle `serpent-c.tap` partout*
 
 Le jeu du [Serpent BASIC](../../serpent/) refait en **C** (cc65) et dessiné en
 **HIRES** (240 x 200 points). Mêmes règles : on dirige le serpent avec les
@@ -65,8 +65,8 @@ Le programme est découpé en modules, que `main.c` importe par leurs `.h` :
 | `images.c` / `.h` | écran titre et écran de victoire en HIRES |
 | `images_bin.h` | les deux images (fabriqué par `faire.sh`) |
 | `pilote.c` / `.h` | pilote automatique, seulement dans la version de test |
-| `faire.sh` | construit `serpent.tap` (ou `serpent-test.tap`) |
-| `serpent.tap` | le jeu, prêt à charger |
+| `faire.sh` | construit `serpent-c.tap` (ou `serpent-c-test.tap`) |
+| `serpent-c.tap` | le jeu, prêt à charger |
 
 ## Construire et jouer
 
@@ -75,15 +75,15 @@ Le programme est découpé en modules, que `main.c` importe par leurs `.h` :
 ```
 
 ```bash
-/Applications/Oricutron.app/Contents/MacOS/Oricutron -m atmos --turbotape on -t "$PWD/serpent.tap"
+/Applications/Oricutron.app/Contents/MacOS/Oricutron -m atmos --turbotape on -t "$PWD/serpent-c.tap"
 ```
 
 Le jeu démarre tout seul après le chargement. `faire.sh` copie aussi le jeu
 dans le dossier des cassettes d'Oricutron
-(`~/Library/Application Support/Oricutron/tapes/serpent-c.tap`, nommé ainsi
-pour ne pas écraser le `serpent.tap` du Serpent BASIC).
+(`~/Library/Application Support/Oricutron/tapes/serpent-c.tap`), sous le même
+nom : il n'écrase pas le `serpent.tap` du Serpent BASIC.
 
-`./faire.sh test` construit `serpent-test.tap` : un pilote automatique joue
+`./faire.sh test` construit `serpent-c-test.tap` : un pilote automatique joue
 seul, la porte s'ouvre après 1 pomme et la partie est gagnée à 40 anneaux. Il
 sert à vérifier les portes, les niveaux et la victoire sans jouer.
 
