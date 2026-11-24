@@ -7,6 +7,9 @@
 ; saut « pas de tic en cours » sautait aussi la musique (une seule note tenue).
 ; Modifié le 2026-11-24 by GliouCNR©70 - vraie petite musique - 4 phrases (~10 s)
 ; sur le canal A et une basse sur le canal C (2 voix), moteur déplacé en $5400.
+; Modifié le 2026-11-24 by GliouCNR©70 - plusieurs morceaux (CHANSON, en $5413) -
+; 0 = comptine de l'écran titre, 1 = « perdu » sur le Hall of Fame. La musique
+; en la mineur est rangée dans ../musiques/la-mineur-2-voix.s.
 ;
 ;   xa -o son.bin son.s
 ;   (les octets sont dans les lignes DATA 1070+ de serpent.bas, posés en $5400,
@@ -22,8 +25,9 @@
 ;   CALL #5409  ZAP    ZAP au volume choisi (canal B, balayage de 0,3 s)
 ;   CALL #540C  BOUM   EXPLODE au volume choisi (canal C, bruit, ~1,5 s)
 ;   POKE #540F,v       le volume, 0 (muet) à 15 (le maximum de la puce)
-;   CALL #5410  MUSIQUE petite musique en boucle (mélodie canal A, basse canal
-;                      C), au volume choisi ;
+;   POKE #5413,n       morceau - 0 comptine (titre), 1 « perdu » (Hall of Fame)
+;   CALL #5410  MUSIQUE le morceau choisi, en boucle (mélodie canal A, basse
+;                      canal C), au volume choisi ;
 ;                      INIT l'arrête
 ;
 ; Pourquoi - dans la ROM, PING et EXPLODE mettent le volume sur l'ENVELOPPE de
@@ -52,6 +56,7 @@ ROMIRQ   = $EE22
         jmp boum
 vol     .byt 15               ; $540F - volume choisi (0-15)
         jmp musique           ; $5410
+chanson .byt 0                ; $5413 - morceau à jouer
 
 ; ----- Installation (peut être appelée plusieurs fois) -----
 init    sei
@@ -137,6 +142,21 @@ boum    lda vol
 
 ; ----- MUSIQUE - lance la mélodie depuis le début -----
 musique sei
+        ldx chanson           ; adresses des tables du morceau choisi, posées
+        lda tmel,x            ; dans les instructions qui les lisent
+        sta nm1+1
+        sta nm2+1
+        lda tmeh,x
+        sta nm1+2
+        sta nm2+2
+        lda tbal,x
+        sta bm1+1
+        sta bm2+1
+        sta bm3+1
+        lda tbah,x
+        sta bm1+2
+        sta bm2+2
+        sta bm3+2
         lda #7                ; mélangeur - sons A, B et C, pas de bruit
         ldx #$38
         jsr AY
@@ -150,7 +170,7 @@ musique sei
 
 ; Joue la note suivante de la mélodie (période, durée en tops), 0 = fin
 note    ldy mi
-        lda melodie,y
+nm1     lda comptine,y        ; (adresse posée par MUSIQUE)
         beq mfin
         cmp #1                ; période 1 = silence
         beq nsil
@@ -163,8 +183,10 @@ nsil    ldx #0
 ndur    lda #8                ; volume du canal A (X)
         jsr AY
         ldy mi
-        lda melodie+1,y
+        iny
+nm2     lda comptine,y        ; durée
         sta mt
+        dey
         iny
         iny
         sty mi
@@ -174,18 +196,24 @@ mfin    sta mi                ; (A = 0) fin de la mélodie - on la reprend
 
 ; Joue la note de basse suivante (période sur 2 octets, durée), 0 = fin
 basse   ldy bi
-        lda basses,y
+bm1     lda cbasse,y          ; (adresse posée par MUSIQUE)
         beq bfin
         tax
         lda #4                ; période du canal C, partie basse...
         jsr AY
         ldy bi
-        ldx basses+1,y
+        iny
+bm2     lda cbasse,y
+        tax
         lda #5                ; ... et partie haute
         jsr AY
         ldy bi
-        lda basses+2,y
+        iny
+        iny
+bm3     lda cbasse,y          ; durée
         sta bt
+        dey
+        dey
         iny
         iny
         iny
@@ -290,20 +318,45 @@ cc      .byt 0                ; tops avant la prochaine baisse
 mt      .byt 0                ; tops restants de la note de musique (0 = pas de musique)
 mi      .byt 0                ; position dans la mélodie
 
-; Musique originale en la mineur, 4 phrases de 2 mesures (A, A', B, C), ~10 s.
-; Mélodie - période AY (1 MHz / 16 / fréquence), durée en centièmes ; 30 = une
-; noire. la4 142, si4 127, do5 119, ré5 106, mi5 95, fa5 90, sol5 80, sol4 159.
-melodie .byt 142,30, 119,15, 106,15, 95,30, 142,30, 159,15, 142,15, 119,30, 127,60
-        .byt 142,30, 119,15, 106,15, 95,30, 80,30,  90,15,  95,15, 106,30, 95,60
-        .byt 90,30,  95,15,  106,15, 119,30, 106,30, 95,15, 106,15, 119,30, 127,30, 159,30
-        .byt 142,15, 127,15, 119,15, 106,15, 95,30, 119,30, 127,15, 159,15, 127,30, 142,60
+; Adresses des tables de chaque morceau (0 comptine, 1 perdu)
+tmel    .byt <comptine, <perdu
+tmeh    .byt >comptine, >perdu
+tbal    .byt <cbasse, <pbasse
+tbah    .byt >cbasse, >pbasse
+
+; Format - mélodie - période AY sur 1 octet (1 MHz / 16 / fréquence), durée en
+; centièmes de seconde, période 1 = silence, 0 = fin (reprise au début) ;
+; basse - période sur 2 octets (bas, haut), durée, 0 = fin.
+; Notes - sol4 159, la4 142, si4 127, do5 119, ré5 106, mi5 95, fa5 90, sol5 80,
+; do4 239, mi4 189, fa4 179 ; basse - do3 477, sol2 638, fa2 716, ré3 425,
+; la2 568, mi2 758, mi3 379.
+
+; COMPTINE (titre) - originale, do majeur, sautillante ; 8 mesures de 96
+; centièmes (noire 24, croche 12, blanche 48), ~7,7 s.
+; do mi sol do mi | ré do si la sol - fa la do fa mi | ré mi ré si do
+; mi mi ré ré do sol | la si do la sol - do mi sol do mi | ré si sol si do
+comptine .byt 119,24, 189,12, 159,12, 119,24, 95,24,  106,12, 119,12, 127,12, 142,12, 159,48
+        .byt 179,24, 142,12, 119,12, 90,24,  95,24,   106,12, 95,12,  106,12, 127,12, 119,48
+        .byt 95,12,  95,12,  106,12, 106,12, 119,24, 159,24,  142,12, 127,12, 119,12, 142,12, 159,48
+        .byt 119,24, 189,12, 159,12, 119,24, 95,24,   106,12, 127,12, 159,12, 127,12, 119,48
         .byt 0
-; Basse - période sur 2 octets (bas, haut), durée ; une blanche (60) par note.
-; la2 568, sol2 638, do3 477, ré3 425, mi3 379, fa2 716, mi2 758.
-basses  .byt $38,2,60, $38,2,60, $7E,2,60, $7E,2,60
-        .byt $38,2,60, $DD,1,60, $A9,1,60, $7B,1,60
-        .byt $CC,2,60, $CC,2,60, $DD,1,60, $7E,2,60
-        .byt $38,2,60, $A9,1,60, $F6,2,60, $38,2,60
+; basse de la comptine - 2 notes par mesure (48), do sol / sol ré / fa do /
+; sol do / do sol / fa do / do sol / sol do
+cbasse  .byt $DD,1,48, $7E,2,48,  $7E,2,48, $A9,1,48
+        .byt $CC,2,48, $DD,1,48,  $7E,2,48, $DD,1,48
+        .byt $DD,1,48, $7E,2,48,  $CC,2,48, $DD,1,48
+        .byt $DD,1,48, $7E,2,48,  $7E,2,48, $DD,1,48
+        .byt 0
+
+; PERDU (Hall of Fame après une partie perdue) - originale, la mineur, lente et
+; douce ; 4 mesures de 120 centièmes (noire 30), ~4,8 s.
+; mi ré do si | la si do - | ré do si sol | la - - (silence)
+perdu   .byt 95,30, 106,30, 119,30, 127,30,  142,30, 127,30, 119,60
+        .byt 106,30, 119,30, 127,30, 159,30,  142,90, 1,30
+        .byt 0
+; basse - la mi / la do / sol mi / la la (blanches)
+pbasse  .byt $38,2,60, $F6,2,60,  $38,2,60, $DD,1,60
+        .byt $7E,2,60, $F6,2,60,  $38,2,60, $38,2,60
         .byt 0
 bt      .byt 0                ; tops restants de la note de basse
 bi      .byt 0                ; position dans la basse

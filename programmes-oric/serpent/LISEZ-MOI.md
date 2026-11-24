@@ -105,7 +105,7 @@ exactement ce qui touche.
 serpent fait « tic, tac », et PING, ZAP et EXPLODE accompagnent les pommes,
 les portes et la fin de partie. Ceux de la ROM étaient trop forts et ne se
 règlent pas : la ROM met le volume sur l'**enveloppe** de la puce son
-(AY-3-8912), qui part toujours de 15, le maximum. Le moteur `son.s` (649
+(AY-3-8912), qui part toujours de 15, le maximum. Le moteur `son.s` (769
 octets en `$5400`, au-dessus de HIMEM abaissé à `$5400`, juste sous l'image
 titre) les remplace : il se
 branche sur l'interruption de l'horloge de l'Oric (100 fois par seconde) et
@@ -116,6 +116,14 @@ Sur l'écran du Hall of Fame, une **barre de volume** de 0 à 64 se règle avec
 les flèches ← → (par pas de 4 ; 64 = 15, le maximum de la puce). À chaque
 réglage, un PING retentit au nouveau volume. Sur la disquette, le volume est
 gardé avec le Hall of Fame (octet `$98F0`) et repris au démarrage suivant.
+
+**Musiques** (2026-11-24 by GliouCNR©70) : le moteur `son.s` joue plusieurs
+morceaux (choix par `POKE #5413,n` puis `CALL #5410`) : 0 = la comptine de
+l'écran titre (reprise au Hall of Fame après une victoire), 1 = « perdu »,
+un petit air lent et doux en la mineur, sur le Hall of Fame après une
+défaite. Chaque musique tourne en boucle jusqu'au début de la partie suivante.
+La première musique du titre, en la mineur, est gardée pour un autre projet
+dans [`../musiques/la-mineur-2-voix.s`](../musiques/la-mineur-2-voix.s).
 
 ### Hall of Fame
 
@@ -160,9 +168,10 @@ CAPS à réafficher, même après `TEXT`. Le nom tapé pour le Hall of Fame est
 remis en majuscules par le programme.
 
 L'image affiche « APPUIE SUR ESPACE » (modifié le 2026-11-24 by GliouCNR©70).
-Une **petite musique** originale en la mineur (4 phrases, ~10 s, mélodie sur
-le canal A et basse sur le canal C, jouée en boucle par le moteur de son au
-volume choisi) démarre avec l'image et tourne jusqu'au début de la partie : on l'entend aussi sur l'écran du Hall of Fame, ce qui aide à
+Une **comptine** originale en do majeur (8 mesures sautillantes, ~7,7 s,
+mélodie sur le canal A et basse sur le canal C, jouée en boucle par le moteur
+de son au volume choisi) démarre avec l'image et tourne jusqu'au début de la
+partie : on l'entend aussi sur l'écran du Hall of Fame, ce qui aide à
 régler le volume. À l'appui sur ESPACE, le message s'efface.
 
 Tout est chargé **avant** l'image, pendant que « CHARGEMENT EN COURS » clignote

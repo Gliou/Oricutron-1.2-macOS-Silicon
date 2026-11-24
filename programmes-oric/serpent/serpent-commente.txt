@@ -26,11 +26,11 @@ une comparaison vraie vaut -1.
                                                                  │ #5403 (tic-tac du pas dans son.s) : un nombre dans une
                                                                  │ variable va plus vite qu'un nombre écrit en clair.
                                                                  │
-11 PG=#5406:ZP=#5409:XP=#540C:SR=#5400:VO=#540F:MU=#5410:VU=32:  │ Adresses du moteur de son : PG = PING, ZP = ZAP, XP =
-      VS=-1                                                      │ EXPLODE, SR = installation, VO = case du volume (0-15), MU =
-                                                                 │ musique de l'écran titre. VU = volume réglé par le joueur
-                                                                 │ (0-64), VS = volume déjà sauvé sur la disquette (-1 = pas
-                                                                 │ encore).
+11 PG=#5406:ZP=#5409:XP=#540C:SR=#5400:VO=#540F:MU=#5410:        │ Adresses du moteur de son : PG = PING, ZP = ZAP, XP =
+      CH=#5413:VU=32:VS=-1                                       │ EXPLODE, SR = installation, VO = case du volume (0-15), MU =
+                                                                 │ musique, CH = numéro du morceau (0 comptine, 1 perdu). VU =
+                                                                 │ volume réglé par le joueur (0-64), VS = volume déjà sauvé
+                                                                 │ sur la disquette (-1 = pas encore).
                                                                  │
 12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT                       │ Lit les 44 octets de la routine titre_copie (DATA 990-995)
                                                                  │ et les pose en $0460.
@@ -44,9 +44,10 @@ une comparaison vraie vaut -1.
                                                                  │ Fame par défaut (970) ; sur disquette, lit le Hall of Fame
                                                                  │ et le volume (CALL #400, puis 950).
                                                                  │
-15 GOSUB 974:IF D=0 THEN CALL MU:GOTO 20                         │ Charge et installe le moteur de son, au volume du joueur, et
-                                                                 │ les chaînes (974). Cassette : pas d'image, la musique
-                                                                 │ démarre tout de suite et on passe au Hall of Fame.
+15 GOSUB 974:POKE CH,0:IF D=0 THEN CALL MU:GOTO 20               │ Charge et installe le moteur de son, au volume du joueur, et
+                                                                 │ les chaînes (974) ; choisit la comptine (morceau 0).
+                                                                 │ Cassette : pas d'image, la musique démarre tout de suite et
+                                                                 │ on passe au Hall of Fame.
                                                                  │
 16 PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#58:POKE #482,#77:  │ Disquette : image titre en HIRES (CALL #460), la musique
       CALL #460:CALL MU:PRINT:                                   │ démarre avec elle (CALL MU, en boucle, jouée par
@@ -186,16 +187,19 @@ une comparaison vraie vaut -1.
                                                                  │
 195 GOTO 100                                                     │ Tour suivant, sans pause (on vient de manger).
                                                                  │
-300 CALL XP:PLOT 15,12,"  PERDU !  ":WAIT 250                    │ Perdu : explosion au volume choisi (CALL XP, bruit sur le
-                                                                 │ canal C qui s'éteint en 1,5 s), message, attente.
+300 CALL XP:POKE CH,1:PLOT 15,12,"  PERDU !  ":WAIT 250          │ Perdu : explosion au volume choisi (CALL XP), choix du
+                                                                 │ morceau « perdu » (1) pour le retour au Hall of Fame,
+                                                                 │ message, attente.
                                                                  │
 310 IF S>SC(10) THEN GOSUB 800                                   │ Score meilleur que le 10e du Hall of Fame : on y entre
                                                                  │ (800).
                                                                  │
-320 GOTO 70                                                      │ Retour au Hall of Fame.
+320 CALL MU:GOTO 70                                              │ Lance la musique choisie (perdu ou comptine) et revient au
+                                                                 │ Hall of Fame ; elle tourne jusqu'à la partie suivante.
                                                                  │
-330 CALL ZP:PLOT 14,12,"  GAGNE !  ":WAIT 300:                   │ Gagné (256 anneaux) : ZAP au volume choisi (CALL ZP),
-      IF D THEN GOSUB 340                                        │ message, puis l'écran de victoire sur disquette (340).
+330 CALL ZP:POKE CH,0:PLOT 14,12,"  GAGNE !  ":WAIT 300:         │ Gagné (256 anneaux) : ZAP au volume choisi, la comptine (0)
+      IF D THEN GOSUB 340                                        │ sera rejouée au Hall of Fame, message, puis l'écran de
+                                                                 │ victoire sur disquette (340).
                                                                  │
 335 GOTO 310                                                     │ Hall of Fame comme après une partie perdue (310).
                                                                  │
@@ -510,7 +514,7 @@ une comparaison vraie vaut -1.
                                                                  │
 973 FOR I=1 TO 10:N$(I)="ORIC    ":READ SC(I),NP(I):NEXT:RETURN  │ ...et le Hall of Fame par défaut (10 fois ORIC).
                                                                  │
-974 FOR I=0 TO 648:READ B:POKE #5400+I,B:NEXT:CALL SR:           │ Moteur de son (649 octets, DATA 1070+) posé en $5400,
+974 FOR I=0 TO 768:READ B:POKE #5400+I,B:NEXT:CALL SR:           │ Moteur de son (769 octets, DATA 1070+) posé en $5400,
       POKE VO,INT(VU*15/64+.5)                                   │ installé (CALL SR) et réglé au volume du joueur...
                                                                  │
 976 W$=CHR$(160):B$=CHR$(255):F$=CHR$(192):Z$=CHR$(122):         │ ...les chaînes du jeu (W$ mur, B$ bord, F$ pomme, Z$ anneau)
@@ -569,103 +573,121 @@ une comparaison vraie vaut -1.
 1060 DATA 750,25,500,20,300,15,150,10,50,5                       │ Places 6 à 10. 500 = portes des niveaux 1 à 4 ouvertes avec
                                                                  │ 5 pommes chacune (50+100+150+200), 50 = porte du niveau 1.
                                                                  │
-1070 DATA 76,19,84,76,93,84,76,123,84,76,154,84,76,175,84,15,76, │ Moteur de son son.s (xa -o son.bin son.s) : 649 octets posés
-      194,84,120                                                 │ en $5400 par la ligne 974 - installation, tic-tac, PING,
-                                                                 │ ZAP, EXPLODE, musique à 2 voix en boucle, et la baisse du
-                                                                 │ volume à chaque interruption de l'horloge.
+1070 DATA 76,20,84,76,94,84,76,124,84,76,155,84,76,176,84,15,76, │ Moteur de son son.s (xa -o son.bin son.s) : 769 octets posés
+      195,84,0                                                   │ en $5400 par la ligne 974 - installation, tic-tac, PING,
+                                                                 │ ZAP, EXPLODE, deux musiques à 2 voix (comptine, perdu), et
+                                                                 │ la baisse du volume à chaque interruption de l'horloge.
                                                                  │
-1072 DATA 169,68,141,69,2,169,85,141,70,2,88,169,7,162,28,32,144 │ Moteur de son (suite).
-      ,245,169,6                                                 │
+1072 DATA 120,169,122,141,69,2,169,85,141,70,2,88,169,7,162,28,3 │ Moteur de son (suite).
+      2,144,245,169                                              │
                                                                  │
-1074 DATA 162,31,32,144,245,162,0,169,1,32,144,245,162,0,169,3,3 │
-      2,144,245,160                                              │
+1074 DATA 6,162,31,32,144,245,162,0,169,1,32,144,245,162,0,169,3 │
+      ,32,144,245                                                │
                                                                  │
-1076 DATA 8,152,162,0,32,144,245,200,192,11,208,245,169,0,141,0, │
-      86,141,1,86                                                │
+1076 DATA 160,8,152,162,0,32,144,245,200,192,11,208,245,169,0,14 │
+      1,54,86,141,55                                             │
                                                                  │
-1078 DATA 141,3,86,141,5,86,141,7,86,141,135,86,96,169,0,174,255 │
-      ,85,32,144                                                 │
+1078 DATA 86,141,57,86,141,59,86,141,61,86,141,255,86,96,169,0,1 │
+      74,53,86,32                                                │
                                                                  │
-1080 DATA 245,173,255,85,73,48,141,255,85,169,8,174,15,84,32,144 │
-      ,245,169,3,141                                             │
+1080 DATA 144,245,173,53,86,73,48,141,53,86,169,8,174,15,84,32,1 │
+      44,245,169,3                                               │
                                                                  │
-1082 DATA 0,86,96,169,0,141,3,86,169,2,162,24,32,144,245,173,15, │
-      84,141,1                                                   │
+1082 DATA 141,54,86,96,169,0,141,57,86,169,2,162,24,32,144,245,1 │
+      73,15,84,141                                               │
                                                                  │
-1084 DATA 86,169,6,141,2,86,169,9,174,15,84,76,144,245,169,0,141 │
-      ,1,86,141                                                  │
+1084 DATA 55,86,169,6,141,56,86,169,9,174,15,84,76,144,245,169,0 │
+      ,141,55,86                                                 │
                                                                  │
-1086 DATA 4,86,169,28,141,3,86,169,9,174,15,84,76,144,245,173,15 │
-      ,84,141,5                                                  │
+1086 DATA 141,58,86,169,28,141,57,86,169,9,174,15,84,76,144,245, │
+      173,15,84,141                                              │
                                                                  │
-1088 DATA 86,169,10,141,6,86,169,10,174,15,84,76,144,245,120,169 │
-      ,7,162,56,32                                               │
+1088 DATA 59,86,169,10,141,60,86,169,10,174,15,84,76,144,245,120 │
+      ,174,19,84,189                                             │
                                                                  │
-1090 DATA 144,245,169,0,141,8,86,141,136,86,32,218,84,32,14,85,8 │
-      8,96,172,8                                                 │
+1090 DATA 63,86,141,12,85,141,44,85,189,65,86,141,13,85,141,45,8 │
+      5,189,67,86                                                │
                                                                  │
-1092 DATA 86,185,9,86,240,38,201,1,240,12,170,169,0,32,144,245,1 │
-      74,15,84,76                                                │
+1092 DATA 141,66,85,141,81,85,141,95,85,189,69,86,141,67,85,141, │
+      82,85,141,96                                               │
                                                                  │
-1094 DATA 244,84,162,0,169,8,32,144,245,172,8,86,185,10,86,141,7 │
-      ,86,200,200                                                │
+1094 DATA 85,169,7,162,56,32,144,245,169,0,141,62,86,141,0,87,32 │
+      ,8,85,32                                                   │
                                                                  │
-1096 DATA 140,8,86,96,141,8,86,76,218,84,172,136,86,185,86,86,24 │
-      0,40,170,169                                               │
+1096 DATA 62,85,88,96,172,62,86,185,71,86,240,40,201,1,240,12,17 │
+      0,169,0,32                                                 │
                                                                  │
-1098 DATA 4,32,144,245,172,136,86,190,87,86,169,5,32,144,245,172 │
-      ,136,86,185,88                                             │
+1098 DATA 144,245,174,15,84,76,34,85,162,0,169,8,32,144,245,172, │
+      62,86,200,185                                              │
                                                                  │
-1100 DATA 86,141,135,86,200,200,200,140,136,86,169,10,174,15,84, │ Fin du moteur de son.
-      76,144,245,141,136                                         │
+1100 DATA 71,86,141,61,86,136,200,200,140,62,86,96,141,62,86,76, │ Fin du moteur de son.
+      8,85,172,0                                                 │
                                                                  │
-1102 DATA 86,76,14,85,72,173,13,3,41,64,208,3,76,251,85,138,72,1 │
-      52,72,173                                                  │
+1102 DATA 87,185,154,86,240,46,170,169,4,32,144,245,172,0,87,200 │
+      ,185,154,86,170                                            │
                                                                  │
-1104 DATA 0,86,240,12,206,0,86,208,7,169,8,162,0,32,144,245,173, │
-      7,86,240                                                   │
+1104 DATA 169,5,32,144,245,172,0,87,200,200,185,154,86,141,255,8 │
+      6,136,136,200,200                                          │
                                                                  │
-1106 DATA 25,206,7,86,173,7,86,201,3,208,7,169,8,162,0,32,144,24 │
-      5,173,7                                                    │
+1106 DATA 200,140,0,87,169,10,174,15,84,76,144,245,141,0,87,76,6 │
+      2,85,72,173                                                │
                                                                  │
-1108 DATA 86,208,3,32,218,84,173,135,86,240,25,206,135,86,173,13 │
-      5,86,201,10,208                                            │
+1108 DATA 13,3,41,64,208,3,76,49,86,138,72,152,72,173,54,86,240, │
+      12,206,54                                                  │
                                                                  │
-1110 DATA 7,169,10,162,0,32,144,245,173,135,86,208,3,32,14,85,17 │
-      3,3,86,240                                                 │
+1110 DATA 86,208,7,169,8,162,0,32,144,245,173,61,86,240,25,206,6 │
+      1,86,173,61                                                │
                                                                  │
-1112 DATA 30,173,4,86,24,105,4,141,4,86,170,169,2,32,144,245,206 │ Fin de la mélodie (période, durée) ...
-      ,3,86,208                                                  │
+1112 DATA 86,201,3,208,7,169,8,162,0,32,144,245,173,61,86,208,3, │ Fin de la mélodie (période, durée) ...
+      32,8,85                                                    │
                                                                  │
-1114 DATA 36,169,9,162,0,32,144,245,76,221,85,173,1,86,240,21,20 │
-      6,2,86,208                                                 │
+1114 DATA 173,255,86,240,25,206,255,86,173,255,86,201,10,208,7,1 │
+      69,10,162,0,32                                             │
                                                                  │
-1116 DATA 16,169,6,141,2,86,206,1,86,174,1,86,169,9,32,144,245,1 │
-      73,5,86                                                    │
+1116 DATA 144,245,173,255,86,208,3,32,62,85,173,57,86,240,30,173 │
+      ,58,86,24,105                                              │
                                                                  │
-1118 DATA 240,21,206,6,86,208,16,169,10,141,6,86,206,5,86,174,5, │
-      86,169,10                                                  │
+1118 DATA 4,141,58,86,170,169,2,32,144,245,206,57,86,208,36,169, │
+      9,162,0,32                                                 │
                                                                  │
-1120 DATA 32,144,245,104,168,104,170,104,76,34,238,96,0,0,0,0,0, │
-      0,0,0                                                      │
+1120 DATA 144,245,76,19,86,173,55,86,240,21,206,56,86,208,16,169 │
+      ,6,141,56,86                                               │
                                                                  │
-1122 DATA 0,142,30,119,15,106,15,95,30,142,30,159,15,142,15,119, │
-      30,127,60,142                                              │
+1122 DATA 206,55,86,174,55,86,169,9,32,144,245,173,59,86,240,21, │
+      206,60,86,208                                              │
                                                                  │
-1124 DATA 30,119,15,106,15,95,30,80,30,90,15,95,15,106,30,95,60, │
-      90,30,95                                                   │
+1124 DATA 16,169,10,141,60,86,206,59,86,174,59,86,169,10,32,144, │
+      245,104,168,104                                            │
                                                                  │
-1126 DATA 15,106,15,119,30,106,30,95,15,106,15,119,30,127,30,159 │
-      ,30,142,15,127                                             │
+1126 DATA 170,104,76,34,238,96,0,0,0,0,0,0,0,0,0,71,203,86,86,15 │
+      4                                                          │
                                                                  │
-1128 DATA 15,119,15,106,15,95,30,119,30,127,15,159,15,127,30,142 │
-      ,60,0,56,2                                                 │
+1128 DATA 230,86,86,119,24,189,12,159,12,119,24,95,24,106,12,119 │
+      ,12,127,12,142                                             │
                                                                  │
-1130 DATA 60,56,2,60,126,2,60,126,2,60,56,2,60,221,1,60,169,1,60 │
-      ,123                                                       │
+1130 DATA 12,159,48,179,24,142,12,119,12,90,24,95,24,106,12,95,1 │
+      2,106,12,127                                               │
                                                                  │
-1132 DATA 1,60,204,2,60,204,2,60,221,1,60,126,2,60,56,2,60,169,1 │
-      ,60                                                        │
+1132 DATA 12,119,48,95,12,95,12,106,12,106,12,119,24,159,24,142, │
+      12,127,12,119                                              │
                                                                  │
-1134 DATA 246,2,60,56,2,60,0,0,0                                 │
+1134 DATA 12,142,12,159,48,119,24,189,12,159,12,119,24,95,24,106 │
+      ,12,127,12,159                                             │
+                                                                 │
+1136 DATA 12,127,12,119,48,0,221,1,48,126,2,48,126,2,48,169,1,48 │
+      ,204,2                                                     │
+                                                                 │
+1138 DATA 48,221,1,48,126,2,48,221,1,48,221,1,48,126,2,48,204,2, │
+      48,221                                                     │
+                                                                 │
+1140 DATA 1,48,221,1,48,126,2,48,126,2,48,221,1,48,0,95,30,106,3 │
+      0,119                                                      │
+                                                                 │
+1142 DATA 30,127,30,142,30,127,30,119,60,106,30,119,30,127,30,15 │
+      9,30,142,90,1                                              │
+                                                                 │
+1144 DATA 30,0,56,2,60,246,2,60,56,2,60,221,1,60,126,2,60,246,2, │
+      60                                                         │
+                                                                 │
+1146 DATA 56,2,60,56,2,60,0,0,0                                  │
                                                                  │
