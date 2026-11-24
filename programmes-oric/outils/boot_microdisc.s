@@ -74,7 +74,7 @@ efin    sta $BF80,y           ; puis $BF80-$BFDF
         cpy #96
         bne efin
         ldx #20               ; « CHARGEMENT EN COURS » clignotant, ligne 13
-m1a    lda charge,x          ; (encre cyan 6, attribut 12 = clignotant)
+m1a     lda charge,x          ; (encre cyan 6, attribut 12 = clignotant)
         sta $BD91,x
         dex
         bpl m1a
