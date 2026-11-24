@@ -1,6 +1,6 @@
 # Serpent — jeu pour Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre*
 
 Petit jeu en BASIC : on dirige un serpent avec les flèches, il mange les pommes
 et grandit ; perdu s'il touche le bord, un mur ou sa queue. Espace pour jouer.
@@ -18,7 +18,8 @@ sur la disquette, et un **robot** qui joue tout seul.
 | `serpent.tap` | la cassette, prête à charger |
 | `serpent.dsk` | la disquette Microdisc, qui démarre toute seule (Hall of Fame sauvegardé) |
 | `serpent-commente.txt` | le programme commenté ligne par ligne |
-| `titre_serpent.py` → `serpent-titre.hir` | écran titre HIRES |
+| `titre_serpent.py` → `serpent-titre.hir` | écran titre HIRES (commun avec la version en C) |
+| `titre_basic.py` → `serpent-titre-basic.hir` | l'écran titre de la disquette BASIC : le même, avec « Version BASIC » sous la barre cyan |
 | `victoire_serpent.py` → `serpent-victoire.hir` | écran de victoire HIRES |
 | `titre_copie.s` | routine 6502 qui recopie une image HIRES à l'écran (`CALL #460`) |
 | `son.s` | moteur de son 6502 (en `$5300`) : tic-tac des pas, PING, ZAP, EXPLODE au volume réglé par le joueur |
@@ -201,7 +202,14 @@ des cases vides de 6 pixels où le convertisseur pose les changements de couleur
 
 ```
 python3 titre_serpent.py
+python3 titre_basic.py
 ```
+
+Sur la disquette BASIC, l'image titre est `serpent-titre-basic.hir` (ajouté le
+2026-11-24 by GliouCNR©70) : `titre_basic.py` y écrit « Version BASIC » en
+cyan, centré sous la barre cyan, avec les lettres de l'Oric (comme « Version
+C » dans la version en C, qui reprend `serpent-titre.hir` tel quel). Le texte
+est dans l'image : rien à dessiner pendant que le BASIC tourne.
 
 ![Écran titre dans Oricutron](captures/serpent-titre-oricutron.jpg)
 
@@ -240,7 +248,7 @@ La cassette et la disquette sont aussi copiées dans
 
 ```
 python3 ../outils/oric_tap.py basic serpent.bas serpent.tap SERPENT
-python3 ../outils/oric_dsk.py serpent.bas serpent.dsk serpent-titre.hir serpent-victoire.hir
+python3 ../outils/oric_dsk.py serpent.bas serpent.dsk serpent-titre-basic.hir serpent-victoire.hir
 ```
 
 Refaire la disquette **efface le Hall of Fame** (secteur 18 vide) : pour garder
