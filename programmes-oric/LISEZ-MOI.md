@@ -75,6 +75,7 @@ positions dans `X(255)`, donc au plus 256 anneaux ; le robot mange juste les 5
 ```
 pip install mss numpy pyobjc-framework-Quartz pyobjc-framework-ScreenCaptureKit pyobjc-framework-CoreMedia pyobjc-framework-libdispatch
 python3 serpent/bot_serpent.py --fenetre --jouer     # conseillé
+python3 serpent/bot_serpent.py --fenetre --jouer --aller-retour 8   # tous les niveaux
 python3 serpent/bot_serpent.py                       # montrer la zone avec la souris
 ```
 
@@ -97,6 +98,18 @@ python3 serpent/bot_serpent.py                       # montrer la zone avec la s
   il attend la partie suivante (Ctrl-C pour l'arrêter) ; à 256 anneaux il rend la main.
 - `BOT_PHOTOS=<dossier>` : le robot photographie l'écran dès que le serpent
   cesse d'avancer (explosion), pour comprendre une défaite.
+- `--aller-retour N` (2026-11-23) : au lieu de foncer au niveau 5, le robot
+  mange N `@` par visite puis change de tableau - vers la droite jusqu'au
+  niveau 5, puis par la porte de gauche jusqu'au niveau 1, et ainsi de suite.
+  Au-delà de `--aller-retour-max` anneaux (120) il reste dans le tableau où il
+  est et y finit la partie : un serpent très long qui entre dans un tableau
+  doit se dérouler depuis la porte, queue bloquée à l'entrée, et s'enfermait
+  souvent. `serpent/simu_aller_retour.py` simule des parties complètes :
+  30 sur 30 gagnées à 120, 12 sur 20 à 170. En vrai (8 `@` par visite) :
+  niveaux 1-2-3-4-5-4-3-2-1-2-3-4-5-4-3, partie **gagnée au niveau 3**
+  (7 640 points, 252 pommes), sans un écart de direction.
+
+![Robot en aller-retour, gagné au niveau 3](serpent/captures/serpent-robot-aller-retour.jpg)
 - Si les images n'arrivent plus, un second fil continue d'envoyer les touches
   et fait avancer le serpent « à l'estime » (tout droit tant que c'est sûr).
 - Stratégie : plus court chemin vers la pomme, seulement s'il peut ensuite

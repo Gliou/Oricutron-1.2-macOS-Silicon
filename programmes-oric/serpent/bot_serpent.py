@@ -26,6 +26,16 @@ et le jeu se dérègle. La meilleure partie possible est donc :
   - total : 500 + 232 x 50 = 12 100 points.
 Le robot vise exactement cela, puis rend la main (option --longueur-max).
 
+Aller-retour (option --aller-retour N, ajouté le 2026-11-23 by GliouCNR©70) :
+le robot mange N @ par visite d'un tableau puis repart - vers la droite
+jusqu'au niveau 5, puis vers la gauche (porte de retour) jusqu'au niveau 1,
+et ainsi de suite. Depuis le 2026-11-23 le jeu est gagné à 256 anneaux sur
+n'importe quel niveau : la partie finit là où le serpent est complet.
+Au-delà de --aller-retour-max anneaux (120), le robot ne change plus de
+tableau : en entrant avec un serpent très long, celui-ci doit se dérouler
+depuis la porte, queue bloquée à l'entrée, et s'enferme souvent (simulé :
+30 parties sur 30 gagnées à 120, 12 sur 20 à 170).
+
 Lecture de l'écran : on repère le cadre - briques blanches à joints magenta,
 colonnes 2 et 37, lignes 1 et 24 du PLOT - pour caler la grille, puis on lit le centre de chacun des 6x8
 points de chaque case et on compare au dessin des caractères redéfinis par
@@ -403,7 +413,7 @@ class Cerveau:
         for d in DIRS:
             yield (p[0] + d[0], p[1] + d[1]), d
 
-    def preparer(self, genres, corps, attente, porte, pomme, veut_pomme, connus=None):
+    def preparer(self, genres, corps, attente, sortie, pomme, veut_pomme, connus=None):
         """Carte des cases : -1 = libre, sinon nombre de pas avant libération."""
         self.libre_a = {}
         bloque = set()
@@ -417,8 +427,9 @@ class Cerveau:
                     bloque.add(pos)          # anneau vu dont on ignore l'ordre (après l'estime)
                 elif g == POMME and not veut_pomme:
                     bloque.add(pos)
-                elif g == VIDE and (pos[0] == COL_G or (pos[0] == COL_D and not porte)):
-                    bloque.add(pos)          # porte de gauche : on ne recule pas
+                elif g == VIDE and ((pos[0] == COL_G and sortie != "G")
+                                    or (pos[0] == COL_D and sortie != "D")):
+                    bloque.add(pos)          # porte qu'on ne veut pas prendre
         for i, pos in enumerate(corps[:-1]):  # corps[0] = queue
             self.libre_a[pos] = i + attente + 1
         bloque.discard(None)
@@ -491,18 +502,21 @@ class Cerveau:
         # suffit pas : le serpent de 189 anneaux s'est enfermé ainsi)
         return self.bfs(tete, {queue}, libre_a) is not None
 
-    def decider(self, genres, corps, attente, d1, longueur, connus=None):
-        """corps = état APRÈS le pas k+1 prévu ; renvoie la direction du pas k+2."""
+    def decider(self, genres, corps, attente, d1, longueur, connus=None, sortie="D"):
+        """corps = état APRÈS le pas k+1 prévu ; renvoie la direction du pas k+2.
+        sortie : porte à prendre dès qu'elle est ouverte - "D" (droite), "G"
+        (gauche, retour au niveau précédent) ou None (manger d'abord)."""
         tete = corps[-1]
-        portes = {(COL_D, y) for y in range(LIG_H + 1, LIG_B)
-                  if genres[y - LIG_H, COL_D - COL_G] == VIDE}
+        col = {"D": COL_D, "G": COL_G}.get(sortie)
+        portes = set() if col is None else {
+            (col, y) for y in range(LIG_H + 1, LIG_B) if genres[y - LIG_H, col - COL_G] == VIDE}
         pommes = {(c + COL_G, l + LIG_H) for l, c in zip(*np.where(genres == POMME))}
         veut_pomme = not portes and longueur < self.longueur_max
-        self.preparer(genres, corps, attente, bool(portes), pommes, veut_pomme, connus)
+        self.preparer(genres, corps, attente, sortie if portes else None, pommes, veut_pomme, connus)
         libre_a = self.carte(corps, attente)
         demi_tour = (-d1[0], -d1[1])
 
-        # 1) la porte de droite, dès qu'elle est ouverte
+        # 1) la porte de sortie, dès qu'elle est ouverte
         if portes:
             ch = self.bfs(tete, portes, libre_a)
             if ch:
@@ -542,7 +556,10 @@ class Cerveau:
 
 # ---------------------------------------------------------------- robot
 class Robot:
-    def __init__(self, ecran, clavier, cerveau, verbeux, test_gel=0):
+    def __init__(self, ecran, clavier, cerveau, verbeux, test_gel=0, aller_retour=0,
+                 aller_retour_max=120):
+        self.aller_retour = aller_retour   # @ à manger par visite (0 = score parfait)
+        self.aller_retour_max = aller_retour_max   # au-delà : on reste dans le tableau
         self.test_gel = test_gel
         self.prochain_gel = maintenant() + test_gel
         self.ecran, self.clavier, self.cerveau = ecran, clavier, cerveau
@@ -585,7 +602,10 @@ class Robot:
         self.prevu = None            # direction prévue pour le pas suivant
         self.attendu = None          # direction prévue pour le pas qu'on va voir
         self.ecarts = 0              # pas qui n'ont pas pris la direction prévue
-        self.mangees = 0             # @ mangés dans ce tableau
+        self.mangees = 0             # @ mangés dans ce tableau (cette visite)
+        self.e_niveau = [0] * 6      # @ mangés en tout dans chaque tableau (porte à 5)
+        self.sens = 1                # aller-retour : 1 = vers le niveau 5, -1 = vers le 1
+        self.visites = 0
         self.pomme = None
         self.entrees = 0
 
@@ -594,6 +614,18 @@ class Robot:
             t = time.time()
             print(f"{time.strftime('%H:%M:%S', time.localtime(t))}.{int(t * 1000) % 1000:03d}",
                   *a, flush=True)
+
+    def sortie(self):
+        """Porte à prendre : "D", "G" ou None (manger encore)."""
+        if not self.aller_retour:
+            return "D" if self.niveau < 5 else None      # score parfait
+        if self.mangees < self.aller_retour or self.longueur >= self.aller_retour_max:
+            return None
+        if self.sens > 0 and self.niveau < 5:
+            return "D"
+        if self.niveau > 1:
+            return "G"
+        return "D"
 
     def statut(self):
         print(f"\rNIVEAU {self.niveau}  SCORE {self.score:6d}  LONGUEUR {self.longueur:3d}  "
@@ -673,7 +705,7 @@ class Robot:
             with self.verrou:
                 avance = self.observer(t_image, tete, dtete, genres)
             if avance:
-                if self.longueur >= self.cerveau.longueur_max and self.niveau == 5:
+                if self.longueur >= self.cerveau.longueur_max:
                     print(f"\nLongueur {self.longueur} atteinte : score {self.score}. "
                           "Je rends la main.", flush=True)
                     return
@@ -712,6 +744,11 @@ class Robot:
                     self.niveau = min(5, self.niveau + 1)
                 elif tete[0] == 36 and h[-1][0] <= 4:
                     self.niveau = max(1, self.niveau - 1)
+                if self.niveau == 5:
+                    self.sens = -1
+                elif self.niveau == 1:
+                    self.sens = 1
+                self.visites += 1
                 self.log(f"nouveau tableau, niveau {self.niveau}")
             self.histo = h = [tete]
             self.prevu = dtete
@@ -736,6 +773,7 @@ class Robot:
         if a_mange:
             self.longueur += 1
             self.mangees += 1
+            self.e_niveau[self.niveau] += 1
             self.score += 10 * self.niveau
             self.statut()
         if self.attendu and dtete != self.attendu:
@@ -773,7 +811,7 @@ class Robot:
             d2, pourquoi = d1, "départ"          # le jeu efface les touches au départ
         else:
             d2, pourquoi = self.cerveau.decider(genres, c1, a1, d1, self.longueur,
-                                                None if simule else set(corps))
+                                                None if simule else set(corps), self.sortie())
         # À l'estime, un virage risque de tomber un pas trop tôt ou trop tard :
         # aller tout droit tant que les deux cases devant sont libres.
         if simule and d2 != d1 and pourquoi != "coincé":
@@ -785,7 +823,7 @@ class Robot:
         # 5e @ des niveaux 1 à 4 : le jeu ouvre la porte (3 PLOT + ZAP) avant
         # de relire le clavier ; une touche envoyée trop tôt écraserait celle
         # du pas k+2 encore en attente. On va donc tout droit si c'est sûr.
-        porte_ouvre = a_mange and self.mangees == 5 and self.niveau < 5
+        porte_ouvre = a_mange and self.e_niveau[self.niveau] == 5 and self.niveau < 5
         if porte_ouvre and d2 != d1 and pourquoi != "coincé":
             q = (p1[0] + d1[0], p1[1] + d1[1])
             if self.cerveau.libre(q, 1, self.cerveau.carte(c1, a1)):
@@ -844,6 +882,11 @@ def main():
                     help="longueur à atteindre au niveau 5 (256 = score parfait)")
     ap.add_argument("--jouer", action="store_true", help="appuie sur Espace pour lancer la partie")
     ap.add_argument("-v", "--verbeux", action="store_true", help="journal détaillé")
+    ap.add_argument("--aller-retour", type=int, default=0, metavar="N",
+                    help="manger N @ par visite puis changer de tableau, du niveau 1 au 5 "
+                         "et retour (0 = score parfait, tout au niveau 5)")
+    ap.add_argument("--aller-retour-max", type=int, default=120, metavar="L",
+                    help="longueur à partir de laquelle on ne change plus de tableau (120)")
     ap.add_argument("--test-gel", type=float, default=0, metavar="S",
                     help="essai : fige la capture 1,5 s toutes les S secondes")
     args = ap.parse_args()
@@ -883,7 +926,7 @@ def main():
     print("Le robot regarde l'écran... (Ctrl-C pour arrêter)")
     try:
         Robot(ecran, clavier, Cerveau(args.longueur_max), args.verbeux,
-              args.test_gel).boucle()
+              args.test_gel, args.aller_retour, args.aller_retour_max).boucle()
     except KeyboardInterrupt:
         print("\nArrêt.")
     finally:
