@@ -1,7 +1,8 @@
 LA SAUVEGARDE DU HALL OF FAME DE SERPENT.DSK
 Routine 6502 de lecture / écriture d'un secteur sur le lecteur Microdisc
 Créé le 2026-11-22 by GliouCNR©70 — mis à jour le 2026-11-22 (démarrage sur
-plusieurs pistes), puis le 2026-11-23 by GliouCNR©70 (pommes mangées)
+plusieurs pistes), puis le 2026-11-23 by GliouCNR©70 (pommes mangées) et le
+2026-11-24 by GliouCNR©70 (programme lu directement en $0501)
 
 ======================================================================
 1. EN DEUX MOTS
@@ -283,5 +284,6 @@ Lignes 900-925 - tableaux -> tampon -> disquette :
   rendu au BASIC, qui l'affiche.
 - Y compte de 0 à 255 : la routine transfère au plus 256 octets, la taille
   exacte d'un secteur de ces disquettes.
-- Le secteur 18 est réservé par oric_dsk.py : le programme BASIC ne doit
-  occuper que les secteurs 4 à 17 (3584 octets au plus).
+- Le secteur 18 est réservé par oric_dsk.py : le programme BASIC et les
+  images sont rangés sur les pistes 1, 2... (depuis le 2026-11-22), la piste
+  0 ne garde que le démarrage et ce secteur.

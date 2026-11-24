@@ -5,7 +5,8 @@ sur un programme BASIC, pour l'Oric Atmos.
 Créé le 2026-11-21 by GliouCNR©70 — secteur de données ajouté le 2026-11-22,
 programme compacté (espaces retirés, oric_tap.compact) et chargement sur
 plusieurs pistes avec image de présentation le 2026-11-22, 2e image (écran de
-victoire) le 2026-11-23 by GliouCNR©70
+victoire) le 2026-11-23 by GliouCNR©70, programme lu directement en $0501
+(plus de limite à 6 Ko) le 2026-11-24 by GliouCNR©70
 
   python3 oric_dsk.py  programme.bas  sortie.dsk  [image.hir [image2.hir]]
 
@@ -14,9 +15,10 @@ du démarrage (boot_microdisc.s), secteur 3 = répertoire où la ROM cherche
 SYSTEM.DOS, secteurs 4-5 = 2e étape (boot_etage2.s), secteur 18 = laissé vide
 pour les données du programme (le Hall of Fame du serpent).
 Pistes 1, 2... (depuis le 2026-11-22) : le programme BASIC tokenisé par
-oric_tap.py (24 secteurs = 6 Ko au plus, lu en $8000), puis l'image HIRES
-facultative (8 000 octets, lue en $6000, que le programme affiche lui-même).
-Avec une 2e image : programme lu en $4000, image en $5800, 2e image en $7800,
+oric_tap.py, lu directement à sa place en $0501 (jusqu'au début de l'image :
+~22 Ko avec une image, ~21 Ko avec deux), puis l'image HIRES facultative
+(8 000 octets, lue en $6000, que le programme affiche lui-même).
+Avec une 2e image : image en $5800, 2e image en $7800,
 gardée sous HIMEM abaissé à $7800 jusqu'à ce que le programme l'affiche.
 Les deux étapes sont assemblées avec xa. Dans Oricutron :
 
@@ -38,7 +40,6 @@ SIDES, TRACKS, SECTORS = 1, 40, 18
 TRACK_SIZE = 6400
 DATA_SECTOR = SECTORS                                  # secteur 18 : données du programme
 ETAGE2_SECTOR, ETAGE2_MAX = 4, 2                       # 2e étape : secteurs 4-5, piste 0
-MAX_PROG_SECTORS = 24                                  # tampon $8000-$97FF
 IMAGE_SECTORS = 32                                     # $6000-$7FFF
 # Ordre des secteurs sur la piste (entrelacement 3), comme les disquettes Sedoric.
 ORDER = [s for start in (1, 2, 3) for s in range(start, SECTORS + 1, 3)]
@@ -108,8 +109,6 @@ def main(argv):
     src, dst = argv[1], argv[2]
     prog = basic_program(open(src, encoding="utf-8").read(), compacter=True)   # sans espaces
     nsect = (len(prog) + 255) // 256
-    if nsect > MAX_PROG_SECTORS:
-        sys.exit(f"programme trop long : {len(prog)} octets ({MAX_PROG_SECTORS * 256} au plus)")
     images = []
     for nom in argv[3:]:
         im = open(nom, "rb").read()
@@ -119,16 +118,22 @@ def main(argv):
     image = b"".join(images)
     isect = IMAGE_SECTORS if images else 0
     jsect = IMAGE_SECTORS if len(images) == 2 else 0
-    # deux images : le programme passe en $4000 (6 Ko au plus, jusqu'à $57FF),
+    # deux images : le programme reste en $0501 (jusqu'à $57FF),
     # l'image en $5800 et la 2e en $7800-$97FF, au-dessus de HIMEM ($7800)
-    bufh, imgh, img2h, himemh = (0x40, 0x58, 0x78, 0x78) if jsect else (0x80, 0x60, 0x78, 0x98)
+    imgh, img2h, himemh = (0x58, 0x78, 0x78) if jsect else (0x60, 0x78, 0x98)
+    # le programme est lu en $0501, $0601... : son dernier secteur doit finir
+    # avant l'image (ou, sans image, laisser 6 Ko aux variables sous HIMEM)
+    haut = imgh * 256 if images else 0x8000
+    max_sect = (haut - BASIC_START) // 256
+    if nsect > max_sect:
+        sys.exit(f"programme trop long : {len(prog)} octets ({max_sect * 256} au plus)")
     ptrk, psec = position(0)
     itrk, isec = position(nsect)
     jtrk, jsec = position(nsect + IMAGE_SECTORS)
     etage2 = assembler("boot_etage2.s", f"PTRK={ptrk}", f"PSEC={psec}", f"NSECT={nsect}",
                        f"ITRK={itrk}", f"ISEC={isec}", f"ISECT={isect}",
                        f"JTRK={jtrk}", f"JSEC={jsec}", f"JSECT={jsect}",
-                       f"BUFH={bufh}", f"IMGH={imgh}", f"IMG2H={img2h}", f"HIMEMH={himemh}",
+                       f"IMGH={imgh}", f"IMG2H={img2h}", f"HIMEMH={himemh}",
                        f"PEND=${BASIC_START + len(prog):04X}")
     if len(etage2) > ETAGE2_MAX * 256:
         sys.exit(f"2e étape trop longue : {len(etage2)} octets")

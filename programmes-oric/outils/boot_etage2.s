@@ -4,14 +4,18 @@
 ; Créé le 2026-11-22 by GliouCNR©70
 ; Modifié le 2026-11-23 by GliouCNR©70 - 2e image facultative (écran de victoire
 ; du serpent), gardée en mémoire sous HIMEM ; adresses passées par oric_dsk.py.
+; Modifié le 2026-11-24 by GliouCNR©70 - le programme est lu DIRECTEMENT à sa
+; place ($0501), sans tampon ni recopie - il n'est plus limité à 6 Ko. Le
+; démarrage du BASIC (NEW) met $0501-$0502 à zéro - ces 2 octets sont gardés
+; (SAV) et remis juste avant le RUN.
 ;
 ;   xa -DPTRK=1 -DPSEC=1 -DNSECT=15 -DITRK=1 -DISEC=16 -DISECT=32 \
-;      -DJTRK=3 -DJSEC=5 -DJSECT=32 -DBUFH=128 -DIMGH=96 -DIMG2H=120 \
+;      -DJTRK=3 -DJSEC=5 -DJSECT=32 -DIMGH=96 -DIMG2H=120 \
 ;      -DHIMEMH=152 '-DPEND=$1234' -o etage2.bin boot_etage2.s
 ;      (oric_dsk.py s'en charge)
 ;
 ;   PTRK/PSEC  piste et secteur où commence le programme BASIC, NSECT secteurs
-;              lus en BUFH*256 (24 au plus)
+;              lus directement en $0501 (jusqu'au début de l'image)
 ;   ITRK/ISEC  piste et secteur où commence l'image, ISECT secteurs lus en
 ;              IMGH*256 (0 = pas d'image) ; le BASIC la recopie en $A000
 ;              après HIRES (routine titre_copie.s)
@@ -19,8 +23,8 @@
 ;   HIMEMH     octet haut de HIMEM - le BASIC ne touche pas à ce qui est au-dessus
 ;   PEND       fin du programme BASIC (mise dans $9C-$9D)
 ;
-;   Une image   - programme $8000, image $6000, HIMEM $9800.
-;   Deux images - programme $4000, image $5800, 2e image $7800-$97FF gardée
+;   Une image   - programme $0501, image $6000, HIMEM $9800.
+;   Deux images - programme $0501, image $5800, 2e image $7800-$97FF gardée
 ;                pour plus tard, HIMEM $7800.
 ;
 ; Les secteurs se suivent de 1 à 18 puis passent à la piste suivante  - la tête
@@ -35,7 +39,6 @@ FDC_SEC  = $0312      ; secteur
 FDC_DAT  = $0313      ; données (et piste visée par SEEK)
 MD_CTRL  = $0314      ; registre de contrôle du Microdisc
 MD_DRQ   = $0318      ; bit 7 à 0 = un octet est prêt
-BUF      = BUFH*256   ; tampon du programme lu
 SECTOR   = $F0        ; variables en page zéro (le BASIC les réinitialise ensuite)
 COUNT    = $F1
 TRIES    = $F2
@@ -44,7 +47,9 @@ TRACK    = $F3
         * = $9900
 
 ; ----- Lecture du programme, puis de l'image -----
-start   lda #BUFH
+start   lda #$01          ; programme lu en $0501, $0601, $0701...
+        sta store+1
+        lda #$05
         sta store+2
         lda #PTRK
         sta TRACK
@@ -53,6 +58,12 @@ start   lda #BUFH
         lda #NSECT
         sta COUNT
         jsr load
+        lda $0501             ; ces 2 octets seront effacés par NEW
+        sta sav
+        lda $0502
+        sta sav+1
+        lda #$00              ; les images, elles, sont lues page par page
+        sta store+1
         lda #ISECT
         beq noimg
         sta COUNT
@@ -128,16 +139,10 @@ efin    sta $BF80,y           ; puis $BF80-$BFDF (96 octets, fin de l'écran)
         iny
         cpy #96
         bne efin
-        ldx #NSECT            ; recopie le programme en $0501
-        ldy #$00
-cp      lda BUF,y
-cpd     sta $0501,y
-        iny
-        bne cp
-        inc cp+2
-        inc cpd+2
-        dex
-        bne cp
+        lda sav               ; remet les 2 premiers octets du programme
+        sta $0501             ; (effacés par NEW au démarrage du BASIC)
+        lda sav+1
+        sta $0502
         lda #<PEND            ; fin du programme (début des variables)
         sta $9C
         lda #>PEND
@@ -163,7 +168,7 @@ busy    lda FDC_CMD
 drq     lda MD_DRQ
         bmi busy
         lda FDC_DAT
-store   sta BUF,y             ; (l'octet haut est modifié à chaque secteur)
+store   sta $0501,y           ; (adresse modifiée - $0501 + 256 par secteur, ou une image)
         iny
         jmp drq
 done    and #$0E              ; perte de données, CRC, secteur introuvable ?
@@ -199,3 +204,5 @@ attente ldy #$04
 a1      dey
         bne a1
         rts
+
+sav     .byt 0,0              ; $0501-$0502 gardés pendant le démarrage du BASIC

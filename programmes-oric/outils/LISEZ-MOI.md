@@ -1,6 +1,6 @@
 # Outils — cassettes et disquettes pour l'Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`)*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`) — modifié le 2026-11-24 : programme lu directement en `$0501`*
 
 Outils communs à tous les programmes de `programmes-oric/`.
 
@@ -45,7 +45,7 @@ ROM `microdis.rom` dans le dossier `roms` d'Oricutron, et le lecteur Microdisc :
 | 0 | 3 | répertoire (`SYSTEM.DOS`) |
 | 0 | 4-5 | 2e étape, `boot_etage2.s` |
 | 0 | 18 | données du programme (laissé vide ; le serpent y garde son Hall of Fame) |
-| 1, 2… | à partir de 1 | programme BASIC (6 Ko au plus), puis l'image et la 2e image (32 secteurs chacune) |
+| 1, 2… | à partir de 1 | programme BASIC (jusqu'au début de l'image en mémoire : ~21 Ko), puis l'image et la 2e image (32 secteurs chacune) |
 
 ### Démarrage
 
@@ -58,10 +58,19 @@ comme un vrai reset (sans le test mémoire, qui effacerait tout), puis fait
 dire au programme qu'il a démarré de la disquette. Le message de la ROM et
 `Ready` sont effacés, le curseur et CAPS éteints.
 
-| Images | Programme lu en | Image en | 2e image en | HIMEM |
-|---|---|---|---|---|
-| aucune ou une | `$8000` | `$6000` | — | `$9800` |
-| deux (2026-11-23) | `$4000` | `$5800` | `$7800`, gardée pour plus tard | `$7800` |
+| Images | Programme lu en | Taille max. du programme | Image en | 2e image en | HIMEM |
+|---|---|---|---|---|---|
+| aucune | `$0501` | ~30 Ko (6 Ko laissés aux variables) | — | — | `$9800` |
+| une | `$0501` | ~22 Ko (jusqu'à `$5FFF`) | `$6000` | — | `$9800` |
+| deux (2026-11-23) | `$0501` | ~21 Ko (jusqu'à `$57FF`) | `$5800` | `$7800`, gardée pour plus tard | `$7800` |
+
+Depuis le 2026-11-24, le programme est lu **directement à sa place** (`$0501`,
+`$0601`…), sans tampon ni recopie : il n'est plus limité à 6 Ko. Le démarrage
+du BASIC (`NEW`) remet à zéro les 2 premiers octets du programme
+(`$0501-$0502`) : la 2e étape les garde de côté et les remet juste avant le
+`RUN`. Les images, elles, ne servent qu'au début (titre) ou sont au-dessus de
+HIMEM (victoire) : les variables du BASIC peuvent ensuite occuper la place de
+l'image titre.
 
 Le programme affiche lui-même ses images (après `HIRES`, une petite routine
 les recopie en `$A000`, voir `serpent/titre_copie.s`).

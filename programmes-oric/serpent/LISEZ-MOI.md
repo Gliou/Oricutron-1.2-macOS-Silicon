@@ -198,8 +198,9 @@ secteur avec une petite routine machine, `hof_disque.s`, recopiée dans les
 lignes `DATA` 1000+ de `serpent.bas` et placée en `$0400` (`CALL #400` lit le
 secteur dans `$9800`, `CALL #403` l'écrit).
 
-Avec deux images, le programme BASIC ne doit pas dépasser 6 Ko (il en fait
-environ 5,3).
+Le programme BASIC est lu directement à sa place en `$0501` : il peut aller
+jusqu'à ~21 Ko avec les deux images (il en fait environ 5,9 ; avant le
+2026-11-24, la limite était de 6 Ko).
 
 ## Le robot joueur (2026-11-23)
 
