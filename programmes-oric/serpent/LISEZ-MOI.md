@@ -21,6 +21,7 @@ sur la disquette, et un **robot** qui joue tout seul.
 | `titre_serpent.py` → `serpent-titre.hir` | écran titre HIRES |
 | `victoire_serpent.py` → `serpent-victoire.hir` | écran de victoire HIRES |
 | `titre_copie.s` | routine 6502 qui recopie une image HIRES à l'écran (`CALL #460`) |
+| `son_pas.s` | routine 6502 du tic-tac joué à chaque pas du serpent (`CALL SN`, en `$0490`) |
 | `hof_disque.s`, `HALL-OF-FAME-routine.txt` | lecture/écriture du Hall of Fame sur la disquette, et sa documentation |
 | `bot_serpent.py` | le robot joueur |
 | `simu_aller_retour.py` | simulateur de parties complètes pour tester le robot |
@@ -99,6 +100,13 @@ marche, et une queue en pointe sur le dernier anneau. Ce qu'on voit est
 exactement ce qui touche.
 
 ![Dessin du serpent, agrandi](captures/serpent-dessin.png)
+
+**Son des pas** (ajouté le 2026-11-24 by GliouCNR©70) : à chaque pas, le
+serpent fait « tic, tac ». C'est la puce son de l'Oric (AY-3-8912) qui joue :
+la routine 6502 `son_pas.s` règle la hauteur, met le volume du canal A sur
+l'**enveloppe** et relance celle-ci ; le son (25 ms) s'éteint alors tout seul,
+sans que le programme attende. L'appel coûte moins de 2 % de vitesse (mesuré :
+626 contre 616 unités du compteur sur 33 pas).
 
 ### Hall of Fame
 

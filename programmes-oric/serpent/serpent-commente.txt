@@ -11,7 +11,7 @@ une comparaison vraie vaut -1.
 
 ================================================================═╪═============================================================
 10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:K=0:GR=0:TM=0:TC=0:M=255:     │ Crée d'abord les variables de la boucle du jeu : le BASIC
-      SP=32:KB=735:I=0                                           │ cherche une variable dans l'ordre où elle a été créée, les
+      SP=32:KB=735:I=0:SN=#490                                   │ cherche une variable dans l'ordre où elle a été créée, les
                                                                  │ premières sont trouvées plus vite. M = 255, SP = 32
                                                                  │ (espace), KB = 735 (adresse de la dernière touche) : un
                                                                  │ nombre dans une variable va plus vite qu'un nombre écrit en
@@ -68,6 +68,10 @@ une comparaison vraie vaut -1.
                                                                  │ Places 10 à 7 : le score minimum pour ouvrir la porte du
                                                                  │ niveau 1, 2, 3, 4 (50, 150, 300, 500) ; places 6 à 1 : des
                                                                  │ pommes en plus au niveau 5 (750 à 2500).
+                                                                 │
+52 FOR I=0 TO 59:READ B:POKE #490+I,B:NEXT                       │ Lit les 60 octets de la routine du son de pas (DATA
+                                                                 │ 1070-1075, son_pas.s) et les pose en $0490, juste après la
+                                                                 │ copie d'image.
                                                                  │
 60 D=(PEEK(#4FF)=68):IF D THEN CALL #400:                        │ D = vrai si on a démarré de la disquette. Si oui, CALL #400
       IF PEEK(#4FE)=0 AND PEEK(#9800)=72 THEN GOSUB 950          │ lit le secteur 18 de la piste 0 dans $9800 ; s'il n'y a pas
@@ -141,7 +145,8 @@ une comparaison vraie vaut -1.
                                                                  │ devra être redessinée.
                                                                  │
 171 PLOT X(H),Y(H),Z$:H=(H+1) AND M:X(H)=NX:Y(H)=NY:             │ L'ancienne tête devient un anneau du corps ; on range la
-      PLOT NX,NY,H$                                              │ nouvelle position et on dessine la tête (H$).
+      PLOT NX,NY,H$:CALL SN                                      │ nouvelle position et on dessine la tête (H$) ; CALL SN joue
+                                                                 │ le tic-tac du pas (routine son_pas.s en $0490).
                                                                  │
 175 IF TM THEN TM=0:I=(T+1) AND M:TX=X(I)-X(T):TC=118-(TX<0):    │ Si la queue a bougé (TM) : regarde où est l'anneau qui la
       IF TX=0 THEN TC=120-(Y(I)<Y(T))                            │ suit (à droite, à gauche, dessous, dessus) et choisit le
@@ -514,4 +519,12 @@ une comparaison vraie vaut -1.
                                                                  │
 1060 DATA 750,25,500,20,300,15,150,10,50,5                       │ Places 6 à 10. 500 = portes des niveaux 1 à 4 ouvertes avec
                                                                  │ 5 pommes chacune (50+100+150+200), 50 = porte du niveau 1.
+                                                                 │
+1070 DATA 169,0,174,203,4,32,144,245,169,1,162,0,32,144,245,...  │ Routine son_pas.s (1re partie) : écrit dans la puce son
+                                                                 │ (WriteToAY de la ROM, $F590) la hauteur du tic, le
+                                                                 │ mélangeur, le volume par enveloppe et la durée...
+                                                                 │
+1075 DATA 11,162,6,32,144,245,169,12,162,0,32,144,245,169,13,... │ ...puis relance l'enveloppe (registre 13) : la puce joue
+                                                                 │ seule un tic de 25 ms qui s'éteint tout seul. La hauteur
+                                                                 │ alterne à chaque pas : tic, tac.
                                                                  │

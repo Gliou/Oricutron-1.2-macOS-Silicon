@@ -122,7 +122,7 @@
 # Modifié le 2026-11-23 by GliouCNR©70 : WAIT 0 ne veut pas dire « pas de
 # pause » - le compteur part de 0, repasse à 65535 et le jeu se fige 655 s
 # (près de 11 minutes) au niveau 5. La ligne 182 ne fait donc WAIT que si WT>0.
-10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:K=0:GR=0:TM=0:TC=0:M=255:SP=32:KB=735:I=0
+10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:K=0:GR=0:TM=0:TC=0:M=255:SP=32:KB=735:I=0:SN=#490
 12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT
 # Modifié le 2026-11-23 by GliouCNR©70 : la disquette a maintenant 2 images ;
 # l'image titre est lue en $5800 (et non plus $6000) : on donne à la routine
@@ -143,6 +143,10 @@
 # niveau 5 (50 points chacune) : 750, 1000, 1250, 1500, 2000, 2500. Le nombre
 # de pommes affiché est le minimum pour faire ce score (DATA 1050-1060).
 50 FOR I=1 TO 10:N$(I)="ORIC    ":READ SC(I),NP(I):NEXT
+# Modifié le 2026-11-24 by GliouCNR©70 : son de pas (tic-tac) joué par la puce
+# son en langage machine (son_pas.s, DATA 1070-1075, posé en $0490) : CALL SN à
+# chaque pas (ligne 171), SN = #490 créé ligne 10 avec les variables rapides.
+52 FOR I=0 TO 59:READ B:POKE #490+I,B:NEXT
 60 D=(PEEK(#4FF)=68):IF D THEN CALL #400:IF PEEK(#4FE)=0 AND PEEK(#9800)=72 THEN GOSUB 950
 70 GOSUB 700:PLOT 12,22,"ESPACE = JOUER"
 75 GET K$:IF K$<>" " THEN 75
@@ -165,7 +169,7 @@
 166 IF GR THEN GR=GR-1:GOTO 170
 167 PLOT X(T),Y(T)," ":T=(T+1) AND M:TM=1
 170 IF T=H THEN TM=1
-171 PLOT X(H),Y(H),Z$:H=(H+1) AND M:X(H)=NX:Y(H)=NY:PLOT NX,NY,H$
+171 PLOT X(H),Y(H),Z$:H=(H+1) AND M:X(H)=NX:Y(H)=NY:PLOT NX,NY,H$:CALL SN
 175 IF TM THEN TM=0:I=(T+1) AND M:TX=X(I)-X(T):TC=118-(TX<0):IF TX=0 THEN TC=120-(Y(I)<Y(T))
 176 IF TC THEN PLOT X(T),Y(T),CHR$(TC):TC=0
 180 IF C=192 THEN 185
@@ -317,3 +321,6 @@
 # Hall of Fame par défaut (ligne 50) : score, pommes, de la 1re à la 10e place
 1050 DATA 2500,60,2000,50,1500,40,1250,35,1000,30
 1060 DATA 750,25,500,20,300,15,150,10,50,5
+# Routine machine de son_pas.s (xa -o son_pas.bin son_pas.s), 60 octets en $0490
+1070 DATA 169,0,174,203,4,32,144,245,169,1,162,0,32,144,245,169,7,162,62,32,144,245,169,8,162,16,32,144,245,169
+1075 DATA 11,162,6,32,144,245,169,12,162,0,32,144,245,169,13,162,0,32,144,245,173,203,4,73,48,141,203,4,96,96
