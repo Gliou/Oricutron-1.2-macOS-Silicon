@@ -5,22 +5,25 @@
 ; jouée en boucle par l'interruption, de l'image titre au début de la partie
 ; (elle sert aussi à régler le volume sur l'écran du Hall of Fame). Corrigé - le
 ; saut « pas de tic en cours » sautait aussi la musique (une seule note tenue).
+; Modifié le 2026-11-24 by GliouCNR©70 - vraie petite musique - 4 phrases (~10 s)
+; sur le canal A et une basse sur le canal C (2 voix), moteur déplacé en $5400.
 ;
 ;   xa -o son.bin son.s
-;   (les octets sont dans les lignes DATA 1070+ de serpent.bas, posés en $5600,
-;    au-dessus de HIMEM abaissé à $5600, juste SOUS l'image titre ($5800-$773F)
+;   (les octets sont dans les lignes DATA 1070+ de serpent.bas, posés en $5400,
+;    au-dessus de HIMEM abaissé à $5400, juste SOUS l'image titre ($5800-$773F)
 ;    - le moteur est chargé avant l'image, pour que la musique démarre avec
 ;    elle, et le BASIC range ses chaînes sous HIMEM, donc jamais dans l'image.
 ;    Avant le 2026-11-24 soir, le moteur était en $7600, dans la fin du tampon
 ;    de l'image - les noms du Hall of Fame lus avant l'image l'abîmaient.)
-;   CALL #5600  INIT   installe le moteur sur l'interruption de l'horloge
+;   CALL #5400  INIT   installe le moteur sur l'interruption de l'horloge
 ;                      (100 fois par seconde) et règle le mélangeur
-;   CALL #5603  PAS    tic-tac du pas (canal A, 30 ms)
-;   CALL #5606  PING   PING au volume choisi (canal B, ~1 s)
-;   CALL #5609  ZAP    ZAP au volume choisi (canal B, balayage de 0,3 s)
-;   CALL #560C  BOUM   EXPLODE au volume choisi (canal C, bruit, ~1,5 s)
-;   POKE #560F,v       le volume, 0 (muet) à 15 (le maximum de la puce)
-;   CALL #5610  MUSIQUE petite musique en boucle (canal A), au volume choisi ;
+;   CALL #5403  PAS    tic-tac du pas (canal A, 30 ms)
+;   CALL #5406  PING   PING au volume choisi (canal B, ~1 s)
+;   CALL #5409  ZAP    ZAP au volume choisi (canal B, balayage de 0,3 s)
+;   CALL #540C  BOUM   EXPLODE au volume choisi (canal C, bruit, ~1,5 s)
+;   POKE #540F,v       le volume, 0 (muet) à 15 (le maximum de la puce)
+;   CALL #5410  MUSIQUE petite musique en boucle (mélodie canal A, basse canal
+;                      C), au volume choisi ;
 ;                      INIT l'arrête
 ;
 ; Pourquoi - dans la ROM, PING et EXPLODE mettent le volume sur l'ENVELOPPE de
@@ -40,15 +43,15 @@ VIA_IFR  = $030D      ; bit 6 = interruption de l'horloge (timer 1)
 IRQV     = $0245      ; adresse sautée par l'interruption (JMP $EE22)
 ROMIRQ   = $EE22
 
-        * = $5600
+        * = $5400
 
         jmp init
         jmp pas
         jmp ping
         jmp zap
         jmp boum
-vol     .byt 15               ; $560F - volume choisi (0-15)
-        jmp musique           ; $5610
+vol     .byt 15               ; $540F - volume choisi (0-15)
+        jmp musique           ; $5410
 
 ; ----- Installation (peut être appelée plusieurs fois) -----
 init    sei
@@ -82,6 +85,7 @@ coupe   tya
         sta rb
         sta lc
         sta mt                ; plus de musique
+        sta bt
         rts
 
 ; ----- Tic-tac du pas - canal A, 3 tops d'horloge -----
@@ -133,9 +137,14 @@ boum    lda vol
 
 ; ----- MUSIQUE - lance la mélodie depuis le début -----
 musique sei
+        lda #7                ; mélangeur - sons A, B et C, pas de bruit
+        ldx #$38
+        jsr AY
         lda #0
         sta mi
+        sta bi
         jsr note
+        jsr basse
         cli
         rts
 
@@ -143,8 +152,15 @@ musique sei
 note    ldy mi
         lda melodie,y
         beq mfin
+        cmp #1                ; période 1 = silence
+        beq nsil
         tax
         lda #0                ; période du canal A
+        jsr AY
+        ldx vol
+        jmp ndur
+nsil    ldx #0
+ndur    lda #8                ; volume du canal A (X)
         jsr AY
         ldy mi
         lda melodie+1,y
@@ -152,11 +168,33 @@ note    ldy mi
         iny
         iny
         sty mi
-        lda #8
-        ldx vol
-        jmp AY
+        rts
 mfin    sta mi                ; (A = 0) fin de la mélodie - on la reprend
         jmp note              ; au début (elle tourne jusqu'à INIT)
+
+; Joue la note de basse suivante (période sur 2 octets, durée), 0 = fin
+basse   ldy bi
+        lda basses,y
+        beq bfin
+        tax
+        lda #4                ; période du canal C, partie basse...
+        jsr AY
+        ldy bi
+        ldx basses+1,y
+        lda #5                ; ... et partie haute
+        jsr AY
+        ldy bi
+        lda basses+2,y
+        sta bt
+        iny
+        iny
+        iny
+        sty bi
+        lda #10               ; volume du canal C
+        ldx vol
+        jmp AY
+bfin    sta bi
+        jmp basse
 
 ; ----- Interruption - 100 fois par seconde -----
 tick    pha
@@ -176,7 +214,7 @@ horloge txa
         ldx #0
         jsr AY
 tmu     lda mt                ; canal A - musique en cours ?
-        beq tb
+        beq tbas
         dec mt
         lda mt
         cmp #3                ; 3 tops de silence avant la note suivante
@@ -185,8 +223,20 @@ tmu     lda mt                ; canal A - musique en cours ?
         ldx #0
         jsr AY
 tm2     lda mt
-        bne tb
+        bne tbas
         jsr note
+tbas    lda bt                ; canal C - basse en cours ?
+        beq tb
+        dec bt
+        lda bt
+        cmp #10               ; basse détachée - 10 tops de silence
+        bne tb2
+        lda #10
+        ldx #0
+        jsr AY
+tb2     lda bt
+        bne tb
+        jsr basse
 tb      lda rb                ; canal B - ZAP en cours ?
         beq pg
         lda pb
@@ -240,8 +290,20 @@ cc      .byt 0                ; tops avant la prochaine baisse
 mt      .byt 0                ; tops restants de la note de musique (0 = pas de musique)
 mi      .byt 0                ; position dans la mélodie
 
-; Mélodie originale (la mineur) - période AY (1 MHz / 16 / fréquence), durée
-; en centièmes de seconde - la do mi la sol mi ré mi, do ré mi do la.
-melodie .byt 142,18, 119,18, 95,18, 71,36, 80,18, 95,18, 106,18, 95,36
-        .byt 119,18, 106,18, 95,18, 119,18, 142,60
+; Musique originale en la mineur, 4 phrases de 2 mesures (A, A', B, C), ~10 s.
+; Mélodie - période AY (1 MHz / 16 / fréquence), durée en centièmes ; 30 = une
+; noire. la4 142, si4 127, do5 119, ré5 106, mi5 95, fa5 90, sol5 80, sol4 159.
+melodie .byt 142,30, 119,15, 106,15, 95,30, 142,30, 159,15, 142,15, 119,30, 127,60
+        .byt 142,30, 119,15, 106,15, 95,30, 80,30,  90,15,  95,15, 106,30, 95,60
+        .byt 90,30,  95,15,  106,15, 119,30, 106,30, 95,15, 106,15, 119,30, 127,30, 159,30
+        .byt 142,15, 127,15, 119,15, 106,15, 95,30, 119,30, 127,15, 159,15, 127,30, 142,60
         .byt 0
+; Basse - période sur 2 octets (bas, haut), durée ; une blanche (60) par note.
+; la2 568, sol2 638, do3 477, ré3 425, mi3 379, fa2 716, mi2 758.
+basses  .byt $38,2,60, $38,2,60, $7E,2,60, $7E,2,60
+        .byt $38,2,60, $DD,1,60, $A9,1,60, $7B,1,60
+        .byt $CC,2,60, $CC,2,60, $DD,1,60, $7E,2,60
+        .byt $38,2,60, $A9,1,60, $F6,2,60, $38,2,60
+        .byt 0
+bt      .byt 0                ; tops restants de la note de basse
+bi      .byt 0                ; position dans la basse

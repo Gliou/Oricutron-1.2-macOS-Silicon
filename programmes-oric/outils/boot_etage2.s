@@ -4,6 +4,8 @@
 ; Créé le 2026-11-22 by GliouCNR©70
 ; Modifié le 2026-11-23 by GliouCNR©70 - 2e image facultative (écran de victoire
 ; du serpent), gardée en mémoire sous HIMEM ; adresses passées par oric_dsk.py.
+; Modifié le 2026-11-24 by GliouCNR©70 - « CHARGEMENT EN COURS » clignotant remis
+; sur l'écran après l'avoir vidé (le BASIC le garde jusqu'à l'image titre).
 ; Modifié le 2026-11-24 by GliouCNR©70 - le programme est lu DIRECTEMENT à sa
 ; place ($0501), sans tampon ni recopie - il n'est plus limité à 6 Ko. Le
 ; démarrage du BASIC (NEW) met $0501-$0502 à zéro - ces 2 octets sont gardés
@@ -139,6 +141,11 @@ efin    sta $BF80,y           ; puis $BF80-$BFDF (96 octets, fin de l'écran)
         iny
         cpy #96
         bne efin
+        ldx #20               ; « CHARGEMENT EN COURS » clignotant, ligne 13
+m2a    lda charge,x          ; (encre cyan 6, attribut 12 = clignotant)
+        sta $BD91,x
+        dex
+        bpl m2a
         lda sav               ; remet les 2 premiers octets du programme
         sta $0501             ; (effacés par NEW au démarrage du BASIC)
         lda sav+1
@@ -205,4 +212,6 @@ a1      dey
         bne a1
         rts
 
+charge  .byt 6,12
+        .asc "CHARGEMENT EN COURS"
 sav     .byt 0,0              ; $0501-$0502 gardés pendant le démarrage du BASIC

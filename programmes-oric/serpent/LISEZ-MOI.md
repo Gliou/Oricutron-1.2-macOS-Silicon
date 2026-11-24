@@ -21,7 +21,7 @@ sur la disquette, et un **robot** qui joue tout seul.
 | `titre_serpent.py` → `serpent-titre.hir` | écran titre HIRES |
 | `victoire_serpent.py` → `serpent-victoire.hir` | écran de victoire HIRES |
 | `titre_copie.s` | routine 6502 qui recopie une image HIRES à l'écran (`CALL #460`) |
-| `son.s` | moteur de son 6502 (en `$5600`) : tic-tac des pas, PING, ZAP, EXPLODE au volume réglé par le joueur |
+| `son.s` | moteur de son 6502 (en `$5400`) : tic-tac des pas, PING, ZAP, EXPLODE au volume réglé par le joueur |
 | `hof_disque.s`, `HALL-OF-FAME-routine.txt` | lecture/écriture du Hall of Fame sur la disquette, et sa documentation |
 | `bot_serpent.py` | le robot joueur |
 | `simu_aller_retour.py` | simulateur de parties complètes pour tester le robot |
@@ -105,8 +105,8 @@ exactement ce qui touche.
 serpent fait « tic, tac », et PING, ZAP et EXPLODE accompagnent les pommes,
 les portes et la fin de partie. Ceux de la ROM étaient trop forts et ne se
 règlent pas : la ROM met le volume sur l'**enveloppe** de la puce son
-(AY-3-8912), qui part toujours de 15, le maximum. Le moteur `son.s` (438
-octets en `$5600`, au-dessus de HIMEM abaissé à `$5600`, juste sous l'image
+(AY-3-8912), qui part toujours de 15, le maximum. Le moteur `son.s` (649
+octets en `$5400`, au-dessus de HIMEM abaissé à `$5400`, juste sous l'image
 titre) les remplace : il se
 branche sur l'interruption de l'horloge de l'Oric (100 fois par seconde) et
 fait lui-même baisser le volume, en partant du **volume choisi**. Le jeu ne
@@ -160,16 +160,18 @@ CAPS à réafficher, même après `TEXT`. Le nom tapé pour le Hall of Fame est
 remis en majuscules par le programme.
 
 L'image affiche « APPUIE SUR ESPACE » (modifié le 2026-11-24 by GliouCNR©70).
-Une **petite musique** (mélodie originale en la mineur, jouée en boucle par le
-moteur de son au volume choisi) démarre avec l'image et tourne jusqu'au début
-de la partie : on l'entend aussi sur l'écran du Hall of Fame, ce qui aide à
+Une **petite musique** originale en la mineur (4 phrases, ~10 s, mélodie sur
+le canal A et basse sur le canal C, jouée en boucle par le moteur de son au
+volume choisi) démarre avec l'image et tourne jusqu'au début de la partie : on l'entend aussi sur l'écran du Hall of Fame, ce qui aide à
 régler le volume. À l'appui sur ESPACE, le message s'efface.
 
-Tout est chargé **avant** l'image (écran noir après le chargement) : dessins
+Tout est chargé **avant** l'image, pendant que « CHARGEMENT EN COURS » clignote
+au milieu de l'écran noir (attribut clignotant de l'Oric, posé par le
+démarrage de la disquette puis par le BASIC) : dessins
 des caractères (posés en `$B400` : HIRES les range en `$9800` et `TEXT` les
 remet), routine disque, Hall of Fame et volume lus sur la disquette, moteur de
 son, chaînes du jeu. Après l'image, il ne reste qu'à dessiner le Hall of Fame.
-HIMEM est à `$5600`, sous l'image titre (`$5800-$773F`) : les noms du Hall of
+HIMEM est à `$5400`, sous l'image titre (`$5800-$773F`) : les noms du Hall of
 Fame, lus avant que l'image soit recopiée à l'écran, ne peuvent plus l'abîmer.
 
 L'image est dessinée par `titre_serpent.py` (Python + Pillow,

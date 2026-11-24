@@ -14,6 +14,8 @@
 ; La ROM du Microdisc ne charge pas ce secteur au-delà de l'octet $F7
 ; (vérifié le 2026-11-22)  - d'où les deux étapes, la 2e n'a pas cette limite
 ; et sait changer de piste.
+; Modifié le 2026-11-24 by GliouCNR©70 - « CHARGEMENT EN COURS » clignotant
+; (attribut 12 de l'Oric) écrit sur l'écran noir pendant le chargement.
 ; Attention avec xa - un deux-points est un séparateur, même dans un commentaire.
 
 FDC_CMD  = $0310      ; contrôleur WD1793 - commande / état
@@ -71,6 +73,11 @@ efin    sta $BF80,y           ; puis $BF80-$BFDF
         iny
         cpy #96
         bne efin
+        ldx #20               ; « CHARGEMENT EN COURS » clignotant, ligne 13
+m1a    lda charge,x          ; (encre cyan 6, attribut 12 = clignotant)
+        sta $BD91,x
+        dex
+        bpl m1a
         lda #FIRSTSEC         ; la ROM vient de lire la piste 0 - la tête y est déjà
         sta SECTOR
         lda #NSECT2
@@ -104,3 +111,6 @@ ok      inc SECTOR
         dec COUNT
         bne next
         jmp ETAGE2
+
+charge  .byt 6,12
+        .asc "CHARGEMENT EN COURS"

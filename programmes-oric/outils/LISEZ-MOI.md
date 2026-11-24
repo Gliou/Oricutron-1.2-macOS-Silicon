@@ -56,7 +56,9 @@ lit le programme et les images, ramène la tête sur la piste 0, démarre le BAS
 comme un vrai reset (sans le test mémoire, qui effacerait tout), puis fait
 `RUN` dès que le BASIC affiche `Ready`, en posant 68 (« D ») en `$04FF` pour
 dire au programme qu'il a démarré de la disquette. Le message de la ROM et
-`Ready` sont effacés, le curseur et CAPS éteints.
+`Ready` sont effacés, le curseur et CAPS éteints. Pendant le chargement, « CHARGEMENT EN
+COURS » clignote au milieu de l'écran (encre cyan, attribut 12 = clignotant ;
+ajouté le 2026-11-24 by GliouCNR©70).
 
 | Images | Programme lu en | Taille max. du programme | Image en | 2e image en | HIMEM |
 |---|---|---|---|---|---|
