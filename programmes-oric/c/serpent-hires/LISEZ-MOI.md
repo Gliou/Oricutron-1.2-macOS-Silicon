@@ -39,7 +39,12 @@ queue ; **gagné à 256 anneaux**.
   longueur atteinte), en mode texte. **Pas encore sauvegardé** : il repart
   du Hall of Fame livré à chaque chargement.
 - Sons et musiques : le **même moteur 6502** que le Serpent BASIC
-  ([`../../serpent/son.s`](../../serpent/son.s)), réassemblé en `$8B00`.
+  ([`../../serpent/son.s`](../../serpent/son.s)), réassemblé en `$8B00` :
+  tic-tac à chaque pas, « pip » aigu quand une pomme apparaît, PING quand le
+  serpent la mange, ZAP quand la porte s'ouvre, EXPLODE contre un mur.
+- **Clic du clavier coupé** (bit 3 de `$026A`, comme `POKE 618,10` dans le
+  BASIC) : le clic de la ROM recharge tous les registres de la puce son, dont
+  le mélangeur, et rendait muets PING, ZAP et EXPLODE (corrigé le 2026-11-24).
 
 ## Les fichiers
 
@@ -72,7 +77,10 @@ Le programme est découpé en modules, que `main.c` importe par leurs `.h` :
 /Applications/Oricutron.app/Contents/MacOS/Oricutron -m atmos --turbotape on -t "$PWD/serpent.tap"
 ```
 
-Le jeu démarre tout seul après le chargement.
+Le jeu démarre tout seul après le chargement. `faire.sh` copie aussi le jeu
+dans le dossier des cassettes d'Oricutron
+(`~/Library/Application Support/Oricutron/tapes/serpent-c.tap`, nommé ainsi
+pour ne pas écraser le `serpent.tap` du Serpent BASIC).
 
 `./faire.sh test` construit `serpent-test.tap` : un pilote automatique joue
 seul, la porte s'ouvre après 1 pomme et la partie est gagnée à 40 anneaux. Il

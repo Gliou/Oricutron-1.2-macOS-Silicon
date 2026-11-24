@@ -137,6 +137,7 @@ static void entre(unsigned char longueur, unsigned char par_droite, unsigned cha
     dy = 0;
     case_pose(sx[0], y, CORPS, dessin_tete());
     pomme_pose();
+    son_pomme();
     hires_efface_ligne(1);
     barre_haut();
     barre_bas();
@@ -247,6 +248,7 @@ unsigned char partie(unsigned int meilleur)
                 return GAGNE;
             }
             pomme_pose();
+            son_pomme();
             barre_haut();
             barre_bas();
 #ifdef PILOTE

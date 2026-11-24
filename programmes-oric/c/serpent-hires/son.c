@@ -21,6 +21,17 @@ void son_volume(unsigned char vu)
 }
 
 void son_pas(void)  { APPEL(0x03); }
+
+/* Le tic-tac du moteur (canal A, 30 ms) joué une fois plus aigu : on change
+** sa hauteur (octet « ton » du moteur) le temps d'un appel, puis on la remet.
+** Ajouté le 2026-11-24 by GliouCNR©70. */
+void son_pomme(void)
+{
+    unsigned char t = PEEK(SON_TON);
+    POKE(SON_TON, 0x1C);                /* ~2 200 Hz */
+    APPEL(0x03);
+    POKE(SON_TON, t);
+}
 void son_ping(void) { APPEL(0x06); }
 void son_zap(void)  { APPEL(0x09); }
 void son_boum(void) { APPEL(0x0C); }

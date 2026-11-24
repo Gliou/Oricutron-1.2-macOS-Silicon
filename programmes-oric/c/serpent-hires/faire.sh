@@ -18,14 +18,16 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
 sed "s/^        \* = \$5300/        * = \$$SON_ADR/" ../../serpent/son.s > $TMP/son_c.s
-xa -o $TMP/son_c.bin $TMP/son_c.s
-python3 - "$SON_ADR" "$TMP/son_c.bin" <<'EOF'
+xa -o $TMP/son_c.bin -l $TMP/son_c.lab $TMP/son_c.s
+python3 - "$SON_ADR" "$TMP/son_c.bin" "$TMP/son_c.lab" <<'EOF'
 import sys
 b = open(sys.argv[2], 'rb').read()
+lab = dict((l.split(',')[0], l.split(',')[1].strip()) for l in open(sys.argv[3]))
 with open('son_bin.h', 'w', encoding='utf-8') as f:
     f.write('/* son_bin.h - FABRIQUÉ par faire.sh (ne pas modifier) : le moteur de son\n')
     f.write('** ../../serpent/son.s assemblé en $%s, %d octets. by GliouCNR©70 */\n' % (sys.argv[1], len(b)))
     f.write('#define SON_ADR 0x%s\n' % sys.argv[1])
+    f.write('#define SON_TON %s      /* hauteur du tic-tac */\n' % lab['ton'])
     f.write('static const unsigned char son_bin[%d] = {\n' % len(b))
     for i in range(0, len(b), 16):
         f.write('    ' + ', '.join('0x%02X' % x for x in b[i:i+16]) + ',\n')
@@ -60,3 +62,12 @@ cl65 -t atmos -O $OPTIONS -o $SORTIE.tap -m $SORTIE.map \
      main.c ecran.c son.c clavier.c niveau.c jeu.c hof.c images.c pilote.c
 rm -f *.o
 ls -l $SORTIE.tap
+
+# Copie dans le dossier des cassettes d'Oricutron (ajouté le 2026-11-24 by
+# GliouCNR©70), sous le nom serpent-c.tap pour ne pas écraser le serpent.tap
+# du Serpent BASIC.
+BANDES="$HOME/Library/Application Support/Oricutron/tapes"
+if [ "$SORTIE" = serpent ] && [ -d "$BANDES" ]; then
+    cp serpent.tap "$BANDES/serpent-c.tap"
+    echo "copié dans $BANDES/serpent-c.tap"
+fi

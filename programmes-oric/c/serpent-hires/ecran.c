@@ -40,6 +40,8 @@ typedef void (*routine)(void);
 #define ROM_HIRES ((routine)0xF920)   /* passe en HIRES (sans le test de $EC33) */
 #define ROM_TEXTE ((routine)0xF967)   /* revient en mode texte                */
 
+static void curseur_cache(void);
+
 static void miroir(const unsigned char* a, unsigned char* b)
 {
     unsigned char i, j, v;
@@ -85,14 +87,19 @@ void ecran_prepare(void)
     for (i = 0; i < HAUTEUR; ++i)
         adr_case[i] = (unsigned char*)HIRES_ECRAN + (unsigned int)i * (COTE * 40) + 2;
     POKE(0x020C, 0x7F);                      /* CAPS éteint (rien en haut) */
+    curseur_cache();                         /* et clic du clavier coupé  */
     /* pomme (@) et tête ({) dans le jeu de caractères du mode texte */
     memcpy((unsigned char*)JEU_TEXTE + '@' * 8, car_pomme, 8);
     memcpy((unsigned char*)JEU_TEXTE + 123 * 8, car_tete, 8);
 }
 
+/* $026A : bit 0 = curseur, bit 3 = clic du clavier coupé (comme POKE 618,10
+** dans le Serpent BASIC). Le clic de la ROM ($FB14) recharge tous les
+** registres de la puce son, mélangeur compris (seul le canal A reste) : il
+** rendait muets PING, ZAP et EXPLODE (corrigé le 2026-11-24 by GliouCNR©70). */
 static void curseur_cache(void)
 {
-    POKE(0x026A, PEEK(0x026A) & 0xFE);
+    POKE(0x026A, (PEEK(0x026A) & 0xFE) | 0x08);
 }
 
 void ecran_hires_seul(void)

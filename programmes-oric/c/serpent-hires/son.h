@@ -15,6 +15,7 @@
 void son_installe(void);              /* recopie et branche le moteur  */
 void son_volume(unsigned char vu);    /* 0 à 64, comme la barre du jeu */
 void son_pas(void);
+void son_pomme(void);                 /* « pip » aigu : une pomme apparaît */
 void son_ping(void);
 void son_zap(void);
 void son_boum(void);
