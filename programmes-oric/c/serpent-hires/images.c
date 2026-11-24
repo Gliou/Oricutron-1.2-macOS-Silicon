@@ -20,9 +20,30 @@ static void affiche(const unsigned char* image)
     memcpy((unsigned char*)HIRES_ECRAN, image, 8000);
 }
 
+/* Texte en caractères de l'Oric (6 x 8 points, jeu de caractères du mode
+** HIRES en $9800) écrit dans l'image : un octet par lettre, 8 lignes, entre
+** un attribut d'encre avant et le retour à l'encre d'origine après. */
+static void ecrit_image(unsigned char col, unsigned char ligne, const char* s,
+                        unsigned char encre, unsigned char encre_apres)
+{
+    unsigned char r, i;
+    unsigned char* p = (unsigned char*)HIRES_ECRAN + ligne * 40 + col;
+    for (r = 0; r < 8; ++r) {
+        p[-1] = encre;
+        for (i = 0; s[i]; ++i)
+            p[i] = 0x40 | PEEK(JEU_HIRES + (unsigned char)s[i] * 8 + r);
+        p[i] = encre_apres;
+        p += 40;
+    }
+}
+
 void ecran_titre(void)
 {
     affiche(titre_bin);
+    /* « Version C » centré sous la barre cyan du titre (lignes 55-56, octets
+    ** 4 à 37) : lignes 59 à 66, octets 16 à 24, en cyan ; ces lignes
+    ** reprennent ensuite l'encre verte de l'image. 2026-11-24 by GliouCNR©70 */
+    ecrit_image(16, 59, "Version C", 6, 2);
     son_musique(MUS_COMPTINE);
     ligne_car(6);                                    /* encre cyan */
     ligne_texte("APPUIE SUR ESPACE");

@@ -33,7 +33,8 @@ queue ; **gagné à 256 anneaux**.
 - **Écran titre et écran de victoire** : les deux images HIRES du Serpent
   BASIC (`serpent-titre.hir`, `serpent-victoire.hir`), rangées dans le
   programme. Le titre s'affiche au démarrage avec la comptine et « APPUIE SUR
-  ESPACE » ; l'image de victoire avec la fanfare (seulement sur elle), le score
+  ESPACE » ; « Version C » y est écrit en petit, en cyan, centré sous la barre
+  cyan du titre ; l'image de victoire avec la fanfare (seulement sur elle), le score
   et les pommes mangées dessous.
 - Hall of Fame et réglage du volume comme dans le Serpent BASIC (avec la
   longueur atteinte), en mode texte. **Pas encore sauvegardé** : il repart

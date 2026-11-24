@@ -56,8 +56,6 @@ void hof_ecran(void)
     texte_efface();
     texte_octet(11, 3, 6);
     texte_ecrit(13, 3, "S E R P E N T");
-    texte_octet(9, 4, 2);
-    texte_ecrit(11, 4, "EN C ET EN HIRES");
     texte_octet(11, 6, 3);
     texte_ecrit(13, 6, "HALL OF FAME");
     for (i = 0; i < 10; ++i) {

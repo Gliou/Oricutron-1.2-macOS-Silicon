@@ -51,14 +51,17 @@ EOF
 
 # ./faire.sh test : version de test (serpent-test.tap) - pilote automatique,
 # porte ouverte après 1 pomme, victoire à 40 anneaux.
+# (pile du C réduite à 1,5 Ko pour la version de test, qui a le pilote en plus)
 SORTIE=serpent
 OPTIONS=
+PILE=0800
 if [ "$1" = test ]; then
     SORTIE=serpent-test
     OPTIONS="-DPILOTE -DPOMMES_PORTE=1 -DGAGNE_LONG=40"
+    PILE=0600
 fi
 cl65 -t atmos -O $OPTIONS -o $SORTIE.tap -m $SORTIE.map \
-     --ld-args -D,__RAMEND__=\$$SON_ADR,-D,__AUTORUN__=\$C7 \
+     --ld-args -D,__RAMEND__=\$$SON_ADR,-D,__AUTORUN__=\$C7,-D,__STACKSIZE__=\$$PILE \
      main.c ecran.c son.c clavier.c niveau.c jeu.c hof.c images.c pilote.c
 rm -f *.o
 ls -l $SORTIE.tap
