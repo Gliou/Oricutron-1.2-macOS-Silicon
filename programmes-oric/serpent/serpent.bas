@@ -124,14 +124,14 @@
 # (près de 11 minutes) au niveau 5. La ligne 182 ne fait donc WAIT que si WT>0.
 # Modifié le 2026-11-24 by GliouCNR©70 : sons au VOLUME réglable. PING, ZAP et
 # EXPLODE de la ROM sont trop forts et ne se règlent pas (enveloppe de la puce
-# toujours partie de 15) : ils sont remplacés par le moteur son.s (en $7600,
+# toujours partie de 15) : ils sont remplacés par le moteur son.s (en $5600,
 # au-dessus de HIMEM abaissé ligne 5) - CALL PG, ZP, XP, et SN pour le tic-tac
 # des pas. Le joueur règle le volume de 0 à 64 avec les flèches sur l'écran du
 # Hall of Fame (lignes 73-79 et 760-765) ; 64 = 15, le maximum de la puce. Le
 # volume est gardé sur la disquette avec le Hall of Fame (octet $98F0).
-5 HIMEM #7600
-10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:K=0:GR=0:TM=0:TC=0:M=255:SP=32:KB=735:I=0:SN=#7603
-11 PG=#7606:ZP=#7609:XP=#760C:SR=#7600:VO=#760F:MU=#7610:VU=32:VS=-1
+5 HIMEM #5600
+10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:K=0:GR=0:TM=0:TC=0:M=255:SP=32:KB=735:I=0:SN=#5603
+11 PG=#5606:ZP=#5609:XP=#560C:SR=#5600:VO=#560F:MU=#5610:VU=32:VS=-1
 # Modifié le 2026-11-24 by GliouCNR©70 : X() et Y() sont dimensionnés en premier -
 # le BASIC les trouve plus vite dans la boucle du jeu.
 13 DIM X(255),Y(255),N$(10),SC(10),NP(10),PZ(12)
@@ -143,14 +143,17 @@
 # titre (970-973) : dessins des caractères posés directement en $B400 (HIRES
 # les range en $9800 et TEXT les remet), routine disque, Hall of Fame par
 # défaut, puis lecture du Hall of Fame et du VOLUME sur la disquette (ligne 14)
-# - la musique de l'écran titre joue ainsi au volume choisi. PENDANT l'image
-# (974-978) : moteur de son et chaînes. À l'appui sur ESPACE (986) : la musique
-# démarre (CALL MU, jouée par l'interruption), le message s'efface, et après
-# TEXT il ne reste qu'à dessiner le Hall of Fame.
+# - puis le moteur de son et les chaînes (974-978). La musique (CALL MU, jouée
+# en boucle par l'interruption) démarre avec l'image titre et tourne jusqu'au
+# début de la partie (CALL SR ligne 80) : elle sert aussi à régler le volume
+# sur l'écran du Hall of Fame. À l'appui sur ESPACE (986), le message s'efface.
+# HIMEM est à $5600, SOUS l'image titre ($5800-$773F) : les noms du Hall of
+# Fame lus avant l'image ne peuvent plus l'abîmer (ils étaient rangés sous
+# l'ancien HIMEM $7600, dans le tampon de l'image - d'où des défauts).
 14 D=(PEEK(#4FF)=68):GOSUB 970:IF D THEN CALL #400:IF PEEK(#4FE)=0 AND PEEK(#9800)=72 THEN GOSUB 950
-15 IF D=0 THEN GOSUB 974:GOTO 20
-16 PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#58:POKE #482,#77:CALL #460:PRINT:PRINT "           APPUIE SUR ESPACE";:POKE 618,10:POKE 735,0:GOSUB 974
-17 GOSUB 986:CALL MU:FOR I=#BF68 TO #BFDF:POKE I,32:NEXT:TEXT
+15 GOSUB 974:IF D=0 THEN CALL MU:GOTO 20
+16 PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#58:POKE #482,#77:CALL #460:CALL MU:PRINT:PRINT "           APPUIE SUR ESPACE";:POKE 618,10:POKE 735,0
+17 GOSUB 986:FOR I=#BF68 TO #BFDF:POKE I,32:NEXT:TEXT
 20 CLS:PAPER 0:INK 2:POKE 618,10
 35 DIM CR(5),OP(5),EL(5),PD(5),NW(5),XA(5,15),YA(5,15),XB(5,15),YB(5,15)
 # Modifié le 2026-11-24 by GliouCNR©70 : Hall of Fame par défaut (celui de la
@@ -159,7 +162,7 @@
 # par niveau : 50, 150, 300, 500) ; de la 6e à la 1re, des pommes en plus au
 # niveau 5 (50 points chacune) : 750, 1000, 1250, 1500, 2000, 2500. Le nombre
 # de pommes affiché est le minimum pour faire ce score (DATA 1050-1060).
-# Moteur de son (son.s, DATA 1070+, 317 octets posés en $7600 par la ligne 974) :
+# Moteur de son (son.s, DATA 1070+, 438 octets posés en $5600 par la ligne 974) :
 # installé sur l'interruption de l'horloge (CALL SR). V1$/V2$ = cases pleines/vides
 # de la barre du volume.
 70 GOSUB 700:PLOT 12,22,"ESPACE = JOUER"
@@ -325,16 +328,15 @@
 965 B=PEEK(#98F0):IF B>0 AND B<66 THEN VU=B-1:VS=VU
 967 RETURN
 # Attente d'une touche sans GET (GET rallume le curseur) : bit 7 de PEEK(735)
-# CHARGEMENT des DATA, dans leur ordre. Avant l'image (970-973) : dessins de la
+# CHARGEMENT des DATA, dans leur ordre, tout avant l'image (970-978) : dessins de la
 # pomme (@, $B600) et du serpent (118-126, $B7B0), brique du bord (127),
-# routine disque du Hall of Fame ($0400), Hall of Fame par défaut. Pendant
-# l'image (974-978) : moteur de son ($7600, installé, réglé au volume du joueur),
-# chaînes et tableaux du jeu.
+# routine disque du Hall of Fame ($0400), Hall of Fame par défaut, puis moteur
+# de son ($5600, installé, réglé au volume du joueur), chaînes et tableaux du jeu.
 970 FOR I=0 TO 7:READ B:POKE #B600+I,B:NEXT:FOR I=0 TO 71:READ B:POKE #B7B0+I,B:NEXT
 971 FOR I=0 TO 7:POKE #B7F8+I,63:NEXT:FOR I=1 TO 3:POKE #B7F8+I,4:POKE #B7FC+I,32:NEXT
 972 FOR I=0 TO 92:READ B:POKE #400+I,B:NEXT
 973 FOR I=1 TO 10:N$(I)="ORIC    ":READ SC(I),NP(I):NEXT:RETURN
-974 FOR I=0 TO 441:READ B:POKE #7600+I,B:NEXT:CALL SR:POKE VO,INT(VU*15/64+.5)
+974 FOR I=0 TO 437:READ B:POKE #5600+I,B:NEXT:CALL SR:POKE VO,INT(VU*15/64+.5)
 976 W$=CHR$(160):B$=CHR$(255):F$=CHR$(192):Z$=CHR$(122):FOR I=0 TO 12:PZ(I)=ASC(MID$("PORTE OUVERTE",I+1,1)):NEXT
 978 V1$="":V2$="":FOR I=1 TO 16:V1$=V1$+W$:V2$=V2$+"-":NEXT:RETURN
 980 IF PEEK(735)<128 THEN 980
@@ -364,27 +366,26 @@
 # Hall of Fame par défaut (ligne 972) : score, pommes, de la 1re à la 10e place
 1050 DATA 2500,60,2000,50,1500,40,1250,35,1000,30
 1060 DATA 750,25,500,20,300,15,150,10,50,5
-# Moteur de son son.s (xa -o son.bin son.s), 442 octets en $7600
-1070 DATA 76,19,118,76,90,118,76,120,118,76,151,118,76,172,118,15,76,191,118,120
-1072 DATA 169,248,141,69,2,169,118,141,70,2,88,169,7,162,28,32,144,245,169,6
+# Moteur de son son.s (xa -o son.bin son.s), 438 octets en $5600
+1070 DATA 76,19,86,76,90,86,76,120,86,76,151,86,76,172,86,15,76,191,86,120
+1072 DATA 169,244,141,69,2,169,86,141,70,2,88,169,7,162,28,32,144,245,169,6
 1074 DATA 162,31,32,144,245,162,0,169,1,32,144,245,162,0,169,3,32,144,245,160
-1076 DATA 8,152,162,0,32,144,245,200,192,11,208,245,169,0,141,150,119,141,151,119
-1078 DATA 141,153,119,141,155,119,141,157,119,96,169,0,174,149,119,32,144,245,173,149
-1080 DATA 119,73,48,141,149,119,169,8,174,15,118,32,144,245,169,3,141,150,119,96
-1082 DATA 169,0,141,153,119,169,2,162,24,32,144,245,173,15,118,141,151,119,169,6
-1084 DATA 141,152,119,169,9,174,15,118,76,144,245,169,0,141,151,119,141,154,119,169
-1086 DATA 28,141,153,119,169,9,174,15,118,76,144,245,173,15,118,141,155,119,169,10
-1088 DATA 141,156,119,169,10,174,15,118,76,144,245,120,169,0,141,158,119,32,202,118
-1090 DATA 88,96,172,158,119,185,159,119,240,28,170,169,0,32,144,245,172,158,119,185
-1092 DATA 160,119,141,157,119,200,200,140,158,119,169,8,174,15,118,76,144,245,141,157
-1094 DATA 119,169,8,162,0,76,144,245,72,173,13,3,41,64,208,3,76,145,119,138
-1096 DATA 72,152,72,173,150,119,240,42,206,150,119,208,37,169,8,162,0,32,144,245
-1098 DATA 173,157,119,240,25,206,157,119,173,157,119,201,3,208,7,169,8,162,0,32
-1100 DATA 144,245,173,157,119,208,3,32,202,118,173,153,119,240,30,173,154,119,24,105
-1102 DATA 4,141,154,119,170,169,2,32,144,245,206,153,119,208,36,169,9,162,0,32
-1104 DATA 144,245,76,115,119,173,151,119,240,21,206,152,119,208,16,169,6,141,152,119
-1106 DATA 206,151,119,174,151,119,169,9,32,144,245,173,155,119,240,21,206,156,119,208
-1108 DATA 16,169,10,141,156,119,206,155,119,174,155,119,169,10,32,144,245,104,168,104
-1110 DATA 170,104,76,34,238,96,0,0,0,0,0,0,0,0,0,142,18,119,18,95
-1112 DATA 18,71,36,80,18,95,18,106,18,95,36,119,18,106,18,95,18,119,18,142
-1114 DATA 60,0
+1076 DATA 8,152,162,0,32,144,245,200,192,11,208,245,169,0,141,146,87,141,147,87
+1078 DATA 141,149,87,141,151,87,141,153,87,96,169,0,174,145,87,32,144,245,173,145
+1080 DATA 87,73,48,141,145,87,169,8,174,15,86,32,144,245,169,3,141,146,87,96
+1082 DATA 169,0,141,149,87,169,2,162,24,32,144,245,173,15,86,141,147,87,169,6
+1084 DATA 141,148,87,169,9,174,15,86,76,144,245,169,0,141,147,87,141,150,87,169
+1086 DATA 28,141,149,87,169,9,174,15,86,76,144,245,173,15,86,141,151,87,169,10
+1088 DATA 141,152,87,169,10,174,15,86,76,144,245,120,169,0,141,154,87,32,202,86
+1090 DATA 88,96,172,154,87,185,155,87,240,28,170,169,0,32,144,245,172,154,87,185
+1092 DATA 156,87,141,153,87,200,200,140,154,87,169,8,174,15,86,76,144,245,141,154
+1094 DATA 87,76,202,86,72,173,13,3,41,64,208,3,76,141,87,138,72,152,72,173
+1096 DATA 146,87,240,12,206,146,87,208,7,169,8,162,0,32,144,245,173,153,87,240
+1098 DATA 25,206,153,87,173,153,87,201,3,208,7,169,8,162,0,32,144,245,173,153
+1100 DATA 87,208,3,32,202,86,173,149,87,240,30,173,150,87,24,105,4,141,150,87
+1102 DATA 170,169,2,32,144,245,206,149,87,208,36,169,9,162,0,32,144,245,76,111
+1104 DATA 87,173,147,87,240,21,206,148,87,208,16,169,6,141,148,87,206,147,87,174
+1106 DATA 147,87,169,9,32,144,245,173,151,87,240,21,206,152,87,208,16,169,10,141
+1108 DATA 152,87,206,151,87,174,151,87,169,10,32,144,245,104,168,104,170,104,76,34
+1110 DATA 238,96,0,0,0,0,0,0,0,0,0,142,18,119,18,95,18,71,36,80
+1112 DATA 18,95,18,106,18,95,36,119,18,106,18,95,18,119,18,142,60,0

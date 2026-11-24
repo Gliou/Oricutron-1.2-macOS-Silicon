@@ -2,22 +2,25 @@
 ; remplace PING, ZAP et EXPLODE de la ROM (trop forts) et le tic-tac des pas.
 ; Créé le 2026-11-24 by GliouCNR©70 (remplace son_pas.s)
 ; Modifié le 2026-11-24 by GliouCNR©70 - petite musique de l'écran titre (MUSIQUE),
-; jouée par l'interruption pendant que le BASIC charge le Hall of Fame.
+; jouée en boucle par l'interruption, de l'image titre au début de la partie
+; (elle sert aussi à régler le volume sur l'écran du Hall of Fame). Corrigé - le
+; saut « pas de tic en cours » sautait aussi la musique (une seule note tenue).
 ;
 ;   xa -o son.bin son.s
-;   (les octets sont dans les lignes DATA 1070+ de serpent.bas, posés en $7600,
-;    au-dessus de HIMEM abaissé à $7600 et sous la 2e image ($7800). C'est la
-;    fin de la place de l'image titre ($5800-$773F) - elle est déjà recopiée à
-;    l'écran (ligne 14) quand le BASIC pose le moteur (ligne 52).)
-;
-;   CALL #7600  INIT   installe le moteur sur l'interruption de l'horloge
+;   (les octets sont dans les lignes DATA 1070+ de serpent.bas, posés en $5600,
+;    au-dessus de HIMEM abaissé à $5600, juste SOUS l'image titre ($5800-$773F)
+;    - le moteur est chargé avant l'image, pour que la musique démarre avec
+;    elle, et le BASIC range ses chaînes sous HIMEM, donc jamais dans l'image.
+;    Avant le 2026-11-24 soir, le moteur était en $7600, dans la fin du tampon
+;    de l'image - les noms du Hall of Fame lus avant l'image l'abîmaient.)
+;   CALL #5600  INIT   installe le moteur sur l'interruption de l'horloge
 ;                      (100 fois par seconde) et règle le mélangeur
-;   CALL #7603  PAS    tic-tac du pas (canal A, 30 ms)
-;   CALL #7606  PING   PING au volume choisi (canal B, ~1 s)
-;   CALL #7609  ZAP    ZAP au volume choisi (canal B, balayage de 0,3 s)
-;   CALL #760C  BOUM   EXPLODE au volume choisi (canal C, bruit, ~1,5 s)
-;   POKE #760F,v       le volume, 0 (muet) à 15 (le maximum de la puce)
-;   CALL #7610  MUSIQUE petite musique (canal A, ~4 s), au volume choisi ;
+;   CALL #5603  PAS    tic-tac du pas (canal A, 30 ms)
+;   CALL #5606  PING   PING au volume choisi (canal B, ~1 s)
+;   CALL #5609  ZAP    ZAP au volume choisi (canal B, balayage de 0,3 s)
+;   CALL #560C  BOUM   EXPLODE au volume choisi (canal C, bruit, ~1,5 s)
+;   POKE #560F,v       le volume, 0 (muet) à 15 (le maximum de la puce)
+;   CALL #5610  MUSIQUE petite musique en boucle (canal A), au volume choisi ;
 ;                      INIT l'arrête
 ;
 ; Pourquoi - dans la ROM, PING et EXPLODE mettent le volume sur l'ENVELOPPE de
@@ -37,15 +40,15 @@ VIA_IFR  = $030D      ; bit 6 = interruption de l'horloge (timer 1)
 IRQV     = $0245      ; adresse sautée par l'interruption (JMP $EE22)
 ROMIRQ   = $EE22
 
-        * = $7600
+        * = $5600
 
         jmp init
         jmp pas
         jmp ping
         jmp zap
         jmp boum
-vol     .byt 15               ; $760F - volume choisi (0-15)
-        jmp musique           ; $7610
+vol     .byt 15               ; $560F - volume choisi (0-15)
+        jmp musique           ; $5610
 
 ; ----- Installation (peut être appelée plusieurs fois) -----
 init    sei
@@ -152,10 +155,8 @@ note    ldy mi
         lda #8
         ldx vol
         jmp AY
-mfin    sta mt                ; (A = 0) mélodie finie, canal A muet
-        lda #8
-        ldx #0
-        jmp AY
+mfin    sta mi                ; (A = 0) fin de la mélodie - on la reprend
+        jmp note              ; au début (elle tourne jusqu'à INIT)
 
 ; ----- Interruption - 100 fois par seconde -----
 tick    pha
@@ -168,13 +169,13 @@ horloge txa
         tya
         pha
         lda ga                ; canal A - fin du tic
-        beq tb
+        beq tmu
         dec ga
-        bne tb
+        bne tmu
         lda #8
         ldx #0
         jsr AY
-        lda mt                ; canal A - musique en cours ?
+tmu     lda mt                ; canal A - musique en cours ?
         beq tb
         dec mt
         lda mt
