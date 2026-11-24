@@ -1,6 +1,6 @@
 # Programmes Oric en C
 
-*Créé le 2026-11-24 by GliouCNR©70*
+*Créé le 2026-11-24 by GliouCNR©70 — modifié le 2026-11-24*
 
 Programmes pour Oric Atmos écrits en **C**, compilés sur le Mac avec
 **cc65** (compilateur C pour 6502, cible `atmos`).
@@ -41,10 +41,3 @@ Dans Oricutron :
 ```
 
 Oricutron tape lui-même `CLOAD""` au démarrage.
-
-## L'OSDK
-
-L'OSDK (Oric Software Development Kit, <https://osdk.org>) est l'autre outil
-classique pour programmer l'Oric en C. Sa page de téléchargement n'a pas pu
-être lue (vérification anti-robot du site) ; cc65, déjà installé, fait le même
-travail sur le Mac Apple Silicon.
