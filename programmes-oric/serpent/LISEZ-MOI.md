@@ -31,7 +31,11 @@ sur la disquette, et un **robot** qui joue tout seul.
 En couleurs : bord en briques blanches à joints magenta, serpent vert, pomme
 magenta (le `@` redessiné, en vidéo inverse), murs en pavés blancs, SCORE cyan,
 HI-SCORE jaune, une ligne vide entre le mur du bas et le score. HI-SCORE est
-affiché pendant la partie.
+affiché pendant la partie. Entre SCORE et HI-SCORE (2026-11-24, à la place de
+« NIV 2 ») : la pomme magenta et le nombre **total** de pommes qu'il reste à
+manger pour gagner (256 moins la longueur du serpent), dans les mêmes couleurs
+que le décompte de la barre du haut - rouge, puis cyan sous 121, jaune sous
+61, vert pour les 20 dernières.
 
 ### Les 5 niveaux (ajoutés le 2026-11-22)
 
@@ -61,7 +65,14 @@ affiché pendant la partie.
   niveau, la valeur d'une <img src="captures/pomme.png" alt="pomme" height="14"> et le nombre de <img src="captures/pomme.png" alt="pomme" height="14"> qu'il **reste** à manger
   (2026-11-23) : avant l'ouverture de la porte aux niveaux 1 à 4, par exemple
   « NIVEAU 2 - <img src="captures/pomme.png" alt="pomme" height="14"> = 20 - RESTE 3 », puis « PORTE OUVERTE » ; au niveau 5, les
-  anneaux qui manquent pour atteindre 256 ;
+  anneaux qui manquent pour atteindre 256. Depuis le 2026-11-24, c'est aussi
+  ce décompte des anneaux (« RESTE 140 ») qui s'affiche quand on **revient**
+  sur un tableau dont la porte est déjà ouverte, et dès la pomme qui suit
+  l'ouverture de la porte : « PORTE OUVERTE » ne reste affiché que jusqu'à la
+  pomme suivante. En couleurs (2026-11-24) : « PORTE OUVERTE » en **rouge**,
+  et le nombre du décompte des anneaux en **rouge** (plus de 120), **cyan**
+  (61 à 120), **jaune** (21 à 60), puis **vert** pour les 20 derniers ; la
+  pomme de la barre est magenta, comme dans le jeu ;
 - **256 anneaux = gagné**, sur n'importe quel niveau (2026-11-23) : c'est le
   plus long que le programme peut garder (positions dans `X(255)`, `Y(255)`).
   Le serpent part de 4 anneaux, la partie parfaite mange donc 252 pommes ;
@@ -253,3 +264,44 @@ bien que l'instant où le jeu relit le clavier, vu depuis l'image, varie de plus
 de 40 ms. Sous ~80 ms par pas, aucun réglage ne tient. Au-delà de 8 MHz,
 plusieurs pas passent entre deux images d'Oricutron : personne ne pourrait
 choisir sa case.
+
+### Compatibilité : Mac, PC et Linux (2026-11-24)
+
+**Le robot ne marche que sur Mac**, avec macOS 12.3 ou plus récent (le
+minimum de ScreenCaptureKit). Il a été écrit et testé sur un Mac Apple
+Silicon (macOS 27.2, Python 3.14) ; il devrait aussi marcher sur un Mac Intel,
+car les bibliothèques utilisées existent pour les deux, mais ce n'est pas
+essayé. Le **jeu**, lui, marche partout où tourne Oricutron (Mac, Windows,
+Linux) : seul le robot est concerné.
+
+Ce qui le lie au Mac (31 appels dans `bot_serpent.py`) :
+
+| Rôle | Ce que le robot utilise | Équivalent à écrire |
+|---|---|---|
+| Trouver la fenêtre d'Oricutron | Quartz (`CGWindowListCopyWindowInfo`) | Windows : `FindWindow` / `EnumWindows` ; Linux X11 : `xdotool search` ou Xlib |
+| Lire l'écran en continu | ScreenCaptureKit (flux de la fenêtre, même cachée) | `mss` (déjà utilisé par le robot, mais la fenêtre doit rester visible) ; Windows : Windows.Graphics.Capture |
+| Envoyer les flèches sans prendre le clavier | Quartz (`CGEventPostToPid`, touches envoyées au seul Oricutron) | Windows : `SendInput` (Oricutron au premier plan) ou `PostMessage` à sa fenêtre ; Linux X11 : XTest ou `xdotool key --window` |
+| Un seul robot à la fois | `fcntl` (verrou de fichier) | Linux : identique ; Windows : `msvcrt.locking` |
+
+Limitations à prévoir sur PC et Linux :
+
+- **Windows** : sans équivalent simple de `CGEventPostToPid`, les touches
+  partent en général vers la fenêtre au premier plan ; Oricutron devrait donc
+  rester devant, et on ne pourrait plus travailler à côté pendant la partie.
+  Les codes de touches (flèches, Espace, F1) sont à changer.
+- **Linux avec X11** : capture (`mss`) et touches (XTest) sont possibles sans
+  droits particuliers ; c'est le portage le plus simple.
+- **Linux avec Wayland** (Ubuntu, Fedora récents) : une application n'a pas le
+  droit de lire l'écran des autres ni de leur envoyer des touches sans passer
+  par les « portails » du bureau, qui demandent une autorisation à chaque fois ;
+  le robot n'y marcherait pas tel quel (on peut lancer Oricutron sous XWayland
+  ou ouvrir une session X11).
+- **Partout** : le robot importe `Quartz` dès le démarrage ; sans lui, il
+  s'arrête avant de commencer. Les réglages de temps (appui à 0,4 pas, auto-
+  réglé) dépendent de la régularité de l'affichage et seraient à revérifier.
+
+Ce qui marcherait tel quel : la lecture des cases, le cerveau (chemins, sécurité
+de la queue, allers-retours), le calage du moment d'appui, et le simulateur
+`simu_aller_retour.py` (Python + numpy seulement), qui tourne déjà sur les
+trois systèmes. Un portage consisterait à regrouper capture, fenêtre et
+clavier dans un petit module par système, autour du même cerveau.

@@ -103,6 +103,12 @@
 # ligne 37) - réécrire toute la barre ralentissait trop le jeu. C'est fait AVANT de poser
 # la nouvelle pomme (ligne 185) : la pomme reste la dernière chose tracée
 # avant la lecture du clavier.
+# Modifié le 2026-11-24 by GliouCNR©70 : CD = décompte des anneaux (posé
+# ligne 400 en entrant dans un tableau). Au niveau 5, et en REVENANT sur un
+# tableau dont la porte est déjà ouverte, la barre compte les anneaux qui
+# manquent pour 256 (« RESTE 140 ») au lieu de « PORTE OUVERTE » ; ce texte
+# ne reste que jusqu'à la pomme suivante : à la 6e pomme, la ligne 689 passe
+# au décompte (CD=-1) et réécrit les 13 cases une fois.
 # Murs : V vertical (U = 1-V), Q longueur, X1,Y1-X2,Y2 extrémités, G = place libre.
 # La queue est effacée AVANT d'avancer la tête : la case qu'elle quitte est libre
 # (ligne 156), sinon le serpent mourait en suivant sa queue de près.
@@ -159,7 +165,7 @@
 180 IF C=192 THEN 185
 182 IF WT THEN WAIT WT
 183 GOTO 100
-185 S=S+L*10:E=E+1:PM=PM+1:PING:GOSUB 600:GOSUB 689:GOSUB 500
+185 S=S+L*10:E=E+1:PM=PM+1:PING:GOSUB 600:GOSUB 689:GOSUB 697:GOSUB 500
 190 IF E=5 AND L<5 THEN GOSUB 650
 # Modifié le 2026-11-23 by GliouCNR©70 : 256 anneaux = gagné sur TOUS les
 # niveaux (le joueur peut redescendre aux niveaux 1 à 4 et y finir), plus
@@ -183,10 +189,14 @@
 346 WAIT VAL(MID$("151515301570",I*2-1,2)):NEXT:PLAY 0,0,0,0
 348 PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:POKE 618,10:POKE 735,0:GOSUB 980
 350 TEXT:PAPER 0:INK 2:POKE 618,10:RETURN
-400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:LY=13:IF L>1 THEN LY=PD(L-1)+1
+400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:CD=(L=5)OR(E>4):LY=13:IF L>1 THEN LY=PD(L-1)+1
 405 FOR I=1 TO 24:PLOT 1,I,2:PLOT 2,I,B$:PLOT 37,I,B$:NEXT
 410 FOR I=3 TO 36:PLOT I,1,B$:PLOT I,24,B$:NEXT
-415 PLOT 2,26,6:PLOT 3,26,"SCORE":PLOT 14,26,7:PLOT 15,26,"NIV"+STR$(L):PLOT 21,26,3:PLOT 22,26,"HI-SCORE"
+# Modifié le 2026-11-24 by GliouCNR©70 : en bas, à la place de « NIV 2 », la
+# pomme magenta (attribut 2 + F$ en inverse) et le nombre TOTAL de pommes
+# qu'il reste à manger pour gagner (256 - longueur), colorié comme le
+# décompte de la barre du haut (lignes 697-698).
+415 PLOT 2,26,6:PLOT 3,26,"SCORE":PLOT 14,26,2:PLOT 15,26,F$:PLOT 21,26,3:PLOT 22,26,"HI-SCORE":GOSUB 697
 412 IF L>1 THEN FOR I=LY-1 TO LY+1:PLOT 2,I," ":NEXT
 417 PLOT 30,26,STR$(SC(1)):GOSUB 600
 420 GOSUB 680
@@ -221,14 +231,29 @@
 660 GOSUB 670:A=#BB80+INT((40-LEN(M$))/2)
 665 FOR I=1 TO LEN(M$):POKE A+I-1,ASC(MID$(M$,I,1)):NEXT:RETURN
 670 FOR I=#BB82 TO #BBA7:POKE I,32:NEXT:RETURN
-680 GOSUB 692:M$="NIVEAU"+STR$(L)+" - @ ="+STR$(L*10)+" - "
-684 T$="RESTE "+R$+"    ":IF L<5 AND E>4 THEN T$="PORTE OUVERTE"
-686 M$=M$+T$:GOSUB 660:RA=A+LEN(M$)-13:RETURN
-689 IF L<5 AND E>5 THEN RETURN
-690 IF L<5 AND E>4 THEN FOR I=0 TO 12:POKE RA+I,PZ(I):NEXT:RETURN
-691 GOSUB 692:POKE RA+6,ASC(R$):POKE RA+7,ASC(MID$(R$,2)):POKE RA+8,ASC(RIGHT$(R$,1)):RETURN
-692 R=5-E:IF L=5 THEN R=256-(((H-T) AND M)+1+GR)
+# Pomme de la barre en magenta comme dans le jeu (2026-11-24 by GliouCNR©70) :
+# les espaces autour du @ deviennent des attributs - 2 (encre verte) avant
+# la pomme posée en inverse (CHR$(192) = magenta, coins blancs, comme F$),
+# 7 (encre blanche) après. Même longueur qu'avant.
+680 GOSUB 692:M$="NIVEAU"+STR$(L)+" -"+CHR$(2)+F$+CHR$(7)+"="+STR$(L*10)+" - "
+684 T$="RESTE "+R$+"    ":IF CD=0 AND E>4 THEN T$="PORTE OUVERTE"
+# Couleurs de la barre (2026-11-24 by GliouCNR©70) : un attribut d'encre posé
+# dans une case blanche - avant la zone (RA-1) : 1 = rouge pour « PORTE
+# OUVERTE » ; ou entre RESTE et le nombre (RA+5) pour le décompte des
+# anneaux : CO = rouge (plus de 120), cyan (61-120), jaune (21-60), vert
+# (20 et moins, ligne 693) - rouge et vert inversés le 2026-11-24. La ligne du haut repart en blanc au début de chaque
+# ligne d'écran ; une case attribut s'affiche vide.
+686 M$=M$+T$:GOSUB 660:RA=A+LEN(M$)-13
+687 IF CD=0 AND E>4 THEN POKE RA-1,1
+688 POKE RA+5,32+(CD<>0)*(32-CO):RETURN
+689 IF CD=0 AND E>5 THEN CD=-1:GOSUB 692:T$="RESTE "+R$+"    ":FOR I=0 TO 12:POKE RA+I,ASC(MID$(T$,I+1,1)):NEXT:POKE RA-1,32:POKE RA+5,CO:RETURN
+690 IF CD=0 AND E>4 THEN FOR I=0 TO 12:POKE RA+I,PZ(I):NEXT:POKE RA-1,1:RETURN
+691 GOSUB 692:POKE RA+6,ASC(R$):POKE RA+7,ASC(MID$(R$,2)):POKE RA+8,ASC(RIGHT$(R$,1)):POKE RA+5,32+(CD<>0)*(32-CO):RETURN
+692 R=5-E:IF CD THEN R=256-(((H-T) AND M)+1+GR)
+693 CO=1:IF R<121 THEN CO=6:IF R<61 THEN CO=3:IF R<21 THEN CO=2
 695 R$=LEFT$(MID$(STR$(R),2)+"  ",3):RETURN
+697 RT=256-(((H-T) AND M)+1+GR):CT=1:IF RT<121 THEN CT=6:IF RT<61 THEN CT=3:IF RT<21 THEN CT=2
+698 PLOT 16,26,CT:PLOT 17,26,LEFT$(MID$(STR$(RT),2)+"  ",3):RETURN
 700 CLS:GOSUB 670:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"
 705 PLOT 11,5,3:PLOT 13,5,"HALL OF FAME"
 710 FOR I=1 TO 10:R=7+I

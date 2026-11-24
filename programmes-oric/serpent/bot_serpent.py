@@ -36,6 +36,9 @@ tableau : en entrant avec un serpent très long, celui-ci doit se dérouler
 depuis la porte, queue bloquée à l'entrée, et s'enferme souvent (simulé :
 30 parties sur 30 gagnées à 120, 12 sur 20 à 170).
 
+Compatibilité (2026-11-24) : Mac seulement, macOS 12.3 ou plus (ScreenCaptureKit,
+Quartz) ; testé sur Mac Apple Silicon. Pour PC et Linux, voir le LISEZ-MOI.
+
 Vitesse (2026-11-24) : --mhz N si Oricutron est accéléré (F1 > Overclock).
 Sûr à 1 MHz ; à 2 MHz jusqu'au niveau 4 ; au-delà, le flottement des images
 (50 i/s d'Oricutron, 60 i/s de l'écran) dépasse la durée d'un pas.

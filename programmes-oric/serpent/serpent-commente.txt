@@ -156,11 +156,12 @@ une comparaison vraie vaut -1.
 183 GOTO 100                                                     │ Tour suivant.
                                                                  │
 185 S=S+L*10:E=E+1:PM=PM+1:PING:GOSUB 600:GOSUB 689:             │ Pomme mangée : 10 points par niveau, une pomme de plus dans
-      GOSUB 500                                                  │ ce niveau et dans la partie (PM, pour le Hall of Fame),
-                                                                 │ son PING, score affiché (600), nombre « RESTE »
-                                                                 │ mis à jour (689), puis seulement la nouvelle pomme (500) :
-                                                                 │ elle reste la dernière chose tracée avant la lecture du
-                                                                 │ clavier (le robot joueur s'en sert pour se synchroniser).
+      GOSUB 697:GOSUB 500                                        │ ce niveau et dans la partie (PM, pour le Hall of Fame),
+                                                                 │ son PING, score affiché (600), barre du haut mise à jour
+                                                                 │ (689), pommes restantes en bas (697), puis seulement la
+                                                                 │ nouvelle pomme (500) : elle reste la dernière chose tracée
+                                                                 │ avant la lecture du clavier (le robot joueur s'en sert pour
+                                                                 │ se synchroniser).
                                                                  │
 190 IF E=5 AND L<5 THEN GOSUB 650                                │ 5e pomme d'un niveau 1 à 4 : la porte de droite s'ouvre
                                                                  │ (650).
@@ -206,9 +207,12 @@ une comparaison vraie vaut -1.
 350 TEXT:PAPER 0:INK 2:POKE 618,10:RETURN                        │ Retour au mode texte (les caractères redessinés reviennent
                                                                  │ intacts), encre verte, curseur caché.
                                                                  │
-400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:LY=13:                     │ DESSIN D'UN TABLEAU. Efface l'écran ; le serpent repart d'un
+400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:CD=(L=5)OR(E>4):LY=13:     │ DESSIN D'UN TABLEAU. Efface l'écran ; le serpent repart d'un
       IF L>1 THEN LY=PD(L-1)+1                                   │ seul anneau, GR = anneaux qui sortiront du mur ; pommes déjà
                                                                  │ mangées ici ; pause WT = 5-L (4 au niveau 1, 0 au niveau 5).
+                                                                 │ CD = décompte des anneaux dans la barre : au niveau 5, et en
+                                                                 │ revenant sur un tableau dont la porte est déjà ouverte (E>4)
+                                                                 │ - modifié le 2026-11-24 by GliouCNR©70.
                                                                  │ LY = hauteur d'entrée : celle de la porte de droite du
                                                                  │ tableau précédent (13 au niveau 1).
                                                                  │
@@ -224,9 +228,11 @@ une comparaison vraie vaut -1.
 412 IF L>1 THEN FOR I=LY-1 TO LY+1:PLOT 2,I," ":NEXT             │ Niveaux 2 à 5 : ouvre la porte de gauche (3 cases) à la
                                                                  │ hauteur LY.
                                                                  │
-415 PLOT 2,26,6:PLOT 3,26,"SCORE":PLOT 14,26,7:                  │ Barre du bas : SCORE en cyan, NIV en blanc, HI-SCORE en
-      PLOT 15,26,"NIV"+STR$(L):PLOT 21,26,3:                     │ jaune (attributs 6, 7, 3 posés devant chaque mot).
-      PLOT 22,26,"HI-SCORE"                                      │
+415 PLOT 2,26,6:PLOT 3,26,"SCORE":PLOT 14,26,2:                  │ Barre du bas : SCORE en cyan, HI-SCORE en jaune (attributs
+      PLOT 15,26,F$:PLOT 21,26,3:PLOT 22,26,"HI-SCORE":          │ 6 et 3 devant chaque mot) et, entre les deux, la pomme
+      GOSUB 697                                                  │ magenta (attribut 2 + F$ en inverse) suivie des pommes
+                                                                 │ qu'il reste à manger pour gagner (697). Modifié le
+                                                                 │ 2026-11-24 by GliouCNR©70 : c'était « NIV 2 » en blanc.
                                                                  │
 417 PLOT 30,26,STR$(SC(1)):GOSUB 600                             │ Affiche le meilleur score du Hall of Fame, puis le score
                                                                  │ (600).
@@ -322,29 +328,62 @@ une comparaison vraie vaut -1.
 670 FOR I=#BB82 TO #BBA7:POKE I,32:NEXT:RETURN                   │ Efface la barre de statut (colonnes 2 à 39, ce qui fait
                                                                  │ disparaître CAPS).
                                                                  │
-680 GOSUB 692:M$="NIVEAU"+STR$(L)+" - @ ="+STR$(L*10)+" - "      │ BARRE DE STATUT ENTIÈRE (en entrant dans un tableau, 420) :
-                                                                 │ calcule le reste (692), puis niveau et valeur d'une pomme...
+680 GOSUB 692:M$="NIVEAU"+STR$(L)+" -"+CHR$(2)+F$+CHR$(7)+"="+   │ BARRE DE STATUT ENTIÈRE (en entrant dans un tableau, 420) :
+      STR$(L*10)+" - "                                           │ calcule le reste (692), puis niveau et valeur d'une pomme.
+                                                                 │ La pomme est celle du jeu, magenta (2026-11-24 by
+                                                                 │ GliouCNR©70) : attribut 2 (encre verte) à la place de
+                                                                 │ l'espace d'avant, la pomme en inverse (F$ = CHR$(192)),
+                                                                 │ attribut 7 (encre blanche) à la place de l'espace d'après...
                                                                  │
-684 T$="RESTE "+R$+"    ":IF L<5 AND E>4 THEN T$="PORTE OUVERTE" │ ...puis une zone de 13 cases : « RESTE n », ou « PORTE
-                                                                 │ OUVERTE » si elle l'est déjà...
+684 T$="RESTE "+R$+"    ":                                       │ ...puis une zone de 13 cases : « RESTE n », ou « PORTE
+      IF CD=0 AND E>4 THEN T$="PORTE OUVERTE"                    │ OUVERTE » si elle vient de s'ouvrir (avant la pomme d'après)...
                                                                  │
-686 M$=M$+T$:GOSUB 660:RA=A+LEN(M$)-13:RETURN                    │ ...écrit le tout au centre (660) et retient en RA l'adresse
+686 M$=M$+T$:GOSUB 660:RA=A+LEN(M$)-13                           │ ...écrit le tout au centre (660) et retient en RA l'adresse
                                                                  │ de la zone de 13 cases.
                                                                  │
-689 IF L<5 AND E>5 THEN RETURN                                   │ POMME MANGÉE (185). Pomme de plus, porte déjà ouverte :
-                                                                 │ rien ne change dans la barre.
+687 IF CD=0 AND E>4 THEN POKE RA-1,1                             │ COULEURS (2026-11-24 by GliouCNR©70). « PORTE OUVERTE » en
+                                                                 │ rouge : attribut d'encre 1 dans la case vide juste avant la
+                                                                 │ zone (une case attribut s'affiche vide ; la ligne repart en
+                                                                 │ blanc au début de chaque ligne d'écran).
                                                                  │
-690 IF L<5 AND E>4 THEN FOR I=0 TO 12:POKE RA+I,PZ(I):NEXT:      │ 5e pomme d'un niveau 1 à 4 : « PORTE OUVERTE » dans la zone,
-      RETURN                                                     │ 13 POKE seulement (lettres préparées ligne 37).
+688 POKE RA+5,32+(CD<>0)*(32-CO):RETURN                          │ Le nombre du décompte des anneaux dans sa couleur CO
+                                                                 │ (ligne 693) : attribut posé dans l'espace entre RESTE et le
+                                                                 │ nombre ; sinon un espace (CD<>0 vaut -1 si vrai, 0 si faux).
+                                                                 │ RESTE reste blanc.
                                                                  │
-691 GOSUB 692:POKE RA+6,ASC(R$):POKE RA+7,ASC(MID$(R$,2)):       │ Sinon seulement le nombre : 3 POKE. Réécrire toute la barre
-      POKE RA+8,ASC(RIGHT$(R$,1)):RETURN                         │ à chaque pomme ralentissait trop le jeu.
+689 IF CD=0 AND E>5 THEN CD=-1:GOSUB 692:                        │ POMME MANGÉE (185). Pomme d'après l'ouverture de la porte
+      T$="RESTE "+R$+"    ":FOR I=0 TO 12:                       │ (6e) : on passe au décompte des anneaux (CD=-1), on réécrit
+      POKE RA+I,ASC(MID$(T$,I+1,1)):NEXT:POKE RA-1,32:           │ une fois les 13 cases (« RESTE 246 »), on retire le rouge
+      POKE RA+5,CO:RETURN                                        │ d'avant la zone et on colore le nombre. Ensuite, 691 ne
+                                                                 │ change que le nombre. Modifié le 2026-11-24 by GliouCNR©70 :
+                                                                 │ avant, « PORTE OUVERTE » restait affiché.
                                                                  │
-692 R=5-E:IF L=5 THEN R=256-(((H-T) AND M)+1+GR)                 │ Reste : pommes avant la porte (niveaux 1 à 4) ; au niveau 5,
-                                                                 │ anneaux avant 256 (longueur = tampon + anneaux encore dans
-                                                                 │ le mur).
+690 IF CD=0 AND E>4 THEN FOR I=0 TO 12:POKE RA+I,PZ(I):NEXT:     │ 5e pomme d'un niveau 1 à 4 : « PORTE OUVERTE » en rouge dans
+      POKE RA-1,1:RETURN                                         │ la zone, 13 POKE seulement (lettres préparées ligne 37).
+                                                                 │
+691 GOSUB 692:POKE RA+6,ASC(R$):POKE RA+7,ASC(MID$(R$,2)):       │ Sinon seulement le nombre : 3 POKE, plus sa couleur (qui
+      POKE RA+8,ASC(RIGHT$(R$,1)):                               │ change en passant 120, 60 et 20). Réécrire toute la barre
+      POKE RA+5,32+(CD<>0)*(32-CO):RETURN                        │ à chaque pomme ralentissait trop le jeu.
+                                                                 │
+692 R=5-E:IF CD THEN R=256-(((H-T) AND M)+1+GR)                  │ Reste : pommes avant la porte (niveaux 1 à 4) ; avec CD
+                                                                 │ (niveau 5, ou retour sur un tableau ouvert), anneaux avant
+                                                                 │ 256 (longueur = tampon + anneaux encore dans le mur).
+                                                                 │
+693 CO=1:IF R<121 THEN CO=6:IF R<61 THEN CO=3:                   │ Couleur du décompte : rouge (plus de 120 anneaux à
+      IF R<21 THEN CO=2                                          │ gagner), cyan (61 à 120), jaune (21 à 60), vert (20 et
+                                                                 │ moins). Les IF s'enchaînent : chaque test n'a lieu que si
+                                                                 │ le précédent est vrai.
                                                                  │
 695 R$=LEFT$(MID$(STR$(R),2)+"  ",3):RETURN                      │ Le nombre sur 3 cases, calé à gauche (« 5  », « 232 »).
+                                                                 │
+697 RT=256-(((H-T) AND M)+1+GR):CT=1:IF RT<121 THEN CT=6:        │ POMMES RESTANTES, EN BAS (2026-11-24 by GliouCNR©70) : RT =
+      IF RT<61 THEN CT=3:IF RT<21 THEN CT=2                      │ pommes à manger pour gagner (256 - longueur, chaque pomme
+                                                                 │ ajoute un anneau), CT = sa couleur, comme le décompte du
+                                                                 │ haut : rouge, cyan sous 121, jaune sous 61, vert sous 21.
+                                                                 │
+698 PLOT 16,26,CT:PLOT 17,26,LEFT$(MID$(STR$(RT),2)+"  ",3):     │ Attribut de couleur juste après la pomme, puis le nombre
+      RETURN                                                     │ sur 3 cases (colonnes 17-19) ; la colonne 21 garde
+                                                                 │ l'attribut jaune de HI-SCORE.
                                                                  │
 700 CLS:GOSUB 670:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"          │ AFFICHAGE DU HALL OF FAME : barre de statut et écran
                                                                  │ effacés, titre en cyan (attribut 6)...
