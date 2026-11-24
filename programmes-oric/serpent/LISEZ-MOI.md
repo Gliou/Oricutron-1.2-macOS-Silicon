@@ -1,6 +1,6 @@
 # Serpent — jeu pour Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@`*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC*
 
 Petit jeu en BASIC : on dirige un serpent avec les flèches, il mange les pommes
 et grandit ; perdu s'il touche le bord, un mur ou sa queue. Espace pour jouer.
@@ -108,6 +108,26 @@ classement, son nom, son score et ses pommes sont écrits sur la piste 0,
 secteur 18, et relus au démarrage suivant. Oricutron réécrit le fichier `.dsk`
 tout seul (`diskautosave = yes`). En cassette, le Hall of Fame marche aussi mais
 n'est gardé que jusqu'à l'extinction. Détails : `HALL-OF-FAME-routine.txt`.
+
+Le Hall of Fame **livré** (disquette et cassette neuves) ne contient que des
+ORIC, avec des scores qui suivent le jeu (modifié le 2026-11-24 by GliouCNR©70) :
+
+| Place | Score | Pommes | Ce que ça représente |
+|---|---|---|---|
+| 10 | 50 | 5 | porte du niveau 1 ouverte (5 pommes à 10) |
+| 9 | 150 | 10 | porte du niveau 2 (+ 5 pommes à 20) |
+| 8 | 300 | 15 | porte du niveau 3 (+ 5 pommes à 30) |
+| 7 | 500 | 20 | porte du niveau 4 (+ 5 pommes à 40) |
+| 6 | 750 | 25 | + 5 pommes au niveau 5 (50 chacune) |
+| 5 | 1000 | 30 | + 10 au niveau 5 |
+| 4 | 1250 | 35 | + 15 au niveau 5 |
+| 3 | 1500 | 40 | + 20 au niveau 5 |
+| 2 | 2000 | 50 | + 30 au niveau 5 |
+| 1 | 2500 | 60 | + 40 au niveau 5 |
+
+Le nombre de pommes est le **minimum** pour faire ce score : chaque porte
+ouverte avec 5 pommes exactement, le reste mangé au niveau 5, où une pomme
+rapporte le plus (DATA 1050-1060 de `serpent.bas`).
 
 ![Hall of Fame](captures/serpent-hall-of-fame.jpg)
 

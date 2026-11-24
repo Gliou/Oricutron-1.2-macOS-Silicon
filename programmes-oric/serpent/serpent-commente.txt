@@ -1,5 +1,5 @@
 SERPENT.BAS COMMENTÉ — le programme BASIC du jeu, ligne par ligne
-Créé le 2026-11-22 by GliouCNR©70 — modifié le 2026-11-23 by GliouCNR©70
+Créé le 2026-11-22 by GliouCNR©70 — modifié le 2026-11-24 by GliouCNR©70
 
 À gauche : le programme tel qu'il est dans serpent.bas (lignes rangées par
 numéro, comme l'Oric les range). Les lignes trop longues sont coupées après
@@ -63,8 +63,11 @@ une comparaison vraie vaut -1.
 40 FOR I=0 TO 92:READ B:POKE #400+I,B:NEXT                       │ Lit les 93 octets de la routine disque du Hall of Fame (DATA
                                                                  │ 1000-1040) et les pose en $0400.
                                                                  │
-50 FOR I=1 TO 10:N$(I)="ATMOS   ":SC(I)=110-I*10:NEXT            │ Hall of Fame par défaut : 10 fois ATMOS, scores 100, 90 ...
-                                                                 │ 10.
+50 FOR I=1 TO 10:N$(I)="ORIC    ":READ SC(I),NP(I):NEXT          │ Hall of Fame par défaut (celui distribué) : 10 fois ORIC ;
+                                                                 │ score et nombre minimum de pommes lus en DATA 1050-1060.
+                                                                 │ Places 10 à 7 : le score minimum pour ouvrir la porte du
+                                                                 │ niveau 1, 2, 3, 4 (50, 150, 300, 500) ; places 6 à 1 : des
+                                                                 │ pommes en plus au niveau 5 (750 à 2500).
                                                                  │
 60 D=(PEEK(#4FF)=68):IF D THEN CALL #400:                        │ D = vrai si on a démarré de la disquette. Si oui, CALL #400
       IF PEEK(#4FE)=0 AND PEEK(#9800)=72 THEN GOSUB 950          │ lit le secteur 18 de la piste 0 dans $9800 ; s'il n'y a pas
@@ -505,4 +508,10 @@ une comparaison vraie vaut -1.
       76,65,4                                                    │
                                                                  │
 1040 DATA 41,46,141,254,4,88,96,160,4,136,208,253,96             │ Fin de la routine disque.
+                                                                 │
+1050 DATA 2500,60,2000,50,1500,40,1250,35,1000,30                │ Hall of Fame par défaut, places 1 à 5 : score puis pommes
+                                                                 │ (au niveau 5 une pomme vaut 50).
+                                                                 │
+1060 DATA 750,25,500,20,300,15,150,10,50,5                       │ Places 6 à 10. 500 = portes des niveaux 1 à 4 ouvertes avec
+                                                                 │ 5 pommes chacune (50+100+150+200), 50 = porte du niveau 1.
                                                                  │

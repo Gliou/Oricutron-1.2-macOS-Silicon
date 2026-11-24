@@ -136,7 +136,13 @@
 37 DIM PZ(12):FOR I=0 TO 12:PZ(I)=ASC(MID$("PORTE OUVERTE",I+1,1)):NEXT
 35 DIM CR(5),OP(5),EL(5),PD(5),NW(5),XA(5,15),YA(5,15),XB(5,15),YB(5,15)
 40 FOR I=0 TO 92:READ B:POKE #400+I,B:NEXT
-50 FOR I=1 TO 10:N$(I)="ATMOS   ":SC(I)=110-I*10:NEXT
+# Modifié le 2026-11-24 by GliouCNR©70 : Hall of Fame par défaut (celui de la
+# disquette et de la cassette distribuées) - que des ORIC. De la 10e à la 7e
+# place, le score minimum pour ouvrir la porte du niveau 1, 2, 3, 4 (5 pommes
+# par niveau : 50, 150, 300, 500) ; de la 6e à la 1re, des pommes en plus au
+# niveau 5 (50 points chacune) : 750, 1000, 1250, 1500, 2000, 2500. Le nombre
+# de pommes affiché est le minimum pour faire ce score (DATA 1050-1060).
+50 FOR I=1 TO 10:N$(I)="ORIC    ":READ SC(I),NP(I):NEXT
 60 D=(PEEK(#4FF)=68):IF D THEN CALL #400:IF PEEK(#4FE)=0 AND PEEK(#9800)=72 THEN GOSUB 950
 70 GOSUB 700:PLOT 12,22,"ESPACE = JOUER"
 75 GET K$:IF K$<>" " THEN 75
@@ -308,3 +314,6 @@
 1020 DATA 76,28,4,120,169,18,141,18,3,169,160,141,16,3,32,87,4,160,0,173
 1030 DATA 16,3,74,144,15,173,24,3,48,245,185,0,152,141,19,3,200,76,65,4
 1040 DATA 41,46,141,254,4,88,96,160,4,136,208,253,96
+# Hall of Fame par défaut (ligne 50) : score, pommes, de la 1re à la 10e place
+1050 DATA 2500,60,2000,50,1500,40,1250,35,1000,30
+1060 DATA 750,25,500,20,300,15,150,10,50,5
