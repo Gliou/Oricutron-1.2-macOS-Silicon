@@ -96,6 +96,20 @@ python3 serpent/bot_serpent.py                       # montrer la zone avec la s
 - Un seul robot à la fois : un second lancement s'arrête tout de suite (deux
   robots envoyaient chacun leurs flèches). Après une défaite, le robot ne s'arrête pas :
   il attend la partie suivante (Ctrl-C pour l'arrêter) ; à 256 anneaux il rend la main.
+- Vitesse d'Oricutron (F1 › Overclock), essais du 2026-11-24 : le robot joue
+  sûrement à **1 MHz** (vitesse d'un vrai Atmos). Avec `--mhz 2`, il passe
+  les niveaux 1 à 4 à **2 MHz** (pas de 80 à 110 ms) mais pas le niveau 5
+  (60 ms, le jeu n'y a plus de pause) ; à 4 MHz, il se trompe dès le niveau 1.
+  Le temps de calcul n'y est pour rien (5 ms) : c'est le flottement de
+  l'image - Oricutron dessine 50 images/s, l'écran en donne 60 et en saute
+  parfois une, si bien que l'instant où le jeu relit le clavier, vu depuis
+  l'image, varie de plus de 40 ms. Sous ~80 ms par pas, aucun réglage ne
+  tient. Au-delà de 8 MHz, plusieurs pas passent entre deux images
+  d'Oricutron : personne ne pourrait choisir sa case.
+- Améliorations faites pour ces essais : `--mhz` (les `WAIT` du jeu durent
+  moins longtemps), moment d'appui **auto-réglé** (une touche trop tard fait
+  appuyer plus tôt la fois suivante, trop tôt plus tard), et deux pas
+  d'avance au lieu d'un au-delà de 2 MHz.
 - `BOT_PHOTOS=<dossier>` : le robot photographie l'écran dès que le serpent
   cesse d'avancer (explosion), pour comprendre une défaite.
 - `--aller-retour N` (2026-11-23) : au lieu de foncer au niveau 5, le robot

@@ -36,6 +36,10 @@ tableau : en entrant avec un serpent très long, celui-ci doit se dérouler
 depuis la porte, queue bloquée à l'entrée, et s'enferme souvent (simulé :
 30 parties sur 30 gagnées à 120, 12 sur 20 à 170).
 
+Vitesse (2026-11-24) : --mhz N si Oricutron est accéléré (F1 > Overclock).
+Sûr à 1 MHz ; à 2 MHz jusqu'au niveau 4 ; au-delà, le flottement des images
+(50 i/s d'Oricutron, 60 i/s de l'écran) dépasse la durée d'un pas.
+
 Lecture de l'écran : on repère le cadre - briques blanches à joints magenta,
 colonnes 2 et 37, lignes 1 et 24 du PLOT - pour caler la grille, puis on lit le centre de chacun des 6x8
 points de chaque case et on compare au dessin des caractères redéfinis par
@@ -557,7 +561,13 @@ class Cerveau:
 # ---------------------------------------------------------------- robot
 class Robot:
     def __init__(self, ecran, clavier, cerveau, verbeux, test_gel=0, aller_retour=0,
-                 aller_retour_max=120):
+                 aller_retour_max=120, mhz=1):
+        self.mhz = mhz                     # vitesse choisie dans Oricutron (Overclock)
+        # appui à 0,4 pas après l'image à 1 MHz ; plus tôt quand l'Oric va plus
+        # vite (le retard de l'image pèse plus lourd) ; ensuite auto-réglé
+        self.avance = 1 if mhz <= 2 else 2  # pas engagés avant que la touche agisse
+        self.phase = 0.2 if mhz == 2 else 0.4
+        self.dernier_ecart = -1
         self.aller_retour = aller_retour   # @ à manger par visite (0 = score parfait)
         self.aller_retour_max = aller_retour_max   # au-delà : on reste dans le tableau
         self.test_gel = test_gel
@@ -601,6 +611,7 @@ class Robot:
         self.score = 0
         self.prevu = None            # direction prévue pour le pas suivant
         self.attendu = None          # direction prévue pour le pas qu'on va voir
+        self.plan = []               # directions engagées : plan[0] = attendu
         self.ecarts = 0              # pas qui n'ont pas pris la direction prévue
         self.mangees = 0             # @ mangés dans ce tableau (cette visite)
         self.e_niveau = [0] * 6      # @ mangés en tout dans chaque tableau (porte à 5)
@@ -723,6 +734,7 @@ class Robot:
             self.appui = None
             self.attendu = None
             self.prevu = dtete
+            self.plan = [None, dtete]
             return False
         if not simule and self.estimes:
             self.log(f"images revenues après {self.estimes} pas estimés")
@@ -753,6 +765,7 @@ class Robot:
             self.histo = h = [tete]
             self.prevu = dtete
             self.attendu = None
+            self.plan = [None, dtete]
             self.mangees = 0
             self.pomme = None
             self.appui = None
@@ -781,7 +794,21 @@ class Robot:
             # ce qu'on voit, le pas suivant continue dans la direction de la tête
             self.ecarts += 1
             self.log(f"!! direction vue {dtete}, prévue {self.attendu}")
+            # Moment d'appui auto-réglé (2026-11-24 by GliouCNR©70) : tout droit
+            # alors qu'on attendait le virage = touche trop tard -> appuyer plus
+            # tôt ; virage déjà pris (direction du pas d'après) = trop tôt.
+            # (le pas qui suit un écart en est la suite : on ne le compte pas)
+            if not simule and len(h) >= 3 and self.dernier_ecart != len(h) - 1:
+                avant = (h[-2][0] - h[-3][0], h[-2][1] - h[-3][1])
+                if dtete == avant != self.attendu:
+                    self.phase = max(0.0, self.phase - 0.08)
+                    self.log(f"touche trop tard : appui à {self.phase:.2f} pas")
+                elif dtete == self.prevu != self.attendu:
+                    self.phase = min(0.85, self.phase + 0.08)
+                    self.log(f"touche trop tôt : appui à {self.phase:.2f} pas")
+            self.dernier_ecart = len(h)
             self.prevu = dtete
+            self.plan = [None, dtete]
             self.appui = None
         if simule:
             # sans image : le corps est la fin de l'historique, la pomme
@@ -803,10 +830,19 @@ class Robot:
         pommes = list(zip(*np.where(genres == POMME)))
         self.pomme = (pommes[0][1] + COL_G, pommes[0][0] + LIG_H) if pommes else None
 
-        # pas k+1 déjà engagé : direction self.prevu (ou celle de la tête)
-        d1 = self.prevu or dtete
-        p1 = (tete[0] + d1[0], tete[1] + d1[1])
-        c1, a1 = Cerveau.avancer(corps, attente, [p1], p1 == self.pomme)
+        # Pas déjà engagés (file self.plan, 2026-11-24 by GliouCNR©70) : à
+        # 1-2 MHz, une touche vue après le pas k agit au pas k+2 - un seul pas
+        # engagé (self.avance = 1). Plus vite, l'image arrive si tard que le jeu
+        # a déjà relu le clavier : la touche agit au pas k+3, deux pas engagés.
+        self.plan = self.plan[1:]
+        engage = self.plan[:self.avance]
+        while len(engage) < self.avance:
+            engage.append(engage[-1] if engage else dtete)
+        p, c1, a1 = tete, corps, attente
+        for d in engage:
+            p = (p[0] + d[0], p[1] + d[1])
+            c1, a1 = Cerveau.avancer(c1, a1, [p], p == self.pomme)
+        p1, d1 = p, engage[-1]
         if len(h) < 2:
             d2, pourquoi = d1, "départ"          # le jeu efface les touches au départ
         else:
@@ -834,7 +870,7 @@ class Robot:
         if d2 != d1:
             if porte_ouvre:
                 delai = 0.30
-            elif a_mange:
+            elif a_mange and self.avance == 1:
                 # la pomme est déjà tracée : le jeu vient de relire le clavier
                 delai = 0.0
             else:
@@ -842,14 +878,20 @@ class Robot:
                 # centièmes) puis lit la touche : viser un peu avant le milieu
                 # de l'intervalle entre cette lecture et la suivante (la touche
                 # met encore 0 à 30 ms à être vue par l'Oric). Modifié le
-                # 2026-11-23 by GliouCNR©70 : 0,4 pas compté depuis l'arrivée
-                # de l'image (voir t_image dans boucle).
-                wt = 0.01 * max(0, 5 - self.niveau)
-                delai = wt + 0.4 * self.periode
+                # 2026-11-23 by GliouCNR©70 : compté depuis l'arrivée de
+                # l'image (voir t_image dans boucle). --mhz (2026-11-24) :
+                # Oricutron accéléré compte aussi ses WAIT plus vite ; la
+                # fraction de pas (self.phase) se règle toute seule.
+                wt = 0.01 * max(0, 5 - self.niveau) / self.mhz
+                delai = wt + self.phase * self.periode
             base = maintenant() if (a_mange and not simule) else t
             self.appui = (base + delai, d2)
-        self.attendu = d1
-        self.prevu = d2
+            if not simule:
+                self.log(f"calcul {1000 * (maintenant() - t):.0f} ms, appui prévu à "
+                         f"+{1000 * (base + delai - t):.0f} ms, pas {1000 * self.periode:.0f} ms")
+        self.plan = engage + [d2]
+        self.attendu = self.plan[0]
+        self.prevu = self.plan[1]
         return True
 
     def attendre_pomme(self, genres):
@@ -885,6 +927,8 @@ def main():
     ap.add_argument("--aller-retour", type=int, default=0, metavar="N",
                     help="manger N @ par visite puis changer de tableau, du niveau 1 au 5 "
                          "et retour (0 = score parfait, tout au niveau 5)")
+    ap.add_argument("--mhz", type=float, default=1,
+                    help="vitesse de l'Oric réglée dans Oricutron (F1 > Overclock), 1 par défaut")
     ap.add_argument("--aller-retour-max", type=int, default=120, metavar="L",
                     help="longueur à partir de laquelle on ne change plus de tableau (120)")
     ap.add_argument("--test-gel", type=float, default=0, metavar="S",
@@ -926,7 +970,7 @@ def main():
     print("Le robot regarde l'écran... (Ctrl-C pour arrêter)")
     try:
         Robot(ecran, clavier, Cerveau(args.longueur_max), args.verbeux,
-              args.test_gel, args.aller_retour, args.aller_retour_max).boucle()
+              args.test_gel, args.aller_retour, args.aller_retour_max, args.mhz).boucle()
     except KeyboardInterrupt:
         print("\nArrêt.")
     finally:
