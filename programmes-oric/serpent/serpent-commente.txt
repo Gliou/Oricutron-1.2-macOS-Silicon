@@ -29,23 +29,22 @@ une comparaison vraie vaut -1.
 12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT                       │ Lit les 44 octets de la routine titre_copie (DATA 990-995)
                                                                  │ et les pose en $0460.
                                                                  │
-14 IF PEEK(#4FF)=68 THEN PAPER 0:INK 6:HIRES:POKE 618,10:        │ Démarré de la disquette (marque 68 en $04FF) ? Alors : passe
-      POKE #461,#58:POKE #482,#77:CALL #460:PRINT:               │ en HIRES, cache le curseur, recopie l'image de présentation
-      PRINT "         APPUIE SUR UNE TOUCHE";:POKE 618,10:       │ ($5800 -> écran $A000) avec CALL #460 - #461 et #482 = pages
-      POKE 735,0:GOSUB 980:TEXT                                  │ de départ de la copie (modifié le 2026-11-23 by GliouCNR©70
-                                                                 │ : l'image était en $6000 avant l'écran de victoire), écrit
-                                                                 │ APPUIE SUR UNE TOUCHE en bas, attend une touche (980) puis
-                                                                 │ revient en mode TEXTE.
+13 DIM X(255),Y(255),N$(10),SC(10),NP(10),GL(79),PZ(12)          │ Dimensionne d'abord X() et Y() (la boucle du jeu les trouve
+                                                                 │ plus vite), puis le Hall of Fame (N$, SC, NP), GL() qui
+                                                                 │ garde les dessins des caractères en attendant le mode texte,
+                                                                 │ et PZ() (« PORTE OUVERTE »).
                                                                  │
-20 CLS:PAPER 0:INK 2:POKE 618,10                                 │ Efface l'écran, fond noir, encre verte, curseur caché (618 =
-                                                                 │ 10).
+14 IF PEEK(#4FF)<>68 THEN GOSUB 970:GOTO 20                      │ Cassette (pas de marque 68 en $04FF) : pas d'image, on
+                                                                 │ charge tout de suite les DATA (970) et on passe au jeu.
                                                                  │
-30 DIM X(255),Y(255),N$(10),SC(10),NP(10):W$=CHR$(160):          │ Tableaux : X(),Y() = positions des anneaux (tampon
-      B$=CHR$(255):F$=CHR$(192)                                  │ circulaire de 256), N$()/SC()/NP() = noms, scores et pommes
-                                                                 │ mangées du Hall of Fame. W$ = mur intérieur (espace en
-                                                                 │ inverse, pavé blanc), B$ = bord (briques en inverse), F$ =
-                                                                 │ la pomme (caractère @ redessiné, en inverse : magenta sur
-                                                                 │ blanc, pour qu'on la voie dans un long serpent vert).
+15 PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#58:POKE #482,#77:  │ Disquette : image titre en HIRES (CALL #460), APPUIE SUR UNE
+      CALL #460:PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:   │ TOUCHE, puis PENDANT que l'image est affichée, chargement
+      POKE 618,10:POKE 735,0:GOSUB 970:GOSUB 980:TEXT            │ des DATA (970) ; attente d'une touche (980) et retour en
+                                                                 │ mode texte. L'écran noir qui suit est ainsi 3 fois plus
+                                                                 │ court.
+                                                                 │
+20 CLS:PAPER 0:INK 2:POKE 618,10                                 │ Efface l'écran, fond noir, encre verte (Hall of Fame),
+                                                                 │ curseur caché (618 = 10).
                                                                  │
 32 FOR I=0 TO 7:POKE #B7F8+I,63:NEXT:FOR I=1 TO 3:               │ Redessine le caractère 127 en briques (2026-11-23) : lignes
       POKE #B7F8+I,4:POKE #B7FC+I,32:NEXT                        │ 0 et 4 pleines (63), joints verticaux décalés (4, puis 32).
@@ -53,36 +52,16 @@ une comparaison vraie vaut -1.
                                                                  │ blanc : des briques blanches à joints magenta. Le bloc
                                                                  │ magenta plein d'avant se confondait avec la pomme.
                                                                  │
-34 FOR I=0 TO 7:READ B:POKE #B600+I,B:NEXT                       │ Redessine le caractère @ en petite pomme (8 nombres lus en
-                                                                 │ DATA 996).
+34 FOR I=0 TO 7:POKE #B600+I,GL(I):NEXT                          │ Pose le dessin de la pomme (gardé dans GL(0-7)) dans le
+                                                                 │ caractère @ ($B600) - possible seulement en mode texte.
                                                                  │
 35 DIM CR(5),OP(5),EL(5),PD(5),NW(5),XA(5,15),YA(5,15),XB(5,15), │ Mémoire des 5 tableaux : CR() créé ?, OP() porte de droite
       YB(5,15)                                                   │ ouverte ?, EL() pommes déjà mangées, PD() hauteur de la
                                                                  │ porte, NW() nombre de murs, XA/YA-XB/YB extrémités de chaque
                                                                  │ mur (15 au plus).
                                                                  │
-36 FOR I=0 TO 71:READ B:POKE #B7B0+I,B:NEXT:Z$=CHR$(122)         │ Redessine les caractères 118 à 126 : 4 queues, le corps, 4
-                                                                 │ têtes (DATA 997-999). Z$ = un anneau du corps.
-                                                                 │
-37 DIM PZ(12):FOR I=0 TO 12:                                     │ Lettres de « PORTE OUVERTE » préparées une fois pour toutes
-      PZ(I)=ASC(MID$("PORTE OUVERTE",I+1,1)):NEXT                │ (ajouté le 2026-11-23) : la porte qui s'ouvre n'écrit que
-                                                                 │ ces 13 cases (690), vite.
-                                                                 │
-40 FOR I=0 TO 92:READ B:POKE #400+I,B:NEXT                       │ Lit les 93 octets de la routine disque du Hall of Fame (DATA
-                                                                 │ 1000-1040) et les pose en $0400.
-                                                                 │
-50 FOR I=1 TO 10:N$(I)="ORIC    ":READ SC(I),NP(I):NEXT          │ Hall of Fame par défaut (celui distribué) : 10 fois ORIC ;
-                                                                 │ score et nombre minimum de pommes lus en DATA 1050-1060.
-                                                                 │ Places 10 à 7 : le score minimum pour ouvrir la porte du
-                                                                 │ niveau 1, 2, 3, 4 (50, 150, 300, 500) ; places 6 à 1 : des
-                                                                 │ pommes en plus au niveau 5 (750 à 2500).
-                                                                 │
-52 FOR I=0 TO 316:READ B:POKE #7600+I,B:NEXT:CALL SR             │ Lit les 317 octets du moteur de son (son.s, DATA 1070-1100),
-                                                                 │ les pose en $7600 et l'installe (CALL SR) : il se branche
-                                                                 │ sur l'interruption de l'horloge, 100 fois par seconde.
-                                                                 │
-53 V1$="":V2$="":FOR I=1 TO 16:V1$=V1$+W$:V2$=V2$+"-":NEXT       │ Prépare la barre du volume : V1$ = 16 cases pleines (pavés
-                                                                 │ blancs), V2$ = 16 tirets.
+36 FOR I=0 TO 71:POKE #B7B0+I,GL(8+I):NEXT:Z$=CHR$(122)          │ Pose les 9 dessins du serpent (GL(8-79)) dans les caractères
+                                                                 │ 118 à 126 ($B7B0). Z$ = un anneau du corps.
                                                                  │
 60 D=(PEEK(#4FF)=68):IF D THEN CALL #400:                        │ D = vrai si on a démarré de la disquette. Si oui, CALL #400
       IF PEEK(#4FE)=0 AND PEEK(#9800)=72 THEN GOSUB 950          │ lit le secteur 18 de la piste 0 dans $9800 ; s'il n'y a pas
@@ -520,6 +499,23 @@ une comparaison vraie vaut -1.
                                                                  │ disquette d'avant le réglage a 0 ici, le volume reste à 32.
                                                                  │
 967 RETURN                                                       │
+                                                                 │
+970 FOR I=0 TO 79:READ GL(I):NEXT:FOR I=0 TO 92:READ B:          │ CHARGEMENT : lit les dessins de la pomme et du serpent dans
+      POKE #400+I,B:NEXT                                         │ GL() (80 nombres, DATA 996-999), puis la routine disque du
+                                                                 │ Hall of Fame (93 octets, DATA 1000-1040) qu'il pose en
+                                                                 │ $0400...
+                                                                 │
+972 FOR I=1 TO 10:N$(I)="ORIC    ":READ SC(I),NP(I):NEXT         │ ...le Hall of Fame par défaut (10 fois ORIC, DATA
+                                                                 │ 1050-1060)...
+                                                                 │
+974 FOR I=0 TO 316:READ B:POKE #7600+I,B:NEXT:CALL SR            │ ...le moteur de son (317 octets, DATA 1070+) posé en $7600
+                                                                 │ et installé (CALL SR)...
+                                                                 │
+976 W$=CHR$(160):B$=CHR$(255):F$=CHR$(192):FOR I=0 TO 12:        │ ...les chaînes du jeu (W$ mur, B$ bord, F$ pomme) et les
+      PZ(I)=ASC(MID$("PORTE OUVERTE",I+1,1)):NEXT                │ lettres de « PORTE OUVERTE » (PZ)...
+                                                                 │
+978 V1$="":V2$="":FOR I=1 TO 16:V1$=V1$+W$:V2$=V2$+"-":NEXT:     │ ...et les deux moitiés de la barre du volume (V1$ pleine,
+      RETURN                                                     │ V2$ vide).
                                                                  │
 980 IF PEEK(735)<128 THEN 980                                    │ ATTENTE D'UNE TOUCHE sans GET (GET rallume le curseur) : on
                                                                  │ guette le bit 7 de 735...

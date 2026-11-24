@@ -158,6 +158,15 @@ verrouillage des majuscules (`$020C`), si bien que la ROM n'a plus jamais de
 CAPS à réafficher, même après `TEXT`. Le nom tapé pour le Hall of Fame est
 remis en majuscules par le programme.
 
+Pendant que l'image attend une touche, le programme charge ses DATA (moteur de
+son, routine disque, Hall of Fame par défaut, dessins des caractères) : l'écran
+noir entre l'image et le Hall of Fame est 3 fois plus court (mesuré : 319
+centièmes au lieu de 964, dessin du Hall of Fame compris ; 2026-11-24). Seuls
+restent après l'image ce qui ne peut pas se faire en HIRES : poser les dessins
+des caractères (leur mémoire, `$B400`, fait partie de l'image en HIRES) et
+lire le Hall of Fame sur la disquette (il passe par `$9800`, où HIRES range les
+caractères).
+
 L'image est dessinée par `titre_serpent.py` (Python + Pillow,
 `pip install pillow`) au format HIRES de l'Oric (`serpent-titre.hir`, 8 000
 octets) ; l'aperçu `captures/serpent-titre.png` est recalculé à partir de ces

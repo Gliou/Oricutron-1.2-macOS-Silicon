@@ -132,30 +132,36 @@
 5 HIMEM #7600
 10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:K=0:GR=0:TM=0:TC=0:M=255:SP=32:KB=735:I=0:SN=#7603
 11 PG=#7606:ZP=#7609:XP=#760C:SR=#7600:VO=#760F:VU=32:VS=-1
+# Modifié le 2026-11-24 by GliouCNR©70 : écran noir raccourci entre l'image titre
+# et le Hall of Fame. Les lectures de DATA (moteur de son, routine disque, Hall
+# of Fame par défaut, dessins des caractères) se font maintenant PENDANT que
+# l'image titre attend une touche (sous-programme 970, ligne 15). Seul ce qui
+# ne peut pas se faire en HIRES reste après TEXT : poser les dessins des
+# caractères (la mémoire des caractères $B400 fait partie de l'image en HIRES ;
+# ils attendent dans GL()) et lire le Hall of Fame sur la disquette (CALL #400
+# écrit en $9800, où HIRES range le jeu de caractères). X() et Y() sont
+# dimensionnés en premier : le BASIC les trouve plus vite dans la boucle du jeu.
+13 DIM X(255),Y(255),N$(10),SC(10),NP(10),GL(79),PZ(12)
 12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT
 # Modifié le 2026-11-23 by GliouCNR©70 : la disquette a maintenant 2 images ;
 # l'image titre est lue en $5800 (et non plus $6000) : on donne à la routine
 # de copie (#460) la page de départ (#461) et celle des 64 derniers octets (#482).
-14 IF PEEK(#4FF)=68 THEN PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#58:POKE #482,#77:CALL #460:PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:POKE 618,10:POKE 735,0:GOSUB 980:TEXT
+14 IF PEEK(#4FF)<>68 THEN GOSUB 970:GOTO 20
+15 PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#58:POKE #482,#77:CALL #460:PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:POKE 618,10:POKE 735,0:GOSUB 970:GOSUB 980:TEXT
 20 CLS:PAPER 0:INK 2:POKE 618,10
-30 DIM X(255),Y(255),N$(10),SC(10),NP(10):W$=CHR$(160):B$=CHR$(255):F$=CHR$(192)
 32 FOR I=0 TO 7:POKE #B7F8+I,63:NEXT:FOR I=1 TO 3:POKE #B7F8+I,4:POKE #B7FC+I,32:NEXT
-34 FOR I=0 TO 7:READ B:POKE #B600+I,B:NEXT
-36 FOR I=0 TO 71:READ B:POKE #B7B0+I,B:NEXT:Z$=CHR$(122)
-37 DIM PZ(12):FOR I=0 TO 12:PZ(I)=ASC(MID$("PORTE OUVERTE",I+1,1)):NEXT
+34 FOR I=0 TO 7:POKE #B600+I,GL(I):NEXT
+36 FOR I=0 TO 71:POKE #B7B0+I,GL(8+I):NEXT:Z$=CHR$(122)
 35 DIM CR(5),OP(5),EL(5),PD(5),NW(5),XA(5,15),YA(5,15),XB(5,15),YB(5,15)
-40 FOR I=0 TO 92:READ B:POKE #400+I,B:NEXT
 # Modifié le 2026-11-24 by GliouCNR©70 : Hall of Fame par défaut (celui de la
 # disquette et de la cassette distribuées) - que des ORIC. De la 10e à la 7e
 # place, le score minimum pour ouvrir la porte du niveau 1, 2, 3, 4 (5 pommes
 # par niveau : 50, 150, 300, 500) ; de la 6e à la 1re, des pommes en plus au
 # niveau 5 (50 points chacune) : 750, 1000, 1250, 1500, 2000, 2500. Le nombre
 # de pommes affiché est le minimum pour faire ce score (DATA 1050-1060).
-50 FOR I=1 TO 10:N$(I)="ORIC    ":READ SC(I),NP(I):NEXT
-# Moteur de son (son.s, DATA 1070+, 317 octets posés en $7600) : installé sur
-# l'interruption de l'horloge (CALL SR). V1$/V2$ = cases pleines/vides de la barre.
-52 FOR I=0 TO 316:READ B:POKE #7600+I,B:NEXT:CALL SR
-53 V1$="":V2$="":FOR I=1 TO 16:V1$=V1$+W$:V2$=V2$+"-":NEXT
+# Moteur de son (son.s, DATA 1070+, 317 octets posés en $7600 par la ligne 974) :
+# installé sur l'interruption de l'horloge (CALL SR). V1$/V2$ = cases pleines/vides
+# de la barre du volume.
 60 D=(PEEK(#4FF)=68):IF D THEN CALL #400:IF PEEK(#4FE)=0 AND PEEK(#9800)=72 THEN GOSUB 950
 70 GOSUB 700:PLOT 12,22,"ESPACE = JOUER"
 73 GOSUB 760
@@ -320,6 +326,15 @@
 965 B=PEEK(#98F0):IF B>0 AND B<66 THEN VU=B-1:VS=VU
 967 RETURN
 # Attente d'une touche sans GET (GET rallume le curseur) : bit 7 de PEEK(735)
+# CHARGEMENT des DATA, dans leur ordre : dessins de la pomme et du serpent
+# (gardés dans GL(), posés lignes 34-36 après TEXT), routine disque du Hall of
+# Fame ($0400), Hall of Fame par défaut, moteur de son ($7600, installé) ; puis
+# les chaînes et tableaux du jeu (W$, B$, F$, PZ(), barre du volume V1$/V2$).
+970 FOR I=0 TO 79:READ GL(I):NEXT:FOR I=0 TO 92:READ B:POKE #400+I,B:NEXT
+972 FOR I=1 TO 10:N$(I)="ORIC    ":READ SC(I),NP(I):NEXT
+974 FOR I=0 TO 316:READ B:POKE #7600+I,B:NEXT:CALL SR
+976 W$=CHR$(160):B$=CHR$(255):F$=CHR$(192):FOR I=0 TO 12:PZ(I)=ASC(MID$("PORTE OUVERTE",I+1,1)):NEXT
+978 V1$="":V2$="":FOR I=1 TO 16:V1$=V1$+W$:V2$=V2$+"-":NEXT:RETURN
 980 IF PEEK(735)<128 THEN 980
 985 POKE 735,0:RETURN
 # Routine machine de titre_copie.s (xa -o titre_copie.bin titre_copie.s)
@@ -341,7 +356,7 @@
 1020 DATA 76,28,4,120,169,18,141,18,3,169,160,141,16,3,32,87,4,160,0,173
 1030 DATA 16,3,74,144,15,173,24,3,48,245,185,0,152,141,19,3,200,76,65,4
 1040 DATA 41,46,141,254,4,88,96,160,4,136,208,253,96
-# Hall of Fame par défaut (ligne 50) : score, pommes, de la 1re à la 10e place
+# Hall of Fame par défaut (ligne 972) : score, pommes, de la 1re à la 10e place
 1050 DATA 2500,60,2000,50,1500,40,1250,35,1000,30
 1060 DATA 750,25,500,20,300,15,150,10,50,5
 # Moteur de son son.s (xa -o son.bin son.s), 317 octets en $7600
