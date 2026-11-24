@@ -8,7 +8,8 @@
 ; Modifié le 2026-11-24 by GliouCNR©70 - vraie petite musique - 4 phrases (~10 s)
 ; sur le canal A et une basse sur le canal C (2 voix), moteur déplacé en $5400.
 ; Modifié le 2026-11-24 by GliouCNR©70 - plusieurs morceaux (CHANSON, en $5413) -
-; 0 = comptine de l'écran titre, 1 = « perdu » sur le Hall of Fame. La musique
+; 0 = comptine de l'écran titre, 1 = « perdu » sur le Hall of Fame, 2 = fanfare
+; de victoire (ajoutée le 2026-11-24 by GliouCNR©70). La musique
 ; en la mineur est rangée dans ../musiques/la-mineur-2-voix.s.
 ;
 ;   xa -o son.bin son.s
@@ -25,7 +26,8 @@
 ;   CALL #5409  ZAP    ZAP au volume choisi (canal B, balayage de 0,3 s)
 ;   CALL #540C  BOUM   EXPLODE au volume choisi (canal C, bruit, ~1,5 s)
 ;   POKE #540F,v       le volume, 0 (muet) à 15 (le maximum de la puce)
-;   POKE #5413,n       morceau - 0 comptine (titre), 1 « perdu » (Hall of Fame)
+;   POKE #5413,n       morceau - 0 comptine (titre), 1 « perdu » (Hall of Fame),
+;                      2 fanfare de victoire
 ;   CALL #5410  MUSIQUE le morceau choisi, en boucle (mélodie canal A, basse
 ;                      canal C), au volume choisi ;
 ;                      INIT l'arrête
@@ -198,7 +200,13 @@ mfin    sta mi                ; (A = 0) fin de la mélodie - on la reprend
 basse   ldy bi
 bm1     lda cbasse,y          ; (adresse posée par MUSIQUE)
         beq bfin
-        tax
+        cmp #1                ; période 1 = silence
+        bne bson
+        lda #10
+        ldx #0
+        jsr AY
+        jmp bdur
+bson    tax
         lda #4                ; période du canal C, partie basse...
         jsr AY
         ldy bi
@@ -207,20 +215,17 @@ bm2     lda cbasse,y
         tax
         lda #5                ; ... et partie haute
         jsr AY
-        ldy bi
+        lda #10               ; volume du canal C
+        ldx vol
+        jsr AY
+bdur    ldy bi
         iny
         iny
 bm3     lda cbasse,y          ; durée
         sta bt
-        dey
-        dey
-        iny
-        iny
         iny
         sty bi
-        lda #10               ; volume du canal C
-        ldx vol
-        jmp AY
+        rts
 bfin    sta bi
         jmp basse
 
@@ -318,11 +323,11 @@ cc      .byt 0                ; tops avant la prochaine baisse
 mt      .byt 0                ; tops restants de la note de musique (0 = pas de musique)
 mi      .byt 0                ; position dans la mélodie
 
-; Adresses des tables de chaque morceau (0 comptine, 1 perdu)
-tmel    .byt <comptine, <perdu
-tmeh    .byt >comptine, >perdu
-tbal    .byt <cbasse, <pbasse
-tbah    .byt >cbasse, >pbasse
+; Adresses des tables de chaque morceau (0 comptine, 1 perdu, 2 fanfare)
+tmel    .byt <comptine, <perdu, <fanfare
+tmeh    .byt >comptine, >perdu, >fanfare
+tbal    .byt <cbasse, <pbasse, <fbasse
+tbah    .byt >cbasse, >pbasse, >fbasse
 
 ; Format - mélodie - période AY sur 1 octet (1 MHz / 16 / fréquence), durée en
 ; centièmes de seconde, période 1 = silence, 0 = fin (reprise au début) ;
@@ -357,6 +362,21 @@ perdu   .byt 95,30, 106,30, 119,30, 127,30,  142,30, 127,30, 119,60
 ; basse - la mi / la do / sol mi / la la (blanches)
 pbasse  .byt $38,2,60, $F6,2,60,  $38,2,60, $DD,1,60
         .byt $7E,2,60, $F6,2,60,  $38,2,60, $38,2,60
+        .byt 0
+; FANFARE (victoire) - originale, do majeur, appels de trompette ; 4 mesures de
+; 120 centièmes puis un silence de 60, ~5,4 s en boucle. la5 71, si5 63, do6 60.
+; sol do mi sol- mi sol-- | fa fa fa sol- la sol-- |
+; la la la si- la sol- mi | sol sol la si do6------ | (silence)
+fanfare .byt 159,10, 119,10, 95,10, 80,30, 95,10, 80,50
+        .byt 90,10,  90,10,  90,10, 80,30, 71,10, 80,50
+        .byt 71,10,  71,10,  71,10, 63,30, 71,10, 80,30, 95,20
+        .byt 80,10,  80,10,  71,10, 63,10, 60,80
+        .byt 1,60
+        .byt 0
+; basse - do sol / fa do / sol ré / sol do / silence (blanches de 60)
+fbasse  .byt $DD,1,60, $7E,2,60,  $CC,2,60, $DD,1,60
+        .byt $7E,2,60, $A9,1,60,  $7E,2,60, $DD,1,60
+        .byt 1,0,60
         .byt 0
 bt      .byt 0                ; tops restants de la note de basse
 bi      .byt 0                ; position dans la basse

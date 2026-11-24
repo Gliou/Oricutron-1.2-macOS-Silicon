@@ -105,7 +105,7 @@ exactement ce qui touche.
 serpent fait « tic, tac », et PING, ZAP et EXPLODE accompagnent les pommes,
 les portes et la fin de partie. Ceux de la ROM étaient trop forts et ne se
 règlent pas : la ROM met le volume sur l'**enveloppe** de la puce son
-(AY-3-8912), qui part toujours de 15, le maximum. Le moteur `son.s` (769
+(AY-3-8912), qui part toujours de 15, le maximum. Le moteur `son.s` (863
 octets en `$5400`, au-dessus de HIMEM abaissé à `$5400`, juste sous l'image
 titre) les remplace : il se
 branche sur l'interruption de l'horloge de l'Oric (100 fois par seconde) et
@@ -121,7 +121,8 @@ gardé avec le Hall of Fame (octet `$98F0`) et repris au démarrage suivant.
 morceaux (choix par `POKE #5413,n` puis `CALL #5410`) : 0 = la comptine de
 l'écran titre (reprise au Hall of Fame après une victoire), 1 = « perdu »,
 un petit air lent et doux en la mineur, sur le Hall of Fame après une
-défaite. Chaque musique tourne en boucle jusqu'au début de la partie suivante.
+défaite. 2 = la fanfare de victoire (do majeur, appels de trompette jusqu'au
+do aigu, basse, ~5,4 s), dès « GAGNE ! » et sur l'écran de victoire. Chaque musique tourne en boucle jusqu'au début de la partie suivante.
 La première musique du titre, en la mineur, est gardée pour un autre projet
 dans [`../musiques/la-mineur-2-voix.s`](../musiques/la-mineur-2-voix.s).
 
@@ -201,7 +202,9 @@ Quand le serpent atteint 256 anneaux, le jeu reste 3 secondes sur le tableau
 avec « GAGNE ! », puis, sur la disquette, affiche une image HIRES - GAGNÉ ! en
 dégradé, une coupe « 256 », des pommes, le serpent complet. Dessous, dans les
 lignes de texte, le score (jaune) et les pommes mangées (magenta) ; une petite
-fanfare joue (sol do mi sol - mi sol), puis une touche mène au Hall of Fame.
+fanfare joue (depuis le 2026-11-24 : vraie fanfare originale à 2 voix,
+morceau 2 du moteur de son, en boucle dès « GAGNE ! »), puis une touche mène au
+Hall of Fame, où la comptine reprend.
 L'image est chargée au démarrage avec l'image titre et attend en
 `$7800-$973F`, au-dessus de HIMEM (abaissé à `$7800`), que la partie soit
 gagnée ; la même routine de copie (`CALL #460`) sert aux deux images. Sur
