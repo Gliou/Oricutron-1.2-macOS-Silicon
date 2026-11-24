@@ -158,14 +158,16 @@ verrouillage des majuscules (`$020C`), si bien que la ROM n'a plus jamais de
 CAPS à réafficher, même après `TEXT`. Le nom tapé pour le Hall of Fame est
 remis en majuscules par le programme.
 
-Pendant que l'image attend une touche, le programme charge ses DATA (moteur de
-son, routine disque, Hall of Fame par défaut, dessins des caractères) : l'écran
-noir entre l'image et le Hall of Fame est 3 fois plus court (mesuré : 319
-centièmes au lieu de 964, dessin du Hall of Fame compris ; 2026-11-24). Seuls
-restent après l'image ce qui ne peut pas se faire en HIRES : poser les dessins
-des caractères (leur mémoire, `$B400`, fait partie de l'image en HIRES) et
-lire le Hall of Fame sur la disquette (il passe par `$9800`, où HIRES range les
-caractères).
+L'image affiche « APPUIE SUR ESPACE » (modifié le 2026-11-24 by GliouCNR©70).
+Le chargement est réparti pour que l'écran noir soit le plus court possible :
+avant l'image, les dessins des caractères (posés en `$B400` : HIRES les range
+en `$9800` et `TEXT` les remet), la routine disque et la lecture du Hall of
+Fame et du volume sur la disquette ; pendant que l'image attend, le moteur de
+son et les chaînes du jeu. À l'appui sur ESPACE, le message s'efface et une
+**petite musique** (mélodie originale en la mineur, ~4 s, jouée par le moteur
+de son au volume choisi) accompagne le passage au Hall of Fame. Après l'image,
+il ne reste qu'à dessiner le Hall of Fame : 185 centièmes mesurés, contre 964
+au départ.
 
 L'image est dessinée par `titre_serpent.py` (Python + Pillow,
 `pip install pillow`) au format HIRES de l'Oric (`serpent-titre.hir`, 8 000

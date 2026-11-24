@@ -1,6 +1,8 @@
 ; son.s — moteur de son du serpent, avec un VOLUME réglable (0 à 15), qui
 ; remplace PING, ZAP et EXPLODE de la ROM (trop forts) et le tic-tac des pas.
 ; Créé le 2026-11-24 by GliouCNR©70 (remplace son_pas.s)
+; Modifié le 2026-11-24 by GliouCNR©70 - petite musique de l'écran titre (MUSIQUE),
+; jouée par l'interruption pendant que le BASIC charge le Hall of Fame.
 ;
 ;   xa -o son.bin son.s
 ;   (les octets sont dans les lignes DATA 1070+ de serpent.bas, posés en $7600,
@@ -15,6 +17,8 @@
 ;   CALL #7609  ZAP    ZAP au volume choisi (canal B, balayage de 0,3 s)
 ;   CALL #760C  BOUM   EXPLODE au volume choisi (canal C, bruit, ~1,5 s)
 ;   POKE #760F,v       le volume, 0 (muet) à 15 (le maximum de la puce)
+;   CALL #7610  MUSIQUE petite musique (canal A, ~4 s), au volume choisi ;
+;                      INIT l'arrête
 ;
 ; Pourquoi - dans la ROM, PING et EXPLODE mettent le volume sur l'ENVELOPPE de
 ; la puce AY-3-8912 (registre 8 = 16), qui part toujours de 15, le maximum ; ZAP
@@ -41,6 +45,7 @@ ROMIRQ   = $EE22
         jmp zap
         jmp boum
 vol     .byt 15               ; $760F - volume choisi (0-15)
+        jmp musique           ; $7610
 
 ; ----- Installation (peut être appelée plusieurs fois) -----
 init    sei
@@ -73,6 +78,7 @@ coupe   tya
         sta lb
         sta rb
         sta lc
+        sta mt                ; plus de musique
         rts
 
 ; ----- Tic-tac du pas - canal A, 3 tops d'horloge -----
@@ -122,12 +128,42 @@ boum    lda vol
         ldx vol
         jmp AY
 
+; ----- MUSIQUE - lance la mélodie depuis le début -----
+musique sei
+        lda #0
+        sta mi
+        jsr note
+        cli
+        rts
+
+; Joue la note suivante de la mélodie (période, durée en tops), 0 = fin
+note    ldy mi
+        lda melodie,y
+        beq mfin
+        tax
+        lda #0                ; période du canal A
+        jsr AY
+        ldy mi
+        lda melodie+1,y
+        sta mt
+        iny
+        iny
+        sty mi
+        lda #8
+        ldx vol
+        jmp AY
+mfin    sta mt                ; (A = 0) mélodie finie, canal A muet
+        lda #8
+        ldx #0
+        jmp AY
+
 ; ----- Interruption - 100 fois par seconde -----
 tick    pha
         lda VIA_IFR
         and #$40
-        beq rom               ; pas l'horloge - rien à faire ici
-        txa
+        bne horloge
+        jmp rom               ; pas l'horloge - rien à faire ici
+horloge txa
         pha
         tya
         pha
@@ -138,6 +174,18 @@ tick    pha
         lda #8
         ldx #0
         jsr AY
+        lda mt                ; canal A - musique en cours ?
+        beq tb
+        dec mt
+        lda mt
+        cmp #3                ; 3 tops de silence avant la note suivante
+        bne tm2
+        lda #8
+        ldx #0
+        jsr AY
+tm2     lda mt
+        bne tb
+        jsr note
 tb      lda rb                ; canal B - ZAP en cours ?
         beq pg
         lda pb
@@ -188,3 +236,11 @@ rb      .byt 0                ; tops restants du ZAP (canal B)
 pb      .byt 0                ; période du ZAP
 lc      .byt 0                ; volume de l'EXPLODE (canal C)
 cc      .byt 0                ; tops avant la prochaine baisse
+mt      .byt 0                ; tops restants de la note de musique (0 = pas de musique)
+mi      .byt 0                ; position dans la mélodie
+
+; Mélodie originale (la mineur) - période AY (1 MHz / 16 / fréquence), durée
+; en centièmes de seconde - la do mi la sol mi ré mi, do ré mi do la.
+melodie .byt 142,18, 119,18, 95,18, 71,36, 80,18, 95,18, 106,18, 95,36
+        .byt 119,18, 106,18, 95,18, 119,18, 142,60
+        .byt 0
