@@ -1,11 +1,11 @@
 # Serpent — jeu pour Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire*
 
 Petit jeu en BASIC : on dirige un serpent avec les flèches, il mange les pommes
 et grandit ; perdu s'il touche le bord, un mur ou sa queue. Espace pour jouer.
 **5 niveaux** reliés par des portes, **Hall of Fame** des 10 meilleurs scores
-(avec le nombre de pommes mangées), écran titre et écran de victoire en HIRES
+(avec la longueur du serpent et le nombre de pommes mangées), écran titre et écran de victoire en HIRES
 sur la disquette, et un **robot** qui joue tout seul.
 
 ![Serpent en couleurs](captures/serpent-couleurs.jpg)
@@ -21,7 +21,7 @@ sur la disquette, et un **robot** qui joue tout seul.
 | `titre_serpent.py` → `serpent-titre.hir` | écran titre HIRES |
 | `victoire_serpent.py` → `serpent-victoire.hir` | écran de victoire HIRES |
 | `titre_copie.s` | routine 6502 qui recopie une image HIRES à l'écran (`CALL #460`) |
-| `son.s` | moteur de son 6502 (en `$5400`) : tic-tac des pas, PING, ZAP, EXPLODE au volume réglé par le joueur |
+| `son.s` | moteur de son 6502 (en `$5300`) : tic-tac des pas, PING, ZAP, EXPLODE au volume réglé par le joueur |
 | `hof_disque.s`, `HALL-OF-FAME-routine.txt` | lecture/écriture du Hall of Fame sur la disquette, et sa documentation |
 | `bot_serpent.py` | le robot joueur |
 | `simu_aller_retour.py` | simulateur de parties complètes pour tester le robot |
@@ -32,11 +32,16 @@ sur la disquette, et un **robot** qui joue tout seul.
 En couleurs : bord en briques blanches à joints magenta, serpent vert, pomme
 magenta (le `@` redessiné, en vidéo inverse), murs en pavés blancs, SCORE cyan,
 HI-SCORE jaune, une ligne vide entre le mur du bas et le score. HI-SCORE est
-affiché pendant la partie. Entre SCORE et HI-SCORE (2026-11-24, à la place de
-« NIV 2 ») : la pomme magenta et le nombre **total** de pommes qu'il reste à
-manger pour gagner (256 moins la longueur du serpent), dans les mêmes couleurs
-que le décompte de la barre du haut - rouge, puis cyan sous 121, jaune sous
-61, vert pour les 20 dernières.
+affiché pendant la partie. Entre SCORE et HI-SCORE (modifié le 2026-11-24 by
+GliouCNR©70) : la **tête du serpent** et sa **taille** (256 = gagné), dans les
+mêmes couleurs que le décompte de la barre du haut - rouge, puis cyan à partir
+de 136, jaune à partir de 196, vert pour les 20 derniers anneaux.
+
+Les nombres de la barre de statut (score, hi-score, taille, décompte du haut)
+sont écrits en 6502 par le moteur de son (routine POMME, `CALL #531E`, une
+seule instruction BASIC par pomme au lieu de quatre sous-programmes), et le
+jeu ne crée plus aucune chaîne pendant la partie : le serpent ne marque plus
+de pause quand il mange une pomme (avant : environ 0,3 s).
 
 ### Les 5 niveaux (ajoutés le 2026-11-22)
 
@@ -105,9 +110,9 @@ exactement ce qui touche.
 serpent fait « tic, tac », et PING, ZAP et EXPLODE accompagnent les pommes,
 les portes et la fin de partie. Ceux de la ROM étaient trop forts et ne se
 règlent pas : la ROM met le volume sur l'**enveloppe** de la puce son
-(AY-3-8912), qui part toujours de 15, le maximum. Le moteur `son.s` (863
-octets en `$5400`, au-dessus de HIMEM abaissé à `$5400`, juste sous l'image
-titre) les remplace : il se
+(AY-3-8912), qui part toujours de 15, le maximum. Le moteur `son.s` (1 231
+octets en `$5300`, au-dessus de HIMEM abaissé à `$5300`, juste sous l'image
+titre ; il contient aussi l'écriture de la barre de statut) les remplace : il se
 branche sur l'interruption de l'horloge de l'Oric (100 fois par seconde) et
 fait lui-même baisser le volume, en partant du **volume choisi**. Le jeu ne
 l'attend jamais ; le tic-tac coûte moins de 2 % de vitesse.
@@ -118,18 +123,22 @@ réglage, un PING retentit au nouveau volume. Sur la disquette, le volume est
 gardé avec le Hall of Fame (octet `$98F0`) et repris au démarrage suivant.
 
 **Musiques** (2026-11-24 by GliouCNR©70) : le moteur `son.s` joue plusieurs
-morceaux (choix par `POKE #5413,n` puis `CALL #5410`) : 0 = la comptine de
+morceaux (choix par `POKE #5313,n` puis `CALL #5310`) : 0 = la comptine de
 l'écran titre (reprise au Hall of Fame après une victoire), 1 = « perdu »,
 un petit air lent et doux en la mineur, sur le Hall of Fame après une
 défaite. 2 = la fanfare de victoire (do majeur, appels de trompette jusqu'au
-do aigu, basse, ~5,4 s), dès « GAGNE ! » et sur l'écran de victoire. Chaque musique tourne en boucle jusqu'au début de la partie suivante.
+do aigu, basse, ~5,4 s), seulement sur l'image de victoire (modifié le
+2026-11-24 by GliouCNR©70 : « GAGNE ! » n'a plus que le ZAP). Chaque musique tourne en boucle jusqu'au début de la partie suivante.
 La première musique du titre, en la mineur, est gardée pour un autre projet
 dans [`../musiques/la-mineur-2-voix.s`](../musiques/la-mineur-2-voix.s).
 
 ### Hall of Fame
 
-Les 10 meilleurs scores, avec le nombre de pommes mangées et la pomme magenta
-du jeu. Sur la disquette, il est **sauvegardé** : quand un joueur entre au
+Les 10 meilleurs scores, avec la **longueur** atteinte par le serpent (suivie
+de sa tête, ajoutée le 2026-11-24 by GliouCNR©70), puis le nombre de pommes
+mangées et la pomme magenta du jeu. La longueur n'est pas rangée sur la
+disquette : le serpent part de 4 anneaux et en gagne un par pomme, donc
+longueur = pommes + 4 (256 pour une partie gagnée, 252 pommes). Sur la disquette, il est **sauvegardé** : quand un joueur entre au
 classement, son nom, son score et ses pommes sont écrits sur la piste 0,
 secteur 18, et relus au démarrage suivant. Oricutron réécrit le fichier `.dsk`
 tout seul (`diskautosave = yes`). En cassette, le Hall of Fame marche aussi mais
@@ -181,7 +190,7 @@ démarrage de la disquette puis par le BASIC) : dessins
 des caractères (posés en `$B400` : HIRES les range en `$9800` et `TEXT` les
 remet), routine disque, Hall of Fame et volume lus sur la disquette, moteur de
 son, chaînes du jeu. Après l'image, il ne reste qu'à dessiner le Hall of Fame.
-HIMEM est à `$5400`, sous l'image titre (`$5800-$773F`) : les noms du Hall of
+HIMEM est à `$5300`, sous l'image titre (`$5800-$773F`) : les noms du Hall of
 Fame, lus avant que l'image soit recopiée à l'écran, ne peuvent plus l'abîmer.
 
 L'image est dessinée par `titre_serpent.py` (Python + Pillow,
@@ -203,8 +212,8 @@ avec « GAGNE ! », puis, sur la disquette, affiche une image HIRES - GAGNÉ ! e
 dégradé, une coupe « 256 », des pommes, le serpent complet. Dessous, dans les
 lignes de texte, le score (jaune) et les pommes mangées (magenta) ; une petite
 fanfare joue (depuis le 2026-11-24 : vraie fanfare originale à 2 voix,
-morceau 2 du moteur de son, en boucle dès « GAGNE ! »), puis une touche mène au
-Hall of Fame, où la comptine reprend.
+morceau 2 du moteur de son, en boucle, seulement sur cette image), puis une
+touche l'arrête et mène au Hall of Fame, où la comptine reprend.
 L'image est chargée au démarrage avec l'image titre et attend en
 `$7800-$973F`, au-dessus de HIMEM (abaissé à `$7800`), que la partie soit
 gagnée ; la même routine de copie (`CALL #460`) sert aux deux images. Sur

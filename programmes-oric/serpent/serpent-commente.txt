@@ -10,27 +10,25 @@ SCRN(x,y) rend le code du caractère qui s'y trouve ; PEEK/POKE lisent et
 une comparaison vraie vaut -1.
 
 ================================================================═╪═============================================================
-5 HIMEM #5400                                                    │ Abaisse HIMEM à $5400 : le moteur de son (son.s) est posé
-                                                                 │ juste au-dessus, SOUS l'image titre ($5800-$773F) ; le BASIC
-                                                                 │ range ses chaînes sous HIMEM, donc jamais dans l'image.
+5 HIMEM #5300                                                    │ HIMEM descend à #5300 : le moteur de son (1231 octets) est
+                                                                 │ posé juste au-dessus, sous l'image titre ($5800). Les
+                                                                 │ chaînes du BASIC restent sous HIMEM.
                                                                  │
 6 M$=CHR$(6)+CHR$(12)+"CHARGEMENT EN COURS":FOR I=1 TO 21:       │ Écrit « CHARGEMENT EN COURS » au milieu de l'écran (ligne
       POKE #BD90+I,ASC(MID$(M$,I,1)):NEXT                        │ 13, mémoire $BD91), précédé de l'encre cyan (6) et de
                                                                  │ l'attribut clignotant (12) : l'Oric le fait clignoter tout
                                                                  │ seul jusqu'à l'image titre.
                                                                  │
-10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:K=0:GR=0:TM=0:TC=0:M=255:     │ Crée d'abord les variables de la boucle du jeu : le BASIC
-      SP=32:KB=735:I=0:SN=#5403                                  │ cherche une variable dans l'ordre où elle a été créée, les
-                                                                 │ premières sont trouvées plus vite. M = 255, SP = 32
-                                                                 │ (espace), KB = 735 (adresse de la dernière touche), SN =
-                                                                 │ #5403 (tic-tac du pas dans son.s) : un nombre dans une
-                                                                 │ variable va plus vite qu'un nombre écrit en clair.
+10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:HC=123:K=0:GR=0:TM=0:TC=0:    │ Crée d'abord les variables de la boucle du jeu : le BASIC
+      M=255:SP=32:KB=735:I=0:SN=#5303                            │ les trouve plus vite (il cherche dans l'ordre de création).
+                                                                 │ HC = dessin de la tête (123 = vers la droite), maintenant
+                                                                 │ utilisé à chaque pas.
                                                                  │
-11 PG=#5406:ZP=#5409:XP=#540C:SR=#5400:VO=#540F:MU=#5410:        │ Adresses du moteur de son : PG = PING, ZP = ZAP, XP =
-      CH=#5413:VU=32:VS=-1                                       │ EXPLODE, SR = installation, VO = case du volume (0-15), MU =
-                                                                 │ musique, CH = numéro du morceau (0 comptine, 1 perdu). VU =
-                                                                 │ volume réglé par le joueur (0-64), VS = volume déjà sauvé
-                                                                 │ sur la disquette (-1 = pas encore).
+11 PG=#5306:ZP=#5309:XP=#530C:SR=#5300:VO=#530F:MU=#5310:        │ Adresses du moteur de son ($5300) : PG = PING, ZP = ZAP, XP
+      CH=#5313:VU=32:VS=-1:ZA=#531E:ZR=#532C                     │ = EXPLODE, SR = installation, VO = volume, MU = musique, CH
+                                                                 │ = morceau ; VU = volume du joueur (0-64). ZA = routine POMME
+                                                                 │ (barre de statut, 2026-11-24 by GliouCNR©70), ZR = anneaux
+                                                                 │ qui manquent pour 256 (tenu par le moteur).
                                                                  │
 12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT                       │ Lit les 44 octets de la routine titre_copie (DATA 990-995)
                                                                  │ et les pose en $0460.
@@ -111,11 +109,8 @@ une comparaison vraie vaut -1.
 140 IF K=11 AND DY=0 THEN DX=0:DY=-1                             │ Flèche haut.
                                                                  │
 145 HC=123-(DX<0):IF DY THEN HC=125-(DY<0)                       │ Nouvelle direction : choisit le dessin de la tête (123
-                                                                 │ droite, 124 gauche, 125 bas, 126 haut ; en BASIC Oric, vrai
-                                                                 │ = -1)...
-                                                                 │
-147 H$=CHR$(HC)                                                  │ ...et le garde dans H$ : il n'est recalculé que quand on
-                                                                 │ tourne.
+                                                                 │ droite, 124 gauche, 125 bas, 126 haut). HC n'est recalculé
+                                                                 │ que quand on change de direction.
                                                                  │
 150 NX=X(H)+DX:NY=Y(H)+DY:C=SCRN(NX,NY):IF C<>SP THEN 155        │ Case où va arriver la tête (NX,NY) et ce qu'elle contient
                                                                  │ (SCRN = code du caractère à l'écran). Le cas le plus
@@ -153,14 +148,17 @@ une comparaison vraie vaut -1.
                                                                  │ devra être redessinée.
                                                                  │
 171 PLOT X(H),Y(H),Z$:H=(H+1) AND M:X(H)=NX:Y(H)=NY:             │ L'ancienne tête devient un anneau du corps ; on range la
-      PLOT NX,NY,H$:CALL SN                                      │ nouvelle position et on dessine la tête (H$) ; CALL SN joue
-                                                                 │ le tic-tac du pas au volume choisi (son.s, canal A, 30 ms).
+      PLOT NX,NY,HC:CALL SN                                      │ nouvelle position et on dessine la tête - PLOT avec un
+                                                                 │ NOMBRE (HC) pose directement le caractère, sans créer de
+                                                                 │ chaîne (2026-11-24) ; puis le tic-tac du pas.
                                                                  │
 175 IF TM THEN TM=0:I=(T+1) AND M:TX=X(I)-X(T):TC=118-(TX<0):    │ Si la queue a bougé (TM) : regarde où est l'anneau qui la
       IF TX=0 THEN TC=120-(Y(I)<Y(T))                            │ suit (à droite, à gauche, dessous, dessus) et choisit le
                                                                  │ dessin de queue (118 à 121) qui pointe dans l'autre sens.
                                                                  │
-176 IF TC THEN PLOT X(T),Y(T),CHR$(TC):TC=0                      │ Dessine la queue en pointe.
+176 IF TC THEN PLOT X(T),Y(T),TC:TC=0                            │ Dessine la queue en pointe (PLOT avec le code TC, sans CHR$
+                                                                 │ : aucune chaîne créée pendant la partie, donc pas de «
+                                                                 │ ménage » des chaînes qui arrêterait le serpent).
                                                                  │
 180 IF C=192 THEN 185                                            │ Pomme mangée : on compte les points (185).
                                                                  │
@@ -171,19 +169,20 @@ une comparaison vraie vaut -1.
                                                                  │
 183 GOTO 100                                                     │ Tour suivant.
                                                                  │
-185 S=S+L*10:E=E+1:PM=PM+1:CALL PG:GOSUB 600:GOSUB 689:          │ Pomme mangée : 10 points par niveau, une pomme de plus dans
-      GOSUB 697:GOSUB 500                                        │ ce niveau et dans la partie, PING au volume choisi (CALL
-                                                                 │ PG), score affiché, nouvelle pomme.
+185 S=S+L*10:E=E+1:PM=PM+1:CALL PG:CALL ZA:                      │ Pomme mangée : points, pommes du niveau, pommes de la
+      IF CD=0 AND E>4 THEN GOSUB 689                             │ partie, PING ; CALL ZA (6502) ajoute les points au score du
+                                                                 │ moteur et réécrit score, hi-score, taille et décompte du
+                                                                 │ haut d'un coup. Seuls les 2 changements de la barre du haut
+                                                                 │ (porte qui s'ouvre, puis décompte des anneaux) passent par
+                                                                 │ le BASIC (689-690).
+                                                                 │
+186 GOSUB 500                                                    │ Nouvelle pomme, tracée en dernier.
                                                                  │
 190 IF E=5 AND L<5 THEN GOSUB 650                                │ 5e pomme d'un niveau 1 à 4 : la porte de droite s'ouvre
                                                                  │ (650).
                                                                  │
-191 IF ((H-T) AND M)+1+GR>255 THEN 330                           │ À n'importe quel niveau : le serpent a 256 anneaux, le plus
-                                                                 │ long que X(255),Y(255) peuvent garder (un de plus et la tête
-                                                                 │ écraserait la queue dans le tampon) : partie gagnée (330).
-                                                                 │ Modifié le 2026-11-23 by GliouCNR©70 : avant, au niveau 5
-                                                                 │ seulement ; un joueur redescendu aux niveaux 1 à 4 pouvait
-                                                                 │ dépasser 256 et casser le tampon.
+191 IF PEEK(ZR)=0 THEN 330                                       │ 256 anneaux (plus rien ne manque, d'après le moteur) :
+                                                                 │ partie gagnée.
                                                                  │
 195 GOTO 100                                                     │ Tour suivant, sans pause (on vient de manger).
                                                                  │
@@ -197,18 +196,18 @@ une comparaison vraie vaut -1.
 320 CALL MU:GOTO 70                                              │ Lance la musique choisie (perdu ou comptine) et revient au
                                                                  │ Hall of Fame ; elle tourne jusqu'à la partie suivante.
                                                                  │
-330 CALL ZP:POKE CH,2:CALL MU:PLOT 14,12,"  GAGNE !  ":WAIT 300: │ Gagné (256 anneaux) : ZAP, puis la fanfare de victoire
-      IF D THEN GOSUB 340                                        │ (morceau 2, en boucle) au volume choisi, message, puis
-                                                                 │ l'écran de victoire sur disquette (340).
+330 CALL ZP:PLOT 14,12,"  GAGNE !  ":WAIT 300:                   │ Gagné : ZAP et « GAGNE ! » sur le tableau pendant 3 s (sans
+      IF D THEN GOSUB 340                                        │ musique, modifié le 2026-11-24 by GliouCNR©70), puis, sur
+                                                                 │ disquette, l'écran de victoire.
                                                                  │
 335 POKE CH,0:GOTO 310                                           │ Repasse sur la comptine (0), qui reprendra au Hall of Fame
                                                                  │ (ligne 320), et va voir si le score entre au Hall of Fame
                                                                  │ (310).
                                                                  │
-340 PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#78:POKE #482,#97: │ ÉCRAN DE VICTOIRE (ajouté le 2026-11-23 by GliouCNR©70).
-      CALL #460                                                  │ HIRES, puis la routine #460 recopie l'image de victoire,
-                                                                 │ chargée au démarrage en $7800-$973F (au-dessus de HIMEM, le
-                                                                 │ BASIC n'y touche pas), dans l'écran $A000.
+340 PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#78:POKE #482,#97: │ Écran de victoire : HIRES, curseur caché, l'image rangée en
+      CALL #460:POKE CH,2:CALL MU                                │ $7800 recopiée à l'écran par la routine #460 ; la fanfare
+                                                                 │ (morceau 2) démarre avec l'image et joue en boucle tant
+                                                                 │ qu'elle est affichée.
                                                                  │
 342 Q$=CHR$(27):                                                 │ Dans les lignes de texte sous l'image : ESC C = encre jaune
       PRINT Q$;"C   SCORE";S;Q$;"E";PM;"POMMES MANGEES"          │ pour le score, ESC E = magenta pour les pommes mangées.
@@ -216,8 +215,8 @@ une comparaison vraie vaut -1.
 348 PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:POKE 618,10:   │ Attend une touche (980), la touche d'avant est oubliée.
       POKE 735,0:GOSUB 980                                       │
                                                                  │
-350 TEXT:PAPER 0:INK 2:POKE 618,10:RETURN                        │ Retour au mode texte (les caractères redessinés reviennent
-                                                                 │ intacts), encre verte, curseur caché.
+350 CALL SR:TEXT:PAPER 0:INK 2:POKE 618,10:RETURN                │ CALL SR coupe la fanfare en quittant l'image ; retour en
+                                                                 │ mode texte, fond noir, encre verte, curseur caché.
                                                                  │
 400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:CD=(L=5)OR(E>4):LY=13:     │ DESSIN D'UN TABLEAU. Efface l'écran ; le serpent repart d'un
       IF L>1 THEN LY=PD(L-1)+1                                   │ seul anneau, GR = anneaux qui sortiront du mur ; pommes déjà
@@ -240,11 +239,10 @@ une comparaison vraie vaut -1.
 412 IF L>1 THEN FOR I=LY-1 TO LY+1:PLOT 2,I," ":NEXT             │ Niveaux 2 à 5 : ouvre la porte de gauche (3 cases) à la
                                                                  │ hauteur LY.
                                                                  │
-415 PLOT 2,26,6:PLOT 3,26,"SCORE":PLOT 14,26,2:PLOT 15,26,F$:    │ Barre du bas : SCORE en cyan, HI-SCORE en jaune (attributs 6
-      PLOT 21,26,3:PLOT 22,26,"HI-SCORE":GOSUB 697               │ et 3 devant chaque mot) et, entre les deux, la pomme magenta
-                                                                 │ (attribut 2 + F$ en inverse) suivie des pommes qu'il reste à
-                                                                 │ manger pour gagner (697). Modifié le 2026-11-24 by
-                                                                 │ GliouCNR©70 : c'était « NIV 2 » en blanc.
+415 PLOT 2,26,6:PLOT 3,26,"SCORE":PLOT 14,26,2:PLOT 15,26,123:   │ Barre du bas : SCORE en cyan, HI-SCORE en jaune (attributs 6
+      PLOT 21,26,3:PLOT 22,26,"HI-SCORE":GOSUB 697               │ et 3) ; entre les deux (2026-11-24 by GliouCNR©70), la tête
+                                                                 │ du serpent en vert (attribut 2, caractère 123) suivie de sa
+                                                                 │ taille (ligne 697).
                                                                  │
 417 PLOT 30,26,STR$(SC(1)):GOSUB 600                             │ Affiche le meilleur score du Hall of Fame, puis le score
                                                                  │ (600).
@@ -307,8 +305,8 @@ une comparaison vraie vaut -1.
                                                                  │ revient d'un niveau plus haut, à droite devant la porte, à
                                                                  │ la ligne EY, en allant à gauche.
                                                                  │
-477 H$=CHR$(123-(DX<0)):PLOT X(0),Y(0),H$:TM=0:TC=0              │ Dessine la tête (tournée à droite ou à gauche) et la garde
-                                                                 │ dans H$ ; rien à redessiner pour la queue.
+477 HC=123-(DX<0):PLOT X(0),Y(0),HC:TM=0:TC=0                    │ Dessine la tête (tournée à droite ou à gauche) : HC sert
+                                                                 │ ensuite à chaque pas.
                                                                  │
 480 WAIT 100:POKE 735,0                                          │ Petite pause avant de jouer ; oublie les touches tapées
                                                                  │ entre-temps.
@@ -322,10 +320,9 @@ une comparaison vraie vaut -1.
                                                                  │
 520 PLOT FX,FY,F$:RETURN                                         │ ...et y dessine la pomme.
                                                                  │
-600 PLOT 8,26,STR$(S):IF S>SC(1) THEN PLOT 30,26,STR$(S)         │ Affiche le score ; s'il bat le HI-SCORE, l'affiche aussi à
-                                                                 │ la place du HI-SCORE.
-                                                                 │
-610 RETURN                                                       │
+600 DOKE #5327,S:DOKE #5329,SC(1):POKE #532B,L*10:CALL #5321:    │ Début d'un tableau : donne au moteur le score, le meilleur
+      RETURN                                                     │ score du Hall of Fame (pour savoir quand écrire le HI-SCORE)
+                                                                 │ et les points d'une pomme, puis écrit le score.
                                                                  │
 650 OP(L)=1:FOR I=PY TO PY+2:PLOT 37,I," ":NEXT:CALL ZP:RETURN   │ OUVERTURE DE LA PORTE DE DROITE : retenue pour ce tableau, 3
                                                                  │ cases vides dans le bord, ZAP au volume choisi.
@@ -340,7 +337,7 @@ une comparaison vraie vaut -1.
 670 FOR I=#BB82 TO #BBA7:POKE I,32:NEXT:RETURN                   │ Efface la barre de statut (colonnes 2 à 39, ce qui fait
                                                                  │ disparaître CAPS).
                                                                  │
-680 GOSUB 692:                                                   │ BARRE DE STATUT ENTIÈRE (en entrant dans un tableau, 420) :
+680 GOSUB 695:                                                   │ BARRE DE STATUT ENTIÈRE (en entrant dans un tableau, 420) :
       M$="NIVEAU"+STR$(L)+" -"+CHR$(2)+F$+CHR$(7)+"="+STR$(L*10) │ calcule le reste (692), puis niveau et valeur d'une pomme.
       +" - "                                                     │ La pomme est celle du jeu, magenta (2026-11-24 by
                                                                  │ GliouCNR©70) : attribut 2 (encre verte) à la place de
@@ -359,44 +356,35 @@ une comparaison vraie vaut -1.
                                                                  │ zone (une case attribut s'affiche vide ; la ligne repart en
                                                                  │ blanc au début de chaque ligne d'écran).
                                                                  │
-688 POKE RA+5,32+(CD<>0)*(32-CO):RETURN                          │ Le nombre du décompte des anneaux dans sa couleur CO (ligne
-                                                                 │ 693) : attribut posé dans l'espace entre RESTE et le nombre
-                                                                 │ ; sinon un espace (CD<>0 vaut -1 si vrai, 0 si faux). RESTE
-                                                                 │ reste blanc.
+688 POKE RA+5,32+(CD<>0)*(32-CO):DOKE #532F,RA+5:                │ Couleur du décompte (ou espace), puis le décompte donné au
+      POKE #532E,(5-E) AND 255:POKE #532D,1-CD:RETURN            │ moteur : adresse de sa case couleur, pommes avant la porte,
+                                                                 │ mode (1 = pommes avant la porte, 2 = anneaux en couleur
+                                                                 │ quand CD).
                                                                  │
-689 IF CD=0 AND E>5 THEN CD=-1:GOSUB 692:T$="RESTE "+R$+"    ":  │ POMME MANGÉE (185). Pomme d'après l'ouverture de la porte
-      FOR I=0 TO 12:POKE RA+I,ASC(MID$(T$,I+1,1)):NEXT:          │ (6e) : on passe au décompte des anneaux (CD=-1), on réécrit
-      POKE RA-1,32:POKE RA+5,CO:RETURN                           │ une fois les 13 cases (« RESTE 246 »), on retire le rouge
-                                                                 │ d'avant la zone et on colore le nombre. Ensuite, 691 ne
-                                                                 │ change que le nombre. Modifié le 2026-11-24 by GliouCNR©70 :
-                                                                 │ avant, « PORTE OUVERTE » restait affiché.
+689 IF E>5 THEN CD=-1:GOSUB 695:T$="RESTE "+R$+"    ":           │ 6e pomme d'un niveau dont la porte est ouverte : la barre
+      FOR I=0 TO 12:POKE RA+I,ASC(MID$(T$,I+1,1)):NEXT:          │ passe au décompte des anneaux (« RESTE 232 », 13 POKE) et le
+      POKE RA-1,32:POKE RA+5,CO:POKE #532D,2:RETURN              │ moteur le tiendra à jour (mode 2).
                                                                  │
-690 IF CD=0 AND E>4 THEN FOR I=0 TO 12:POKE RA+I,PZ(I):NEXT:     │ 5e pomme d'un niveau 1 à 4 : « PORTE OUVERTE » en rouge dans
-      POKE RA-1,1:RETURN                                         │ la zone, 13 POKE seulement (lettres préparées ligne 37).
-                                                                 │
-691 GOSUB 692:POKE RA+6,ASC(R$):POKE RA+7,ASC(MID$(R$,2)):       │ Sinon seulement le nombre : 3 POKE, plus sa couleur (qui
-      POKE RA+8,ASC(RIGHT$(R$,1)):POKE RA+5,32+(CD<>0)*(32-CO):  │ change en passant 120, 60 et 20). Réécrire toute la barre à
-      RETURN                                                     │ chaque pomme ralentissait trop le jeu.
+690 FOR I=0 TO 12:POKE RA+I,PZ(I):NEXT:POKE RA-1,1:POKE #532D,0: │ 5e pomme : « PORTE OUVERTE » en rouge à la place du décompte
+      RETURN                                                     │ ; le moteur n'écrit plus rien en haut (mode 0).
                                                                  │
 692 R=5-E:IF CD THEN R=256-(((H-T) AND M)+1+GR)                  │ Reste : pommes avant la porte (niveaux 1 à 4) ; avec CD
                                                                  │ (niveau 5, ou retour sur un tableau ouvert), anneaux avant
                                                                  │ 256 (longueur = tampon + anneaux encore dans le mur).
                                                                  │
 693 CO=1:IF R<121 THEN CO=6:IF R<61 THEN CO=3:IF R<21 THEN CO=2  │ Couleur du décompte : rouge (plus de 120 anneaux à gagner),
-                                                                 │ cyan (61 à 120), jaune (21 à 60), vert (20 et moins). Les IF
-                                                                 │ s'enchaînent : chaque test n'a lieu que si le précédent est
-                                                                 │ vrai.
+                                                                 │ cyan (61-120), jaune (21-60), vert (20 et moins).
                                                                  │
-695 R$=LEFT$(MID$(STR$(R),2)+"  ",3):RETURN                      │ Le nombre sur 3 cases, calé à gauche (« 5  », « 232 »).
+694 RETURN                                                       │ Fin du calcul du décompte.
                                                                  │
-697 RT=256-(((H-T) AND M)+1+GR):CT=1:IF RT<121 THEN CT=6:        │ POMMES RESTANTES, EN BAS (2026-11-24 by GliouCNR©70) : RT =
-      IF RT<61 THEN CT=3:IF RT<21 THEN CT=2                      │ pommes à manger pour gagner (256 - longueur, chaque pomme
-                                                                 │ ajoute un anneau), CT = sa couleur, comme le décompte du
-                                                                 │ haut : rouge, cyan sous 121, jaune sous 61, vert sous 21.
+695 GOSUB 692:R$=LEFT$(MID$(STR$(R),2)+"  ",3):RETURN            │ Le décompte en chaîne R$ sur 3 cases, calé à gauche (« 5  »,
+                                                                 │ « 232 ») - seulement quand la barre du haut est écrite en
+                                                                 │ entier (entrée dans un niveau, porte qui se referme).
                                                                  │
-698 PLOT 16,26,CT:PLOT 17,26,LEFT$(MID$(STR$(RT),2)+"  ",3):     │ Attribut de couleur juste après la pomme, puis le nombre sur
-      RETURN                                                     │ 3 cases (colonnes 17-19) ; la colonne 21 garde l'attribut
-                                                                 │ jaune de HI-SCORE.
+697 POKE ZR,255-(((H-T) AND M)+GR):CALL #5324:RETURN             │ TAILLE DU SERPENT, EN BAS (2026-11-24 by GliouCNR©70) :
+                                                                 │ donne au moteur ce qui manque pour 256 (255 - (longueur - 1)
+                                                                 │ - croissance à venir) et lui fait écrire la taille en
+                                                                 │ couleur.
                                                                  │
 700 CLS:GOSUB 670:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"          │ AFFICHAGE DU HALL OF FAME : barre de statut et écran
                                                                  │ effacés, titre en cyan (attribut 6)...
@@ -405,16 +393,18 @@ une comparaison vraie vaut -1.
                                                                  │
 710 FOR I=1 TO 10:R=7+I                                          │ ...puis les 10 lignes, à partir de la ligne 8 de l'écran :
                                                                  │
-715 PLOT 5,R,7:PLOT 6,R,RIGHT$(" "+STR$(I),3)+". "+N$(I)         │ rang et nom en blanc (7),
+715 PLOT 3,R,7:PLOT 4,R,RIGHT$(" "+STR$(I),3)+". "+N$(I)         │ Rang et nom en blanc (colonnes 4 à 16).
                                                                  │
-720 PLOT 20,R,3:PLOT 21,R,RIGHT$("    "+STR$(SC(I)),6):          │ score en jaune, aligné à droite sur 6 caractères, puis encre
-      PLOT 27,R,2                                                │ verte (2) pour les pommes...
+720 PLOT 18,R,3:PLOT 19,R,RIGHT$("    "+STR$(SC(I)),6):          │ Score en jaune (colonnes 19 à 24), puis encre verte pour la
+      PLOT 25,R,2                                                │ suite.
                                                                  │
-722 IF NP(I) THEN PLOT 28,R,RIGHT$("   "+STR$(NP(I)),4)+" "+F$   │ ...nombre de pommes mangées et la pomme du jeu (F$, @ en
-                                                                 │ inverse : magenta sur blanc, comme sur le terrain ; ajouté
-                                                                 │ le 2026-11-23)...
+722 IF NP(I) THEN PLOT 26,R,RIGHT$("   "+STR$(NP(I)+4),4)+" "+CH │ Longueur atteinte par le serpent (pommes + 4 : il part de 4
+      R$(123)+RIGHT$("   "+STR$(NP(I)),4)+" "+F$                 │ anneaux et en gagne un par pomme) suivie de sa tête, puis
+                                                                 │ les pommes mangées et la pomme magenta (inverse sur encre
+                                                                 │ verte). Ajouté le 2026-11-24 by GliouCNR©70.
                                                                  │
-723 IF NP(I)=0 THEN PLOT 31,R,"-"                                │ ...ou « - » pour un record d'avant, sans ce nombre.
+723 IF NP(I)=0 THEN PLOT 29,R,"-":PLOT 35,R,"-"                  │ Ancien record sans pommes connues : « - » dans les deux
+                                                                 │ colonnes.
                                                                  │
 725 NEXT:POKE 735,0:RETURN                                       │ Fin de la liste ; oublie les touches déjà tapées.
                                                                  │
@@ -510,8 +500,9 @@ une comparaison vraie vaut -1.
                                                                  │
 973 FOR I=1 TO 10:N$(I)="ORIC    ":READ SC(I),NP(I):NEXT:RETURN  │ ...et le Hall of Fame par défaut (10 fois ORIC).
                                                                  │
-974 FOR I=0 TO 862:READ B:POKE #5400+I,B:NEXT:CALL SR:           │ Moteur de son (863 octets, DATA 1070+) posé en $5400,
-      POKE VO,INT(VU*15/64+.5)                                   │ installé (CALL SR) et réglé au volume du joueur...
+974 FOR I=0 TO 1230:READ B:POKE #5300+I,B:NEXT:CALL SR:          │ Moteur de son (1231 octets, DATA 1070+) posé en $5300, sous
+      POKE VO,INT(VU*15/64+.5)                                   │ l'image titre, installé et réglé au volume du joueur. Il
+                                                                 │ écrit aussi la barre de statut (NOMBRE, POMME).
                                                                  │
 976 W$=CHR$(160):B$=CHR$(255):F$=CHR$(192):Z$=CHR$(122):         │ ...les chaînes du jeu (W$ mur, B$ bord, F$ pomme, Z$ anneau)
       FOR I=0 TO 12:PZ(I)=ASC(MID$("PORTE OUVERTE",I+1,1)):NEXT  │ et les lettres de « PORTE OUVERTE » (PZ)...
@@ -569,137 +560,188 @@ une comparaison vraie vaut -1.
 1060 DATA 750,25,500,20,300,15,150,10,50,5                       │ Places 6 à 10. 500 = portes des niveaux 1 à 4 ouvertes avec
                                                                  │ 5 pommes chacune (50+100+150+200), 50 = porte du niveau 1.
                                                                  │
-1070 DATA 76,20,84,76,94,84,76,124,84,76,155,84,76,176,84,15,76, │ Moteur de son son.s (xa -o son.bin son.s) : 863 octets posés
-      195,84,0                                                   │ en $5400 par la ligne 974 - installation, tic-tac, PING,
-                                                                 │ ZAP, EXPLODE, trois musiques à 2 voix (comptine, perdu,
-                                                                 │ fanfare), et la baisse du volume à chaque interruption de
-                                                                 │ l'horloge.
+1070 DATA 76,132,84,76,206,84,76,236,84,76,11,85,76,32,85,15,76, │ Moteur de son son.s (xa -o son.bin son.s) : 1231 octets
+      51,85,0                                                    │ posés en $5300 par la ligne 974 (musiques, sons au volume
+                                                                 │ réglable, barre de statut).
                                                                  │
-1072 DATA 120,169,133,141,69,2,169,85,141,70,2,88,169,7,162,28,3 │ Moteur de son (suite).
-      2,144,245,169                                              │
+1072 DATA 0,0,128,187,76,253,83,76,1,84,76,49,83,76,143,83,76,19 │ Moteur de son (suite).
+      1,83,0                                                     │
                                                                  │
-1074 DATA 6,162,31,32,144,245,162,0,169,1,32,144,245,162,0,169,3 │
-      ,32,144,245                                                │
+1074 DATA 0,0,0,10,252,0,5,128,187,24,173,39,83,109,43,83,141,39 │
+      ,83,144                                                    │
                                                                  │
-1076 DATA 160,8,152,162,0,32,144,245,200,192,11,208,245,169,0,14 │
-      1,65,86,141,66                                             │
+1076 DATA 3,238,40,83,32,143,83,206,44,83,32,191,83,173,45,83,24 │
+      0,64,74,144                                                │
                                                                  │
-1078 DATA 86,141,68,86,141,70,86,141,72,86,141,93,87,96,169,0,17 │
-      4,64,86,32                                                 │
+1078 DATA 9,206,46,83,173,46,83,76,114,83,173,47,83,141,109,83,1 │
+      73,48,83,141                                               │
                                                                  │
-1080 DATA 144,245,173,64,86,73,48,141,64,86,169,8,174,15,84,32,1 │
-      44,245,169,3                                               │
+1080 DATA 110,83,173,44,83,32,229,83,141,128,187,173,44,83,141,2 │
+      0,83,169,0,141                                             │
                                                                  │
-1082 DATA 141,65,86,96,169,0,141,68,86,169,2,162,24,32,144,245,1 │
-      73,15,84,141                                               │
+1082 DATA 21,83,24,173,47,83,105,1,141,22,83,173,48,83,105,0,141 │
+      ,23,83,76                                                  │
                                                                  │
-1084 DATA 66,86,169,6,141,67,86,169,9,174,15,84,76,144,245,169,0 │
-      ,141,66,86                                                 │
+1084 DATA 1,84,96,173,39,83,141,20,83,173,40,83,141,21,83,169,19 │
+      3,141,22,83                                                │
                                                                  │
-1086 DATA 141,69,86,169,28,141,68,86,169,9,174,15,84,76,144,245, │
-      173,15,84,141                                              │
+1086 DATA 169,191,141,23,83,32,253,83,173,41,83,205,39,83,173,42 │
+      ,83,237,40,83                                              │
                                                                  │
-1088 DATA 70,86,169,10,141,71,86,169,10,174,15,84,76,144,245,120 │
-      ,174,19,84,189                                             │
+1088 DATA 176,8,169,215,141,22,83,76,253,83,96,173,44,83,32,229, │
+      83,141,200,191                                             │
                                                                  │
-1090 DATA 74,86,141,12,85,141,44,85,189,77,86,141,13,85,141,45,8 │
-      5,189,80,86                                                │
+1090 DATA 56,169,0,237,44,83,141,20,83,169,1,233,0,141,21,83,169 │
+      ,201,141,22                                                │
                                                                  │
-1092 DATA 141,66,85,141,95,85,141,117,85,189,83,86,141,67,85,141 │
-      ,96,85,141,118                                             │
+1092 DATA 83,169,191,141,23,83,76,1,84,201,21,144,11,201,61,144, │
+      10,201,121,144                                             │
                                                                  │
-1094 DATA 85,169,7,162,56,32,144,245,169,0,141,73,86,141,94,87,3 │
-      2,8,85,32                                                  │
+1094 DATA 9,169,1,96,169,2,96,169,3,96,169,6,96,169,5,208,2,169, │
+      3,141                                                      │
                                                                  │
-1096 DATA 62,85,88,96,172,73,86,185,86,86,240,40,201,1,240,12,17 │
-      0,169,0,32                                                 │
+1096 DATA 131,84,173,22,83,141,94,84,141,110,84,173,23,83,141,95 │
+      ,84,141,111,84                                             │
                                                                  │
-1098 DATA 144,245,174,15,84,76,34,85,162,0,169,8,32,144,245,172, │
-      73,86,200,185                                              │
+1098 DATA 173,20,83,141,127,84,173,21,83,141,128,84,162,0,160,0, │
+      169,48,141,130                                             │
                                                                  │
-1100 DATA 86,86,141,72,86,136,200,200,140,73,86,96,141,73,86,76, │ Fin du moteur de son.
-      8,85,172,94                                                │
+1100 DATA 84,173,127,84,56,253,117,84,141,129,84,173,128,84,253, │ Fin du moteur de son.
+      122,84,144,15,141                                          │
                                                                  │
-1102 DATA 87,185,169,86,240,57,201,1,208,10,169,10,162,0,32,144, │
-      245,76,111,85                                              │
+1102 DATA 128,84,173,129,84,141,127,84,238,130,84,76,45,84,173,1 │
+      30,84,192,0,208                                            │
                                                                  │
-1104 DATA 170,169,4,32,144,245,172,94,87,200,185,169,86,170,169, │
-      5,32,144,245,169                                           │
+1104 DATA 8,224,4,240,4,201,48,240,4,153,128,187,200,232,224,5,2 │
+      08,194,169,32                                              │
                                                                  │
-1106 DATA 10,174,15,84,32,144,245,172,94,87,200,200,185,169,86,1 │
-      41,93,87,200,140                                           │
+1106 DATA 204,131,84,176,7,153,128,187,200,76,104,84,96,16,232,1 │
+      00,10,1,39,3                                               │
                                                                  │
-1108 DATA 94,87,96,141,94,87,76,62,85,72,173,13,3,41,64,208,3,76 │
-      ,60,86                                                     │
+1108 DATA 0,0,0,0,0,0,0,0,120,169,245,141,69,2,169,85,141,70,2,8 │
+      8                                                          │
                                                                  │
-1110 DATA 138,72,152,72,173,65,86,240,12,206,65,86,208,7,169,8,1 │
-      62,0,32,144                                                │
+1110 DATA 169,7,162,28,32,144,245,169,6,162,31,32,144,245,162,0, │
+      169,1,32,144                                               │
                                                                  │
-1112 DATA 245,173,72,86,240,25,206,72,86,173,72,86,201,3,208,7,1 │ Fin de la mélodie (période, durée) ...
-      69,8,162,0                                                 │
+1112 DATA 245,162,0,169,3,32,144,245,160,8,152,162,0,32,144,245, │ Fin de la mélodie (période, durée) ...
+      200,192,11,208                                             │
                                                                  │
-1114 DATA 32,144,245,173,72,86,208,3,32,8,85,173,93,87,240,25,20 │
-      6,93,87,173                                                │
+1114 DATA 245,169,0,141,177,86,141,178,86,141,180,86,141,182,86, │
+      141,184,86,141,205                                         │
                                                                  │
-1116 DATA 93,87,201,10,208,7,169,10,162,0,32,144,245,173,93,87,2 │
-      08,3,32,62                                                 │
+1116 DATA 87,96,169,0,174,176,86,32,144,245,173,176,86,73,48,141 │
+      ,176,86,169,8                                              │
                                                                  │
-1118 DATA 85,173,68,86,240,30,173,69,86,24,105,4,141,69,86,170,1 │
-      69,2,32,144                                                │
+1118 DATA 174,15,83,32,144,245,169,3,141,177,86,96,169,0,141,180 │
+      ,86,169,2,162                                              │
                                                                  │
-1120 DATA 245,206,68,86,208,36,169,9,162,0,32,144,245,76,30,86,1 │
-      73,66,86,240                                               │
+1120 DATA 24,32,144,245,173,15,83,141,178,86,169,6,141,179,86,16 │
+      9,9,174,15,83                                              │
                                                                  │
-1122 DATA 21,206,67,86,208,16,169,6,141,67,86,206,66,86,174,66,8 │
-      6,169,9,32                                                 │
+1122 DATA 76,144,245,169,0,141,178,86,141,181,86,169,28,141,180, │
+      86,169,9,174,15                                            │
                                                                  │
-1124 DATA 144,245,173,70,86,240,21,206,71,86,208,16,169,10,141,7 │
-      1,86,206,70,86                                             │
+1124 DATA 83,76,144,245,173,15,83,141,182,86,169,10,141,183,86,1 │
+      69,10,174,15,83                                            │
                                                                  │
-1126 DATA 174,70,86,169,10,32,144,245,104,168,104,170,104,76,34, │
-      238,96,0,0,0                                               │
+1126 DATA 76,144,245,120,174,19,83,189,186,86,141,124,85,141,156 │
+      ,85,189,189,86,141                                         │
                                                                  │
-1128 DATA 0,0,0,0,0,0,86,218,14,86,86,87,169,245,65,86,86,87,119 │
-      ,24                                                        │
+1128 DATA 125,85,141,157,85,189,192,86,141,178,85,141,207,85,141 │
+      ,229,85,189,195,86                                         │
                                                                  │
-1130 DATA 189,12,159,12,119,24,95,24,106,12,119,12,127,12,142,12 │
-      ,159,48,179,24                                             │
+1130 DATA 141,179,85,141,208,85,141,230,85,169,7,162,56,32,144,2 │
+      45,169,0,141,185                                           │
                                                                  │
-1132 DATA 142,12,119,12,90,24,95,24,106,12,95,12,106,12,127,12,1 │
-      19,48,95,12                                                │
+1132 DATA 86,141,206,87,32,120,85,32,174,85,88,96,172,185,86,185 │
+      ,198,86,240,40                                             │
                                                                  │
-1134 DATA 95,12,106,12,106,12,119,24,159,24,142,12,127,12,119,12 │
-      ,142,12,159,48                                             │
+1134 DATA 201,1,240,12,170,169,0,32,144,245,174,15,83,76,146,85, │
+      162,0,169,8                                                │
                                                                  │
-1136 DATA 119,24,189,12,159,12,119,24,95,24,106,12,127,12,159,12 │
-      ,127,12,119,48                                             │
+1136 DATA 32,144,245,172,185,86,200,185,198,86,141,184,86,136,20 │
+      0,200,140,185,86,96                                        │
                                                                  │
-1138 DATA 0,221,1,48,126,2,48,126,2,48,169,1,48,204,2,48,221,1,4 │
-      8,126                                                      │
+1138 DATA 141,185,86,76,120,85,172,206,87,185,25,87,240,57,201,1 │
+      ,208,10,169,10                                             │
                                                                  │
-1140 DATA 2,48,221,1,48,221,1,48,126,2,48,204,2,48,221,1,48,221, │
-      1,48                                                       │
+1140 DATA 162,0,32,144,245,76,223,85,170,169,4,32,144,245,172,20 │
+      6,87,200,185,25                                            │
                                                                  │
-1142 DATA 126,2,48,126,2,48,221,1,48,0,95,30,106,30,119,30,127,3 │
-      0,142,30                                                   │
+1142 DATA 87,170,169,5,32,144,245,169,10,174,15,83,32,144,245,17 │
+      2,206,87,200,200                                           │
                                                                  │
-1144 DATA 127,30,119,60,106,30,119,30,127,30,159,30,142,90,1,30, │
-      0,56,2,60                                                  │
+1144 DATA 185,25,87,141,205,87,200,140,206,87,96,141,206,87,76,1 │
+      74,85,72,173,13                                            │
                                                                  │
-1146 DATA 246,2,60,56,2,60,221,1,60,126,2,60,246,2,60,56,2,60,56 │
-      ,2                                                         │
+1146 DATA 3,41,64,208,3,76,172,86,138,72,152,72,173,177,86,240,1 │
+      2,206,177,86                                               │
                                                                  │
-1148 DATA 60,0,159,10,119,10,95,10,80,30,95,10,80,50,90,10,90,10 │
-      ,90,10                                                     │
+1148 DATA 208,7,169,8,162,0,32,144,245,173,184,86,240,25,206,184 │
+      ,86,173,184,86                                             │
                                                                  │
-1150 DATA 80,30,71,10,80,50,71,10,71,10,71,10,63,30,71,10,80,30, │
-      95,20                                                      │
+1150 DATA 201,3,208,7,169,8,162,0,32,144,245,173,184,86,208,3,32 │
+      ,120,85,173                                                │
                                                                  │
-1152 DATA 80,10,80,10,71,10,63,10,60,80,1,60,0,221,1,60,126,2,60 │
-      ,204                                                       │
+1152 DATA 205,87,240,25,206,205,87,173,205,87,201,10,208,7,169,1 │
+      0,162,0,32,144                                             │
                                                                  │
-1154 DATA 2,60,221,1,60,126,2,60,169,1,60,126,2,60,221,1,60,1,0, │
+1154 DATA 245,173,205,87,208,3,32,174,85,173,180,86,240,30,173,1 │
+      81,86,24,105,4                                             │
+                                                                 │
+1156 DATA 141,181,86,170,169,2,32,144,245,206,180,86,208,36,169, │
+      9,162,0,32,144                                             │
+                                                                 │
+1158 DATA 245,76,142,86,173,178,86,240,21,206,179,86,208,16,169, │
+      6,141,179,86,206                                           │
+                                                                 │
+1160 DATA 178,86,174,178,86,169,9,32,144,245,173,182,86,240,21,2 │
+      06,183,86,208,16                                           │
+                                                                 │
+1162 DATA 169,10,141,183,86,206,182,86,174,182,86,169,10,32,144, │
+      245,104,168,104,170                                        │
+                                                                 │
+1164 DATA 104,76,34,238,96,0,0,0,0,0,0,0,0,0,198,74,126,86,87,87 │
+                                                                 │
+1166 DATA 25,101,177,87,87,87,119,24,189,12,159,12,119,24,95,24, │
+      106,12,119,12                                              │
+                                                                 │
+1168 DATA 127,12,142,12,159,48,179,24,142,12,119,12,90,24,95,24, │
+      106,12,95,12                                               │
+                                                                 │
+1170 DATA 106,12,127,12,119,48,95,12,95,12,106,12,106,12,119,24, │
+      159,24,142,12                                              │
+                                                                 │
+1172 DATA 127,12,119,12,142,12,159,48,119,24,189,12,159,12,119,2 │
+      4,95,24,106,12                                             │
+                                                                 │
+1174 DATA 127,12,159,12,127,12,119,48,0,221,1,48,126,2,48,126,2, │
+      48,169,1                                                   │
+                                                                 │
+1176 DATA 48,204,2,48,221,1,48,126,2,48,221,1,48,221,1,48,126,2, │
+      48,204                                                     │
+                                                                 │
+1178 DATA 2,48,221,1,48,221,1,48,126,2,48,126,2,48,221,1,48,0,95 │
+      ,30                                                        │
+                                                                 │
+1180 DATA 106,30,119,30,127,30,142,30,127,30,119,60,106,30,119,3 │
+      0,127,30,159,30                                            │
+                                                                 │
+1182 DATA 142,90,1,30,0,56,2,60,246,2,60,56,2,60,221,1,60,126,2, │
       60                                                         │
                                                                  │
-1156 DATA 0,0,0                                                  │
+1184 DATA 246,2,60,56,2,60,56,2,60,0,159,10,119,10,95,10,80,30,9 │
+      5,10                                                       │
+                                                                 │
+1186 DATA 80,50,90,10,90,10,90,10,80,30,71,10,80,50,71,10,71,10, │
+      71,10                                                      │
+                                                                 │
+1188 DATA 63,30,71,10,80,30,95,20,80,10,80,10,71,10,63,10,60,80, │
+      1,60                                                       │
+                                                                 │
+1190 DATA 0,221,1,60,126,2,60,204,2,60,221,1,60,126,2,60,169,1,6 │
+      0,126                                                      │
+                                                                 │
+1192 DATA 2,60,221,1,60,1,0,60,0,0,0                             │
                                                                  │
