@@ -6,9 +6,9 @@
 ; (elle sert aussi à régler le volume sur l'écran du Hall of Fame). Corrigé - le
 ; saut « pas de tic en cours » sautait aussi la musique (une seule note tenue).
 ; Modifié le 2026-11-24 by GliouCNR©70 - vraie petite musique - 4 phrases (~10 s)
-; sur le canal A et une basse sur le canal C (2 voix), moteur déplacé en $5300
-; (puis en $5300 le 2026-11-24 soir, by GliouCNR©70).
-; Modifié le 2026-11-24 by GliouCNR©70 - plusieurs morceaux (CHANSON, en $5313) -
+; sur le canal A et une basse sur le canal C (2 voix), moteur déplacé en $5400
+; (puis en $5300 le 2026-11-24 soir, et en $5000 le 2026-11-26, by GliouCNR©70).
+; Modifié le 2026-11-24 by GliouCNR©70 - plusieurs morceaux (CHANSON, en $5013) -
 ; 0 = comptine de l'écran titre, 1 = « perdu » sur le Hall of Fame, 2 = fanfare
 ; de victoire (ajoutée le 2026-11-24 by GliouCNR©70). La musique
 ; en la mineur est rangée dans ../musiques/la-mineur-2-voix.s.
@@ -17,35 +17,38 @@
 ; devenu plus gros qu'1 Ko, descend en $5300 (HIMEM #5300).
 ;
 ;   xa -o son.bin son.s
-;   (les octets sont dans les lignes DATA 1070+ de serpent.bas, posés en $5300,
-;    au-dessus de HIMEM abaissé à $5300, juste SOUS l'image titre ($5800-$773F)
-;    - le moteur est chargé avant l'image, pour que la musique démarre avec
-;    elle, et le BASIC range ses chaînes sous HIMEM, donc jamais dans l'image.
+;   (sur la disquette, son.bin est lu en $5000 par le démarrage, avant le
+;    BASIC - oric_dsk.py --binaire son.bin@5000 ; sur la cassette, les octets
+;    sont dans les lignes DATA 1070+ de serpent.bas, posés en $5000 par la
+;    ligne 974. HIMEM est abaissé à $5000, juste SOUS l'image titre
+;    ($5800-$773F) - le BASIC range ses chaînes sous HIMEM, jamais dans
+;    l'image ni dans le moteur.
 ;    Avant le 2026-11-24 soir, le moteur était en $7600, dans la fin du tampon
 ;    de l'image - les noms du Hall of Fame lus avant l'image l'abîmaient.)
-;   CALL #5300  INIT   installe le moteur sur l'interruption de l'horloge
+;   CALL #5000  INIT   installe le moteur sur l'interruption de l'horloge
 ;                      (100 fois par seconde) et règle le mélangeur
-;   CALL #5303  PAS    tic-tac du pas (canal A, 30 ms)
-;   CALL #5306  PING   PING au volume choisi (canal B, ~1 s)
-;   CALL #5309  ZAP    ZAP au volume choisi (canal B, balayage de 0,3 s)
-;   CALL #530C  BOUM   EXPLODE au volume choisi (canal C, bruit, ~1,5 s)
-;   POKE #530F,v       le volume, 0 (muet) à 15 (le maximum de la puce)
-;   POKE #5313,n       morceau - 0 comptine (titre), 1 « perdu » (Hall of Fame),
+;   CALL #5003  PAS    tic-tac du pas (canal A, 30 ms)
+;   CALL #5006  PING   PING au volume choisi (canal B, ~1 s)
+;   CALL #5009  ZAP    ZAP au volume choisi (canal B, balayage de 0,3 s)
+;   CALL #500C  BOUM   EXPLODE au volume choisi (canal C, bruit, ~1,5 s)
+;   POKE #500F,v       le volume, 0 (muet) à 15 (le maximum de la puce)
+;   POKE #5013,n       morceau - 0 Pastorale de Beethoven (chargement, titre,
+;                      Hall of Fame), 1 « perdu » (Hall of Fame),
 ;                      2 fanfare de victoire
-;   CALL #5310  MUSIQUE le morceau choisi, en boucle (mélodie canal A, basse
+;   CALL #5010  MUSIQUE le morceau choisi, en boucle (mélodie canal A, basse
 ;                      canal C), au volume choisi ;
 ;                      INIT l'arrête
-;   DOKE #5314,n       nombre à écrire (0 à 65535)
-;   DOKE #5316,a       adresse écran de son premier chiffre
-;   CALL #5318 / #531B NOMBRE sur 5 / 3 cases (calé à gauche, puis espaces)
-;   CALL #531E  POMME  le serpent a mangé - score + points, taille + 1, et
+;   DOKE #5014,n       nombre à écrire (0 à 65535)
+;   DOKE #5016,a       adresse écran de son premier chiffre
+;   CALL #5018 / #501B NOMBRE sur 5 / 3 cases (calé à gauche, puis espaces)
+;   CALL #501E  POMME  le serpent a mangé - score + points, taille + 1, et
 ;                      la barre de statut réécrite (score, hi-score, taille,
 ;                      décompte du haut)
-;   CALL #5321 / #5324 réécrit le score / la taille (début d'un tableau)
-;   DOKE #5327,s  score   DOKE #5329,h  meilleur score   POKE #532B,p  points
-;   POKE #532C,r  anneaux qui manquent pour 256
-;   POKE #532D,m  décompte du haut (0 rien, 1 pommes avant la porte, 2 anneaux)
-;   POKE #532E,n  pommes avant la porte   DOKE #532F,a  case couleur du décompte
+;   CALL #5021 / #5024 réécrit le score / la taille (début d'un tableau)
+;   DOKE #5027,s  score   DOKE #5029,h  meilleur score   POKE #502B,p  points
+;   POKE #502C,r  anneaux qui manquent pour 256
+;   POKE #502D,m  décompte du haut (0 rien, 1 pommes avant la porte, 2 anneaux)
+;   POKE #502E,n  pommes avant la porte   DOKE #502F,a  case couleur du décompte
 ;
 ; Pourquoi - dans la ROM, PING et EXPLODE mettent le volume sur l'ENVELOPPE de
 ; la puce AY-3-8912 (registre 8 = 16), qui part toujours de 15, le maximum ; ZAP
@@ -57,6 +60,10 @@
 ; Écriture d'un registre - WriteToAY de la ROM ($F590), A = registre, X =
 ; valeur ; elle garde le bit 6 du mélangeur (clavier) et bloque les
 ; interruptions pendant l'écriture.
+; Modifié le 2026-11-26 by GliouCNR©70 - la Pastorale de Beethoven remplace la
+; comptine (morceau 0, rangée dans ../musiques/comptine-serpent.s) ; tables
+; lues sur 16 bits ; moteur en $5000, lu sur la disquette par le démarrage
+; (oric_dsk.py --binaire) - la musique part dès « CHARGEMENT EN COURS ».
 ; Attention avec xa - un deux-points est un séparateur, même dans un commentaire.
 
 AY       = $F590      ; WriteToAY
@@ -64,31 +71,31 @@ VIA_IFR  = $030D      ; bit 6 = interruption de l'horloge (timer 1)
 IRQV     = $0245      ; adresse sautée par l'interruption (JMP $EE22)
 ROMIRQ   = $EE22
 
-        * = $5300
+        * = $5000
 
         jmp init
         jmp pas
         jmp ping
         jmp zap
         jmp boum
-vol     .byt 15               ; $530F - volume choisi (0-15)
-        jmp musique           ; $5310
-chanson .byt 0                ; $5313 - morceau à jouer
-nval    .word 0               ; $5314 - nombre à afficher (DOKE)
-nadr    .word $BB80           ; $5316 - adresse écran du 1er chiffre (DOKE)
-        jmp nomb5             ; $5318 - écrit nval sur 5 cases
-        jmp nomb3             ; $531B - écrit nval sur 3 cases
-        jmp pomme             ; $531E - POMME - tout ce qui change quand le serpent mange
-        jmp affsc             ; $5321 - écrit le score (et le hi-score s'il est battu)
-        jmp afftai            ; $5324 - écrit la taille du serpent, en couleur
-sco     .word 0               ; $5327 - score (DOKE au début de chaque tableau)
-hisc    .word 0               ; $5329 - meilleur score du Hall of Fame (DOKE)
-pts     .byt 10               ; $532B - points d'une pomme (10 x niveau)
-reste   .byt 252              ; $532C - anneaux qui manquent pour 256 (0 = gagné)
-hmode   .byt 0                ; $532D - décompte du haut - 0 rien (PORTE OUVERTE),
+vol     .byt 15               ; $500F - volume choisi (0-15)
+        jmp musique           ; $5010
+chanson .byt 0                ; $5013 - morceau à jouer
+nval    .word 0               ; $5014 - nombre à afficher (DOKE)
+nadr    .word $BB80           ; $5016 - adresse écran du 1er chiffre (DOKE)
+        jmp nomb5             ; $5018 - écrit nval sur 5 cases
+        jmp nomb3             ; $501B - écrit nval sur 3 cases
+        jmp pomme             ; $501E - POMME - tout ce qui change quand le serpent mange
+        jmp affsc             ; $5021 - écrit le score (et le hi-score s'il est battu)
+        jmp afftai            ; $5024 - écrit la taille du serpent, en couleur
+sco     .word 0               ; $5027 - score (DOKE au début de chaque tableau)
+hisc    .word 0               ; $5029 - meilleur score du Hall of Fame (DOKE)
+pts     .byt 10               ; $502B - points d'une pomme (10 x niveau)
+reste   .byt 252              ; $502C - anneaux qui manquent pour 256 (0 = gagné)
+hmode   .byt 0                ; $502D - décompte du haut - 0 rien (PORTE OUVERTE),
                               ;   1 pommes avant la porte (hreste), 2 anneaux (reste, en couleur)
-hreste  .byt 5                ; $532E - pommes avant la porte
-hadr    .word $BB80           ; $532F - case couleur du décompte du haut (chiffres juste après)
+hreste  .byt 5                ; $502E - pommes avant la porte
+hadr    .word $BB80           ; $502F - case couleur du décompte du haut (chiffres juste après)
 
 ; ----- POMME (2026-11-24 by GliouCNR©70) - appelée par le BASIC à chaque pomme
 ; mangée (ligne 185), à la place de 4 sous-programmes BASIC (score, hi-score,
@@ -332,36 +339,51 @@ boum    lda vol
         jmp AY
 
 ; ----- MUSIQUE - lance la mélodie depuis le début -----
+; Modifié le 2026-11-26 by GliouCNR©70 - les tables sont lues avec une adresse
+; sur 16 bits (posée dans les instructions nm1/nm2, bm1/bm2/bm3, puis avancée
+; de 2 ou 3 octets à chaque note) - un morceau n'est plus limité à 255 octets
+; (la Pastorale de Beethoven en fait 483 pour la mélodie).
 musique sei
-        ldx chanson           ; adresses des tables du morceau choisi, posées
-        lda tmel,x            ; dans les instructions qui les lisent
-        sta nm1+1
-        sta nm2+1
+        ldx chanson           ; adresses des tables du morceau choisi
+        lda tmel,x
+        sta mdeb
         lda tmeh,x
-        sta nm1+2
-        sta nm2+2
+        sta mdeb+1
         lda tbal,x
-        sta bm1+1
-        sta bm2+1
-        sta bm3+1
+        sta bdeb
         lda tbah,x
-        sta bm1+2
-        sta bm2+2
-        sta bm3+2
+        sta bdeb+1
         lda #7                ; mélangeur - sons A, B et C, pas de bruit
         ldx #$38
         jsr AY
-        lda #0
-        sta mi
-        sta bi
+        jsr mrep
+        jsr brep
         jsr note
         jsr basse
         cli
         rts
 
+; Remet la mélodie / la basse au début du morceau
+mrep    lda mdeb
+        sta nm1+1
+        sta nm2+1
+        lda mdeb+1
+        sta nm1+2
+        sta nm2+2
+        rts
+brep    lda bdeb
+        sta bm1+1
+        sta bm2+1
+        sta bm3+1
+        lda bdeb+1
+        sta bm1+2
+        sta bm2+2
+        sta bm3+2
+        rts
+
 ; Joue la note suivante de la mélodie (période, durée en tops), 0 = fin
-note    ldy mi
-nm1     lda comptine,y        ; (adresse posée par MUSIQUE)
+note    ldy #0
+nm1     lda pastor,y          ; période (adresse posée par MUSIQUE)
         beq mfin
         cmp #1                ; période 1 = silence
         beq nsil
@@ -373,21 +395,24 @@ nm1     lda comptine,y        ; (adresse posée par MUSIQUE)
 nsil    ldx #0
 ndur    lda #8                ; volume du canal A (X)
         jsr AY
-        ldy mi
-        iny
-nm2     lda comptine,y        ; durée
+        ldy #1
+nm2     lda pastor,y          ; durée
         sta mt
-        dey
-        iny
-        iny
-        sty mi
-        rts
-mfin    sta mi                ; (A = 0) fin de la mélodie - on la reprend
-        jmp note              ; au début (elle tourne jusqu'à INIT)
+        clc                   ; note suivante - adresse + 2
+        lda nm1+1
+        adc #2
+        sta nm1+1
+        sta nm2+1
+        bcc nok
+        inc nm1+2
+        inc nm2+2
+nok     rts
+mfin    jsr mrep              ; fin de la mélodie - on la reprend au début
+        jmp note              ; (elle tourne jusqu'à INIT)
 
 ; Joue la note de basse suivante (période sur 2 octets, durée), 0 = fin
-basse   ldy bi
-bm1     lda cbasse,y          ; (adresse posée par MUSIQUE)
+basse   ldy #0
+bm1     lda pbas6,y           ; (adresse posée par MUSIQUE)
         beq bfin
         cmp #1                ; période 1 = silence
         bne bson
@@ -398,24 +423,29 @@ bm1     lda cbasse,y          ; (adresse posée par MUSIQUE)
 bson    tax
         lda #4                ; période du canal C, partie basse...
         jsr AY
-        ldy bi
-        iny
-bm2     lda cbasse,y
+        ldy #1
+bm2     lda pbas6,y
         tax
         lda #5                ; ... et partie haute
         jsr AY
         lda #10               ; volume du canal C
         ldx vol
         jsr AY
-bdur    ldy bi
-        iny
-        iny
-bm3     lda cbasse,y          ; durée
+bdur    ldy #2
+bm3     lda pbas6,y           ; durée
         sta bt
-        iny
-        sty bi
-        rts
-bfin    sta bi
+        clc                   ; note suivante - adresse + 3
+        lda bm1+1
+        adc #3
+        sta bm1+1
+        sta bm2+1
+        sta bm3+1
+        bcc bok
+        inc bm1+2
+        inc bm2+2
+        inc bm3+2
+bok     rts
+bfin    jsr brep
         jmp basse
 
 ; ----- Interruption - 100 fois par seconde -----
@@ -510,13 +540,13 @@ pb      .byt 0                ; période du ZAP
 lc      .byt 0                ; volume de l'EXPLODE (canal C)
 cc      .byt 0                ; tops avant la prochaine baisse
 mt      .byt 0                ; tops restants de la note de musique (0 = pas de musique)
-mi      .byt 0                ; position dans la mélodie
+mdeb    .word 0               ; début de la mélodie du morceau en cours
 
-; Adresses des tables de chaque morceau (0 comptine, 1 perdu, 2 fanfare)
-tmel    .byt <comptine, <perdu, <fanfare
-tmeh    .byt >comptine, >perdu, >fanfare
-tbal    .byt <cbasse, <pbasse, <fbasse
-tbah    .byt >cbasse, >pbasse, >fbasse
+; Adresses des tables de chaque morceau (0 Pastorale, 1 perdu, 2 fanfare)
+tmel    .byt <pastor, <perdu, <fanfare
+tmeh    .byt >pastor, >perdu, >fanfare
+tbal    .byt <pbas6, <pbasse, <fbasse
+tbah    .byt >pbas6, >pbasse, >fbasse
 
 ; Format - mélodie - période AY sur 1 octet (1 MHz / 16 / fréquence), durée en
 ; centièmes de seconde, période 1 = silence, 0 = fin (reprise au début) ;
@@ -525,22 +555,52 @@ tbah    .byt >cbasse, >pbasse, >fbasse
 ; do4 239, mi4 189, fa4 179 ; basse - do3 477, sol2 638, fa2 716, ré3 425,
 ; la2 568, mi2 758, mi3 379.
 
-; COMPTINE (titre) - originale, do majeur, sautillante ; 8 mesures de 96
-; centièmes (noire 24, croche 12, blanche 48), ~7,7 s.
-; do mi sol do mi | ré do si la sol - fa la do fa mi | ré mi ré si do
-; mi mi ré ré do sol | la si do la sol - do mi sol do mi | ré si sol si do
-comptine .byt 119,24, 189,12, 159,12, 119,24, 95,24,  106,12, 119,12, 127,12, 142,12, 159,48
-        .byt 179,24, 142,12, 119,12, 90,24,  95,24,   106,12, 95,12,  106,12, 127,12, 119,48
-        .byt 95,12,  95,12,  106,12, 106,12, 119,24, 159,24,  142,12, 127,12, 119,12, 142,12, 159,48
-        .byt 119,24, 189,12, 159,12, 119,24, 95,24,   106,12, 127,12, 159,12, 127,12, 119,48
-        .byt 0
-; basse de la comptine - 2 notes par mesure (48), do sol / sol ré / fa do /
-; sol do / do sol / fa do / do sol / sol do
-cbasse  .byt $DD,1,48, $7E,2,48,  $7E,2,48, $A9,1,48
-        .byt $CC,2,48, $DD,1,48,  $7E,2,48, $DD,1,48
-        .byt $DD,1,48, $7E,2,48,  $CC,2,48, $DD,1,48
-        .byt $DD,1,48, $7E,2,48,  $7E,2,48, $DD,1,48
-        .byt 0
+; PASTORALE (écran de chargement, titre et Hall of Fame) - Beethoven,
+; Symphonie n° 6 en fa majeur, op. 68, 1er mouvement (« Éveil d'impressions
+; joyeuses en arrivant à la campagne », Allegro ma non troppo), arrangée pour
+; 2 voix le 2026-11-26 by GliouCNR©70 - mélodie des premiers violons (complétée
+; par le hautbois, la clarinette ou les seconds violons quand ils se taisent),
+; basse des violoncelles (le bourdon fa-do en notes tenues). Noire = 44
+; centièmes, ~47 s en boucle - le thème et son point d'orgue, la phrase des
+; violons, la montée « sol la si bémol si do » répétée, les arpèges et le
+; tutti jusqu'à l'accord de fa. Copie de ../musiques/pastorale-beethoven-6.s
+; (branche Musique-Oric), qui explique comment les tables sont faites.
+pastor  .byt 179,22,142,22,134,22,106,22,119,22,134,11,142,11,159,66,239,22,179,22
+        .byt 159,22,142,22,134,11,142,11,159,132,1,22,142,22,134,22,106,22,119,22
+        .byt 159,11,142,11,134,22,159,22,142,22,142,22,134,22,134,22,159,22,159,11
+        .byt 142,11,134,22,159,22,142,44,119,44,134,66,142,22,106,44,119,44,159,22
+        .byt 159,11,142,11,134,22,159,22,142,44,119,44,134,66,142,22,106,44,119,44
+        .byt 159,22,159,11,142,11,134,22,127,22,119,22,159,11,142,11,134,22,127,22
+        .byt 119,22,159,11,142,11,134,22,127,22,119,22,159,11,142,11,134,22,127,22
+        .byt 119,22,159,11,142,11,134,22,127,22,119,22,159,11,142,11,134,22,127,22
+        .byt 119,22,159,11,142,11,134,22,127,22,119,22,159,11,142,11,134,22,127,22
+        .byt 119,22,159,11,142,11,134,22,127,22,119,22,159,11,142,11,134,22,127,22
+        .byt 119,22,142,11,134,11,119,22,113,22,106,22,134,11,119,11,106,22,95,22
+        .byt 89,22,106,11,95,11,89,22,80,22,71,22,71,22,67,22,53,22,60,22
+        .byt 67,11,71,11,80,22,119,22,89,22,80,22,71,22,67,11,71,11,80,22
+        .byt 71,22,67,22,60,11,67,11,71,22,179,11,142,11,60,22,159,11,134,11
+        .byt 60,22,142,11,119,11,60,22,159,11,95,11,60,22,142,11,89,11,60,22
+        .byt 142,11,89,11,60,22,95,11,80,11,60,22,95,11,80,11,71,22,71,22
+        .byt 67,22,53,22,60,22,67,11,71,11,80,22,119,22,89,22,80,22,71,22
+        .byt 67,11,71,11,80,22,71,22,67,22,60,11,67,11,71,22,60,22,60,22
+        .byt 60,22,60,44,67,11,71,11,80,11,89,11,95,22,89,22,80,22,71,11
+        .byt 80,11,89,22,80,22,71,22,67,11,71,11,80,22,67,22,67,22,67,22
+        .byt 67,44,60,11,67,11,71,11,80,11,71,22,67,22,60,22,53,11,60,11
+        .byt 67,22,60,11,67,11,80,22,60,11,67,11,71,22,67,22,60,22,53,11
+        .byt 60,11,67,22,60,11,67,11,80,22,60,11,67,11,71,22,60,11,67,11
+        .byt 80,22,60,11,67,11,71,22,60,11,67,11,80,22,60,11,67,11,71,22
+        .byt 1,22,0
+pbas6   .byt 204,2,255,204,2,53,188,3,132,204,2,176,204,2,176,102,1,44,28,1,44
+        .byt 63,1,66,102,1,22,24,2,44,102,1,44,222,1,88,204,2,44,56,2,44
+        .byt 126,2,66,204,2,22,24,2,44,204,2,44,222,1,66,222,1,22,222,1,66
+        .byt 222,1,22,222,1,66,222,1,22,222,1,66,222,1,22,222,1,66,222,1,22
+        .byt 222,1,66,222,1,22,222,1,66,222,1,22,222,1,66,222,1,22,222,1,66
+        .byt 222,1,22,222,1,22,1,0,22,222,1,132,24,2,88,222,1,88,204,2,88
+        .byt 204,2,88,204,2,88,204,2,88,204,2,88,204,2,88,204,2,88,204,2,88
+        .byt 204,2,88,204,2,88,204,2,88,204,2,88,204,2,88,204,2,88,188,3,88
+        .byt 188,3,88,188,3,88,188,3,88,204,2,88,204,2,88,204,2,88,204,2,88
+        .byt 204,2,88,204,2,88,204,2,22,1,0,22,0
+
 
 ; PERDU (Hall of Fame après une partie perdue) - originale, la mineur, lente et
 ; douce ; 4 mesures de 120 centièmes (noire 30), ~4,8 s.
@@ -568,4 +628,4 @@ fbasse  .byt $DD,1,60, $7E,2,60,  $CC,2,60, $DD,1,60
         .byt 1,0,60
         .byt 0
 bt      .byt 0                ; tops restants de la note de basse
-bi      .byt 0                ; position dans la basse
+bdeb    .word 0               ; début de sa basse

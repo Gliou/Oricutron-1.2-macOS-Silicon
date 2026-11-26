@@ -1,6 +1,6 @@
 # Serpent — jeu pour Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre ; la Pastorale de Beethoven dès le chargement (2026-11-26)*
 
 Petit jeu en BASIC : on dirige un serpent avec les flèches, il mange les pommes
 et grandit ; perdu s'il touche le bord, un mur ou sa queue. Espace pour jouer.
@@ -22,7 +22,7 @@ sur la disquette, et un **robot** qui joue tout seul.
 | `titre_basic.py` → `serpent-titre-basic.hir` | l'écran titre de la disquette BASIC : le même, avec « Version BASIC » sous la barre cyan |
 | `victoire_serpent.py` → `serpent-victoire.hir` | écran de victoire HIRES |
 | `titre_copie.s` | routine 6502 qui recopie une image HIRES à l'écran (`CALL #460`) |
-| `son.s` | moteur de son 6502 (en `$5300`) : tic-tac des pas, PING, ZAP, EXPLODE au volume réglé par le joueur |
+| `son.s` → `son.bin` | moteur de son 6502 (en `$5000`) : tic-tac des pas, PING, ZAP, EXPLODE au volume réglé par le joueur, musiques (dont la Pastorale de Beethoven), barre de statut |
 | `hof_disque.s`, `HALL-OF-FAME-routine.txt` | lecture/écriture du Hall of Fame sur la disquette, et sa documentation |
 | `bot_serpent.py` | le robot joueur |
 | `simu_aller_retour.py` | simulateur de parties complètes pour tester le robot |
@@ -39,7 +39,7 @@ mêmes couleurs que le décompte de la barre du haut - rouge, puis cyan à parti
 de 136, jaune à partir de 196, vert pour les 20 derniers anneaux.
 
 Les nombres de la barre de statut (score, hi-score, taille, décompte du haut)
-sont écrits en 6502 par le moteur de son (routine POMME, `CALL #531E`, une
+sont écrits en 6502 par le moteur de son (routine POMME, `CALL #501E`, une
 seule instruction BASIC par pomme au lieu de quatre sous-programmes), et le
 jeu ne crée plus aucune chaîne pendant la partie : le serpent ne marque plus
 de pause quand il mange une pomme (avant : environ 0,3 s).
@@ -111,9 +111,10 @@ exactement ce qui touche.
 serpent fait « tic, tac », et PING, ZAP et EXPLODE accompagnent les pommes,
 les portes et la fin de partie. Ceux de la ROM étaient trop forts et ne se
 règlent pas : la ROM met le volume sur l'**enveloppe** de la puce son
-(AY-3-8912), qui part toujours de 15, le maximum. Le moteur `son.s` (1 231
-octets en `$5300`, au-dessus de HIMEM abaissé à `$5300`, juste sous l'image
-titre ; il contient aussi l'écriture de la barre de statut) les remplace : il se
+(AY-3-8912), qui part toujours de 15, le maximum. Le moteur `son.s` (1 837
+octets en `$5000` depuis le 2026-11-26, au-dessus de HIMEM abaissé à `$5000`,
+juste sous l'image titre ; il contient aussi l'écriture de la barre de statut
+et les musiques) les remplace : il se
 branche sur l'interruption de l'horloge de l'Oric (100 fois par seconde) et
 fait lui-même baisser le volume, en partant du **volume choisi**. Le jeu ne
 l'attend jamais ; le tic-tac coûte moins de 2 % de vitesse.
@@ -124,14 +125,34 @@ réglage, un PING retentit au nouveau volume. Sur la disquette, le volume est
 gardé avec le Hall of Fame (octet `$98F0`) et repris au démarrage suivant.
 
 **Musiques** (2026-11-24 by GliouCNR©70) : le moteur `son.s` joue plusieurs
-morceaux (choix par `POKE #5313,n` puis `CALL #5310`) : 0 = la comptine de
-l'écran titre (reprise au Hall of Fame après une victoire), 1 = « perdu »,
+morceaux (choix par `POKE #5013,n` puis `CALL #5010`) : 0 = la **Pastorale**
+de Beethoven (depuis le 2026-11-26, voir plus bas), de « CHARGEMENT EN COURS »
+jusqu'au début de la partie, et au Hall of Fame après une victoire ; 1 = « perdu »,
 un petit air lent et doux en la mineur, sur le Hall of Fame après une
 défaite. 2 = la fanfare de victoire (do majeur, appels de trompette jusqu'au
 do aigu, basse, ~5,4 s), seulement sur l'image de victoire (modifié le
 2026-11-24 by GliouCNR©70 : « GAGNE ! » n'a plus que le ZAP). Chaque musique tourne en boucle jusqu'au début de la partie suivante.
-La première musique du titre, en la mineur, est gardée pour un autre projet
-dans [`../musiques/la-mineur-2-voix.s`](../musiques/la-mineur-2-voix.s).
+La première musique du titre, en la mineur, et la comptine qui l'a remplacée
+du 24 au 26 novembre sont gardées pour d'autres projets dans
+[`../musiques/la-mineur-2-voix.s`](../musiques/la-mineur-2-voix.s) et
+[`../musiques/comptine-serpent.s`](../musiques/comptine-serpent.s).
+
+**La Pastorale** (2026-11-26 by GliouCNR©70) : Beethoven, Symphonie n° 6 en
+fa majeur, op. 68, 1er mouvement (« Éveil d'impressions joyeuses en arrivant à
+la campagne »), arrangée pour 2 voix - les premiers violons à la mélodie, les
+violoncelles à la basse, ~47 s en boucle : le thème et son point d'orgue, la
+phrase des violons, la montée « sol la si♭ si do » répétée, les arpèges sur
+le bourdon de fa et le tutti jusqu'à l'accord de fa. Les tables sont faites
+dans le projet Musique Oric (branche `Musique-Oric`,
+`programmes-oric/musiques/pastorale-beethoven-6.s` et `pastorale_tables.py`)
+et recopiées dans `son.s`. Pour qu'elle joue **dès « CHARGEMENT EN COURS »**,
+le moteur n'est plus chargé par des lignes DATA sur la disquette : le
+démarrage le lit directement en `$5000` (`oric_dsk.py --binaire`), et la ligne
+6 du programme le lance avant tout le reste. Les lignes DATA du moteur ne
+servent plus qu'à la cassette (elles sont retirées du programme mis sur la
+disquette, `--sans-lignes 1070-1999`) : l'écran noir est bien plus court et
+l'image titre arrive en une dizaine de secondes. Les tables sont lues avec une
+adresse sur 16 bits : un morceau n'est plus limité à 255 octets.
 
 ### Hall of Fame
 
@@ -179,19 +200,19 @@ CAPS à réafficher, même après `TEXT`. Le nom tapé pour le Hall of Fame est
 remis en majuscules par le programme.
 
 L'image affiche « APPUIE SUR ESPACE » (modifié le 2026-11-24 by GliouCNR©70).
-Une **comptine** originale en do majeur (8 mesures sautillantes, ~7,7 s,
-mélodie sur le canal A et basse sur le canal C, jouée en boucle par le moteur
-de son au volume choisi) démarre avec l'image et tourne jusqu'au début de la
-partie : on l'entend aussi sur l'écran du Hall of Fame, ce qui aide à
-régler le volume. À l'appui sur ESPACE, le message s'efface.
+La **Pastorale** de Beethoven (modifié le 2026-11-26 by GliouCNR©70 ; c'était
+une comptine), mélodie sur le canal A et basse sur le canal C, jouée en boucle
+par le moteur de son au volume choisi, démarre dès « CHARGEMENT EN COURS » et
+tourne sans s'interrompre sur l'image titre et le Hall of Fame jusqu'au début
+de la partie, ce qui aide à régler le volume. À l'appui sur ESPACE, le message s'efface.
 
 Tout est chargé **avant** l'image, pendant que « CHARGEMENT EN COURS » clignote
 au milieu de l'écran noir (attribut clignotant de l'Oric, posé par le
 démarrage de la disquette puis par le BASIC) : dessins
 des caractères (posés en `$B400` : HIRES les range en `$9800` et `TEXT` les
-remet), routine disque, Hall of Fame et volume lus sur la disquette, moteur de
-son, chaînes du jeu. Après l'image, il ne reste qu'à dessiner le Hall of Fame.
-HIMEM est à `$5300`, sous l'image titre (`$5800-$773F`) : les noms du Hall of
+remet), routine disque, Hall of Fame et volume lus sur la disquette, chaînes
+du jeu (le moteur de son est déjà en mémoire, lu par le démarrage, et joue). Après l'image, il ne reste qu'à dessiner le Hall of Fame.
+HIMEM est à `$5000` (depuis le 2026-11-26), sous l'image titre (`$5800-$773F`) : les noms du Hall of
 Fame, lus avant que l'image soit recopiée à l'écran, ne peuvent plus l'abîmer.
 
 L'image est dessinée par `titre_serpent.py` (Python + Pillow,
@@ -221,7 +242,7 @@ dégradé, une coupe « 256 », des pommes, le serpent complet. Dessous, dans le
 lignes de texte, le score (jaune) et les pommes mangées (magenta) ; une petite
 fanfare joue (depuis le 2026-11-24 : vraie fanfare originale à 2 voix,
 morceau 2 du moteur de son, en boucle, seulement sur cette image), puis une
-touche l'arrête et mène au Hall of Fame, où la comptine reprend.
+touche l'arrête et mène au Hall of Fame, où la Pastorale reprend.
 L'image est chargée au démarrage avec l'image titre et attend en
 `$7800-$973F`, au-dessus de HIMEM (abaissé à `$7800`), que la partie soit
 gagnée ; la même routine de copie (`CALL #460`) sert aux deux images. Sur
@@ -247,8 +268,10 @@ La cassette et la disquette sont aussi copiées dans
 ## Refaire la cassette et la disquette
 
 ```
+xa -o son.bin son.s
 python3 ../outils/oric_tap.py basic serpent.bas serpent.tap SERPENT
-python3 ../outils/oric_dsk.py serpent.bas serpent.dsk serpent-titre-basic.hir serpent-victoire.hir
+python3 ../outils/oric_dsk.py serpent.bas serpent.dsk serpent-titre-basic.hir serpent-victoire.hir \
+        --binaire son.bin@5000 --sans-lignes 1070-1999
 ```
 
 Refaire la disquette **efface le Hall of Fame** (secteur 18 vide) : pour garder

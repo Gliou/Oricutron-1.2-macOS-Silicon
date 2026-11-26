@@ -1,6 +1,6 @@
 # Outils — cassettes et disquettes pour l'Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`) — modifié le 2026-11-24 : programme lu directement en `$0501`*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`) — modifié le 2026-11-24 : programme lu directement en `$0501` ; le 2026-11-26 : options `--binaire` et `--sans-lignes`*
 
 Outils communs à tous les programmes de `programmes-oric/`.
 
@@ -27,8 +27,20 @@ python3 oric_tap.py bin programme.bin programme.tap 0x0800 NOM
 ## Disquettes : `oric_dsk.py`
 
 ```
-python3 oric_dsk.py programme.bas sortie.dsk [image.hir [image2.hir]]
+python3 oric_dsk.py programme.bas sortie.dsk [image.hir [image2.hir]] \
+        [--binaire fichier.bin@5000] [--sans-lignes 1070-1999]
 ```
+
+Options ajoutées le 2026-11-26 by GliouCNR©70 :
+
+- `--binaire f@HHHH` : la 2e étape lit aussi `f` en `$HHHH` (début de page),
+  après les images et **avant** de lancer le BASIC. Le serpent y met son
+  moteur de son (`son.bin` en `$5000`), qui peut ainsi jouer la musique dès la
+  1re ligne du programme, pendant « CHARGEMENT EN COURS ». Le programme doit
+  finir sous cette adresse ; le binaire ne doit pas recouvrir une image.
+- `--sans-lignes A-B` : retire les lignes A à B du programme mis sur la
+  disquette (le serpent y retire les DATA du moteur, qui ne servent qu'à la
+  version cassette) : programme plus court, démarrage plus rapide.
 
 Il faut l'assembleur `xa` (Homebrew : `brew install xa`). Le programme est
 tokenisé et compacté (espaces retirés). Pour lancer la disquette, il faut la
@@ -45,7 +57,7 @@ ROM `microdis.rom` dans le dossier `roms` d'Oricutron, et le lecteur Microdisc :
 | 0 | 3 | répertoire (`SYSTEM.DOS`) |
 | 0 | 4-5 | 2e étape, `boot_etage2.s` |
 | 0 | 18 | données du programme (laissé vide ; le serpent y garde son Hall of Fame) |
-| 1, 2… | à partir de 1 | programme BASIC (jusqu'au début de l'image en mémoire : ~21 Ko), puis l'image et la 2e image (32 secteurs chacune) |
+| 1, 2… | à partir de 1 | programme BASIC (jusqu'au début de l'image en mémoire : ~21 Ko), puis l'image et la 2e image (32 secteurs chacune), puis le binaire de `--binaire` |
 
 ### Démarrage
 

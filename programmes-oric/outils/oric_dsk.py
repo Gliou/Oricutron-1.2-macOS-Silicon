@@ -6,9 +6,18 @@ Créé le 2026-11-21 by GliouCNR©70 — secteur de données ajouté le 2026-11-
 programme compacté (espaces retirés, oric_tap.compact) et chargement sur
 plusieurs pistes avec image de présentation le 2026-11-22, 2e image (écran de
 victoire) le 2026-11-23 by GliouCNR©70, programme lu directement en $0501
-(plus de limite à 6 Ko) le 2026-11-24 by GliouCNR©70
+(plus de limite à 6 Ko) le 2026-11-24 by GliouCNR©70, binaire chargé au
+démarrage et lignes retirées (--binaire, --sans-lignes) le 2026-11-26 by
+GliouCNR©70
 
   python3 oric_dsk.py  programme.bas  sortie.dsk  [image.hir [image2.hir]]
+                       [--binaire fichier.bin@5000] [--sans-lignes 1070-1999]
+
+  --binaire f@HHHH   lit f en $HHHH (début de page) avant de lancer le BASIC
+                     (le moteur de son du serpent, qui joue ainsi dès la 1re
+                     ligne du programme) ; il est rangé après les images
+  --sans-lignes A-B  retire les lignes A à B du programme mis sur la disquette
+                     (les DATA du moteur, qui ne servent qu'à la cassette)
 
 Piste 0 : secteur 1 = en-tête lu par la ROM du Microdisc, secteur 2 = 1re étape
 du démarrage (boot_microdisc.s), secteur 3 = répertoire où la ROM cherche
@@ -104,10 +113,30 @@ def position(n):
 
 
 def main(argv):
+    argv = list(argv)
+    binaire, binh, sans = b"", 0, None
+    if "--binaire" in argv:
+        k = argv.index("--binaire"); nom, adr = argv[k + 1].rsplit("@", 1); del argv[k:k + 2]
+        adr = int(adr, 16)
+        if adr & 0xFF:
+            sys.exit(f"--binaire : l'adresse doit commencer une page (${adr:04X})")
+        binaire, binh = open(nom, "rb").read(), adr >> 8
+    if "--sans-lignes" in argv:
+        k = argv.index("--sans-lignes"); a, b = argv[k + 1].split("-"); del argv[k:k + 2]
+        sans = (int(a), int(b))
     if len(argv) not in (3, 4, 5):
         print(__doc__); return 1
     src, dst = argv[1], argv[2]
-    prog = basic_program(open(src, encoding="utf-8").read(), compacter=True)   # sans espaces
+    texte = open(src, encoding="utf-8").read()
+    if sans:
+        garde = []
+        for l in texte.split("\n"):
+            mot = l.split(" ", 1)[0]
+            if mot.isdigit() and sans[0] <= int(mot) <= sans[1]:
+                continue
+            garde.append(l)
+        texte = "\n".join(garde)
+    prog = basic_program(texte, compacter=True)   # sans espaces
     nsect = (len(prog) + 255) // 256
     images = []
     for nom in argv[3:]:
@@ -124,16 +153,25 @@ def main(argv):
     # le programme est lu en $0501, $0601... : son dernier secteur doit finir
     # avant l'image (ou, sans image, laisser 6 Ko aux variables sous HIMEM)
     haut = imgh * 256 if images else 0x8000
+    ksect = (len(binaire) + 255) // 256
+    if binaire:
+        haut = min(haut, binh * 256)              # le programme s'arrête sous le binaire
+        zones = [(imgh, isect)] + ([(img2h, jsect)] if jsect else [])
+        for debut, n in zones if images else []:
+            if binh < debut + n and debut < binh + ksect:
+                sys.exit(f"--binaire : {len(binaire)} octets en ${binh:02X}00 recouvrent une image (${debut:02X}00)")
     max_sect = (haut - BASIC_START) // 256
     if nsect > max_sect:
         sys.exit(f"programme trop long : {len(prog)} octets ({max_sect * 256} au plus)")
     ptrk, psec = position(0)
     itrk, isec = position(nsect)
     jtrk, jsec = position(nsect + IMAGE_SECTORS)
+    ktrk, ksec = position(nsect + isect + jsect)
     etage2 = assembler("boot_etage2.s", f"PTRK={ptrk}", f"PSEC={psec}", f"NSECT={nsect}",
                        f"ITRK={itrk}", f"ISEC={isec}", f"ISECT={isect}",
                        f"JTRK={jtrk}", f"JSEC={jsec}", f"JSECT={jsect}",
                        f"IMGH={imgh}", f"IMG2H={img2h}", f"HIMEMH={himemh}",
+                       f"KTRK={ktrk}", f"KSEC={ksec}", f"KSECT={ksect}", f"BINH={binh}",
                        f"PEND=${BASIC_START + len(prog):04X}")
     if len(etage2) > ETAGE2_MAX * 256:
         sys.exit(f"2e étape trop longue : {len(etage2)} octets")
@@ -144,7 +182,8 @@ def main(argv):
                   3: DIRECTORY + bytes(256 - len(DIRECTORY))}}
     for i in range(ETAGE2_MAX):
         pistes[0][ETAGE2_SECTOR + i] = etage2[i * 256:(i + 1) * 256]
-    donnees = prog + bytes(nsect * 256 - len(prog)) + image
+    donnees = (prog + bytes(nsect * 256 - len(prog)) + image
+               + binaire + bytes(ksect * 256 - len(binaire)))
     for n in range(len(donnees) // 256):
         t, s_ = position(n)
         pistes.setdefault(t, {})[s_] = donnees[n * 256:(n + 1) * 256]
@@ -157,7 +196,9 @@ def main(argv):
     open(dst, "wb").write(out)
     print(f"{dst} : programme BASIC de {len(prog)} octets ({nsect} secteurs, piste {ptrk})"
           + (f", image HIRES (piste {itrk} secteur {isec})" if image else "")
-          + (f", 2e image (piste {jtrk} secteur {jsec})" if jsect else "") + ", démarrage automatique")
+          + (f", 2e image (piste {jtrk} secteur {jsec})" if jsect else "")
+          + (f", binaire de {len(binaire)} octets en ${binh:02X}00 (piste {ktrk} secteur {ksec})" if binaire else "")
+          + ", démarrage automatique")
     return 0
 
 

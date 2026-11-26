@@ -10,9 +10,12 @@
 ; place ($0501), sans tampon ni recopie - il n'est plus limité à 6 Ko. Le
 ; démarrage du BASIC (NEW) met $0501-$0502 à zéro - ces 2 octets sont gardés
 ; (SAV) et remis juste avant le RUN.
+; Modifié le 2026-11-26 by GliouCNR©70 - binaire facultatif (KSECT/BINH), lu
+; après les images (oric_dsk.py --binaire fichier@adresse).
 ;
 ;   xa -DPTRK=1 -DPSEC=1 -DNSECT=15 -DITRK=1 -DISEC=16 -DISECT=32 \
 ;      -DJTRK=3 -DJSEC=5 -DJSECT=32 -DIMGH=96 -DIMG2H=120 \
+;      -DKTRK=5 -DKSEC=1 -DKSECT=0 -DBINH=80 \
 ;      -DHIMEMH=152 '-DPEND=$1234' -o etage2.bin boot_etage2.s
 ;      (oric_dsk.py s'en charge)
 ;
@@ -22,6 +25,10 @@
 ;              IMGH*256 (0 = pas d'image) ; le BASIC la recopie en $A000
 ;              après HIRES (routine titre_copie.s)
 ;   JTRK/JSEC  2e image (JSECT secteurs, 0 = aucune), lue en IMG2H*256
+;   KTRK/KSEC  binaire facultatif (KSECT secteurs, 0 = aucun), lu en BINH*256
+;              avant le démarrage du BASIC - ajouté le 2026-11-26 by GliouCNR©70
+;              pour le moteur de son du serpent, qui peut ainsi jouer dès le
+;              début du programme (sans passer par des lignes DATA)
 ;   HIMEMH     octet haut de HIMEM - le BASIC ne touche pas à ce qui est au-dessus
 ;   PEND       fin du programme BASIC (mise dans $9C-$9D)
 ;
@@ -86,7 +93,19 @@ start   lda #$01          ; programme lu en $0501, $0601, $0701...
         lda #JSEC
         sta SECTOR
         jsr load
-noimg   lda #0                ; retour sur la piste 0 (Hall of Fame)
+noimg   lda #KSECT            ; binaire facultatif (moteur de son du serpent)
+        beq nobin
+        sta COUNT
+        lda #BINH
+        sta store+2
+        lda #$00
+        sta store+1
+        lda #KTRK
+        sta TRACK
+        lda #KSEC
+        sta SECTOR
+        jsr load
+nobin   lda #0                ; retour sur la piste 0 (Hall of Fame)
         jsr seek
 
 ; ----- Démarrage du BASIC (copie de la routine de reset $F88F) -----
