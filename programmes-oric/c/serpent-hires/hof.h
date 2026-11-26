@@ -7,6 +7,7 @@
 extern unsigned char volume;                 /* 0 à 64, pas de 4 */
 
 void hof_raz(void);                          /* le Hall of Fame livré (ORIC) */
+void hof_charge(void);                       /* relu de la disquette (si démarré d'elle) */
 unsigned int hof_meilleur(void);
 void hof_ecran(void);                        /* affiche, règle le volume, attend Espace */
 void hof_record(unsigned int score, unsigned int pommes);  /* demande le nom si record */

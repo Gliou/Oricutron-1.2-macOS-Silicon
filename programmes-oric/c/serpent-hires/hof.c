@@ -5,8 +5,16 @@
 ** score, longueur atteinte (pommes + 4) suivie de la tête, pommes mangées
 ** suivies de la pomme ; barre du volume réglée avec les flèches, un PING à
 ** chaque réglage. Le Hall of Fame livré est fait d'« ORIC » aux scores
-** minimum des portes. (Pas encore sauvegardé sur disquette.)
-** L'écran de victoire est passé dans images.c (image HIRES, 2026-11-24).
+** minimum des portes. L'écran de victoire est passé dans images.c (image
+** HIRES, 2026-11-24).
+** Modifié le 2026-11-26 by GliouCNR©70 : sur la disquette, le Hall of Fame et
+** le volume sont SAUVEGARDÉS (piste 0, secteur 18, module disque.c), dans le
+** même format que le Serpent BASIC :
+**   octet 0 = 72 (« H ») ; 10 fois : nom (8 lettres), score (haut, bas) ;
+**   octets 101 à 120 : pommes de chaque record (haut, bas) ;
+**   octet 240 : volume + 1 (0 = pas encore réglé).
+** Le secteur est relu au démarrage, réécrit après chaque record, et quand le
+** volume a changé (au début de la partie, sans rien afficher).
 */
 #include <string.h>
 #include "config.h"
@@ -14,8 +22,10 @@
 #include "clavier.h"
 #include "son.h"
 #include "hof.h"
+#include "disque.h"
 
 unsigned char volume = 32;
+static unsigned char volume_sauve = 255;   /* volume déjà sur la disquette */
 
 static char noms[10][9];
 static unsigned int scores[10];
@@ -31,6 +41,45 @@ void hof_raz(void)
         strcpy(noms[i], "ORIC    ");
         scores[i] = score_livre[i];
         pommes[i] = pommes_livre[i];
+    }
+}
+
+/* ----- Sauvegarde sur la disquette ----- */
+void hof_charge(void)
+{
+    unsigned char i, k;
+    if (!disque_present() || disque_lit() || secteur[0] != 72) return;
+    for (i = 0; i < 10; ++i) {
+        k = 1 + i * 10;
+        memcpy(noms[i], secteur + k, 8);
+        noms[i][8] = 0;
+        scores[i] = secteur[k + 8] * 256 + secteur[k + 9];
+        pommes[i] = secteur[0x65 + i * 2] * 256 + secteur[0x66 + i * 2];
+    }
+    k = secteur[0xF0];
+    if (k > 0 && k < 66) volume = k - 1;
+    volume_sauve = volume;
+}
+
+static void sauve(void)
+{
+    unsigned char i, k;
+    if (!disque_present()) return;
+    memset(secteur, 0, sizeof secteur);
+    secteur[0] = 72;
+    for (i = 0; i < 10; ++i) {
+        k = 1 + i * 10;
+        memcpy(secteur + k, noms[i], 8);
+        secteur[k + 8] = scores[i] >> 8;
+        secteur[k + 9] = scores[i] & 255;
+        secteur[0x65 + i * 2] = pommes[i] >> 8;
+        secteur[0x66 + i * 2] = pommes[i] & 255;
+    }
+    secteur[0xF0] = volume + 1;
+    volume_sauve = volume;
+    if (disque_ecrit()) {
+        texte_ecrit(3, 25, "ERREUR DISQUE");
+        attend(250);
     }
 }
 
@@ -83,7 +132,10 @@ void hof_ecran(void)
     POKE(TOUCHE, 0);
     for (;;) {
         k = attend_touche();
-        if (k == T_ESPACE) return;
+        if (k == T_ESPACE) {
+            if (volume != volume_sauve) sauve();   /* volume gardé sur la disquette */
+            return;
+        }
         if (k == T_GAUCHE && volume > 0) volume -= 4;
         else if (k == T_DROITE && volume < 64) volume += 4;
         else continue;
@@ -133,4 +185,8 @@ void hof_record(unsigned int score, unsigned int nb_pommes)
     strcpy(noms[p], nom);
     scores[p] = score;
     pommes[p] = nb_pommes;
+    if (disque_present()) {
+        texte_ecrit(3, 9, "SAUVEGARDE...");
+        sauve();
+    }
 }

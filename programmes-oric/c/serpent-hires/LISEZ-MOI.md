@@ -1,6 +1,6 @@
 # Serpent en C et en HIRES
 
-*Créé le 2026-11-24 by GliouCNR©70 — modifié le 2026-11-24 : écran titre et écran de victoire en HIRES, barres de statut centrées ; le jeu s'appelle `serpent-c.tap` partout*
+*Créé le 2026-11-24 by GliouCNR©70 — modifié le 2026-11-24 : écran titre et écran de victoire en HIRES, barres de statut centrées ; le jeu s'appelle `serpent-c.tap` partout — modifié le 2026-11-26 : **disquette** (Hall of Fame sauvegardé), moteur de son et musiques **en C**, Pastorale et Ode à la joie*
 
 Le jeu du [Serpent BASIC](../../serpent/) refait en **C** (cc65) et dessiné en
 **HIRES** (240 x 200 points). Mêmes règles : on dirige le serpent avec les
@@ -32,17 +32,25 @@ queue ; **gagné à 256 anneaux**.
   serpent, `HI-SCORE`.
 - **Écran titre et écran de victoire** : les deux images HIRES du Serpent
   BASIC (`serpent-titre.hir`, `serpent-victoire.hir`), rangées dans le
-  programme. Le titre s'affiche au démarrage avec la comptine et « APPUIE SUR
-  ESPACE » ; « Version C » y est écrit en petit, en cyan, centré sous la barre
-  cyan du titre ; l'image de victoire avec la fanfare (seulement sur elle), le score
-  et les pommes mangées dessous.
+  programme. Le titre s'affiche au démarrage avec la Pastorale et « APPUIE
+  SUR ESPACE » ; « Version C » y est écrit en petit, en cyan, centré sous la
+  barre cyan du titre ; l'image de victoire avec l'Ode à la joie (seulement
+  sur elle), le score et les pommes mangées dessous.
 - Hall of Fame et réglage du volume comme dans le Serpent BASIC (avec la
-  longueur atteinte), en mode texte. **Pas encore sauvegardé** : il repart
-  du Hall of Fame livré à chaque chargement.
-- Sons et musiques : le **même moteur 6502** que le Serpent BASIC
-  ([`../../serpent/son.s`](../../serpent/son.s)), réassemblé en `$8B00` :
-  tic-tac à chaque pas, « pip » aigu quand une pomme apparaît, PING quand le
-  serpent la mange, ZAP quand la porte s'ouvre, EXPLODE contre un mur.
+  longueur atteinte), en mode texte. Sur la **disquette**, ils sont
+  **sauvegardés** (piste 0, secteur 18, même format que le Serpent BASIC) :
+  relus au démarrage, réécrits après chaque record et quand le volume change.
+  En cassette, le Hall of Fame repart du classement livré à chaque chargement.
+- **Sons et musiques en C** (`son.c`, `musiques.c`, depuis le 2026-11-26) :
+  une fonction C branchée sur l'interruption de l'horloge (100 fois par
+  seconde, `set_irq` de cc65) joue les sons au volume choisi et les musiques
+  à 2 voix : tic-tac à chaque pas, « pip » aigu quand une pomme apparaît, PING
+  quand le serpent la mange, ZAP quand la porte s'ouvre, EXPLODE contre un
+  mur ; la Pastorale de Beethoven (titre, Hall of Fame), « perdu » (Hall of
+  Fame après une défaite), l'Ode à la joie (victoire). Les tables de notes
+  viennent des arrangements du Serpent BASIC. L'interruption ne lit les tables
+  que par indices d'un octet (tableaux de moins de 256 cases) : elle ne touche
+  pas aux cases de page zéro du C que le programme principal utilise.
 - **Clic du clavier coupé** (bit 3 de `$026A`, comme `POKE 618,10` dans le
   BASIC) : le clic de la ROM recharge tous les registres de la puce son, dont
   le mélangeur, et rendait muets PING, ZAP et EXPLODE (corrigé le 2026-11-24).
@@ -56,17 +64,19 @@ Le programme est découpé en modules, que `main.c` importe par leurs `.h` :
 | `main.c` | boucle générale : Hall of Fame, partie, victoire, record |
 | `config.h` | constantes : grille, types de case, adresses de l'Atmos |
 | `ecran.c` / `.h` | HIRES (appel des routines de la ROM), dessins 6 x 6, lignes de texte |
-| `son.c` / `.h` | le moteur de son du Serpent BASIC, appelé depuis le C |
-| `son_bin.h` | le moteur assemblé (fabriqué par `faire.sh`) |
+| `son.c` / `.h` | moteur de son en C, sur l'interruption de l'horloge |
+| `musiques.c` / `.h` | les trois morceaux (périodes et durées des notes) |
+| `disque.c` / `.h` | lecture / écriture d'un secteur de la disquette (contrôleur WD1793) |
 | `clavier.c` / `.h` | touches lues par la ROM (`$02DF`), attentes |
 | `niveau.c` / `.h` | les 5 tableaux : bord, portes, murs tirés au hasard et gardés, pommes |
 | `jeu.c` / `.h` | une partie |
-| `hof.c` / `.h` | Hall of Fame, volume, saisie du nom |
+| `hof.c` / `.h` | Hall of Fame, volume, saisie du nom, sauvegarde sur disquette |
 | `images.c` / `.h` | écran titre et écran de victoire en HIRES |
 | `images_bin.h` | les deux images (fabriqué par `faire.sh`) |
 | `pilote.c` / `.h` | pilote automatique, seulement dans la version de test |
-| `faire.sh` | construit `serpent-c.tap` (ou `serpent-c-test.tap`) |
-| `serpent-c.tap` | le jeu, prêt à charger |
+| `faire.sh` | construit `serpent-c.tap` et `serpent-c.dsk` (ou `serpent-c-test.*`) |
+| `serpent-c.tap` | le jeu en cassette |
+| `serpent-c.dsk` | le jeu en disquette Microdisc (Hall of Fame sauvegardé) |
 
 ## Construire et jouer
 
@@ -74,16 +84,32 @@ Le programme est découpé en modules, que `main.c` importe par leurs `.h` :
 ./faire.sh
 ```
 
+Disquette (le Hall of Fame y est sauvegardé) :
+
+```bash
+/Applications/Oricutron.app/Contents/MacOS/Oricutron -k m -d "$PWD/serpent-c.dsk"
+```
+
+Cassette :
+
 ```bash
 /Applications/Oricutron.app/Contents/MacOS/Oricutron -m atmos --turbotape on -t "$PWD/serpent-c.tap"
 ```
 
-Le jeu démarre tout seul après le chargement. `faire.sh` copie aussi le jeu
-dans le dossier des cassettes d'Oricutron
-(`~/Library/Application Support/Oricutron/tapes/serpent-c.tap`), sous le même
-nom : il n'écrase pas le `serpent.tap` du Serpent BASIC.
+Le jeu démarre tout seul dans les deux cas. `faire.sh` copie aussi la
+cassette et la disquette dans les dossiers d'Oricutron
+(`~/Library/Application Support/Oricutron/tapes/serpent-c.tap` et
+`.../disks/serpent-c.dsk`), sous ces noms : ils n'écrasent pas le `serpent.tap`
+et le `serpent.dsk` du Serpent BASIC. La disquette copiée **garde le Hall of
+Fame** déjà sauvegardé sur la précédente (secteur 18 recopié).
 
-`./faire.sh test` construit `serpent-c-test.tap` : un pilote automatique joue
+La disquette est faite par [`../../outils/oric_dsk.py`](../../outils/oric_dsk.py),
+qui accepte une cassette `.tap` déjà compilée : le programme de cc65 est une
+ligne BASIC « CALL » suivie du code machine ; le chargeur Microdisc commun
+(les deux étapes de démarrage en 6502, partagées avec les programmes BASIC) le
+lit en `$0501`, démarre le BASIC, qui exécute la ligne et lance le C.
+
+`./faire.sh test` construit `serpent-c-test.tap` et `serpent-c-test.dsk` : un pilote automatique joue
 seul, la porte s'ouvre après 1 pomme et la partie est gagnée à 40 anneaux. Il
 sert à vérifier les portes, les niveaux et la victoire sans jouer.
 
@@ -91,9 +117,9 @@ sert à vérifier les portes, les niveaux et la victoire sans jouer.
 
 | Adresses | Contenu |
 |---|---|
-| `$0501-$78D9` | programme C (dont les 2 images, 16 000 octets) et ses variables |
-| `$8300-$8AFF` | pile du C (2 Ko) |
-| `$8B00-$8FCE` | moteur de son |
+| `$0501-$83DB` | programme C (dont les 2 images, 16 000 octets) et ses variables |
+| `$8800-$8FFF` | pile du C (2 Ko) |
+| `$9000-$96FF` | tableaux du pilote (version de test seulement) |
 | `$9800-$9FFF` | jeu de caractères du mode HIRES |
 | `$A000-$BF3F` | écran HIRES, puis les 3 lignes de texte jusqu'à `$BFDF` |
 

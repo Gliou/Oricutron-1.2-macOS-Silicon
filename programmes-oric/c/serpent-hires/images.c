@@ -44,7 +44,7 @@ void ecran_titre(void)
     ** 4 à 37) : lignes 59 à 66, octets 16 à 24, en cyan ; ces lignes
     ** reprennent ensuite l'encre verte de l'image. 2026-11-24 by GliouCNR©70 */
     ecrit_image(16, 59, "Version C", 6, 2);
-    son_musique(MUS_COMPTINE);
+    son_musique(MUS_TITRE);
     ligne_car(6);                                    /* encre cyan */
     ligne_texte("APPUIE SUR ESPACE");
     ligne_pose(2);
@@ -56,7 +56,7 @@ void ecran_titre(void)
 void ecran_victoire(unsigned int score, unsigned int pommes)
 {
     affiche(victoire_bin);
-    son_musique(MUS_FANFARE);
+    son_musique(MUS_VICTOIRE);
     ligne_car(3);                                    /* jaune */
     ligne_texte("SCORE ");
     ligne_nombre(score, 1);

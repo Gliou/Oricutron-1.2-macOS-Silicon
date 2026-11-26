@@ -1,40 +1,21 @@
 #!/bin/sh
-# faire.sh - construit serpent-c.tap (SERPENT en C et en HIRES) avec cc65.
+# faire.sh - construit serpent-c.tap et serpent-c.dsk (SERPENT en C et en
+# HIRES) avec cc65.
 # Créé le 2026-11-24 by GliouCNR©70 - modifié le 2026-11-24 : le jeu s'appelle
 # serpent-c.tap partout (dépôt et dossier tapes d'Oricutron).
 #
-# 1. réassemble le moteur de son du Serpent BASIC (../../serpent/son.s) en
-#    $8B00 avec xa, et le range dans son_bin.h (tableau C) ;
-#    range aussi les images HIRES titre et victoire du Serpent BASIC dans
-#    images_bin.h (modifié le 2026-11-24 by GliouCNR©70) ;
+# 1. range les images HIRES titre et victoire du Serpent BASIC dans
+#    images_bin.h ;
 # 2. compile et relie tous les modules .c (cl65 -t atmos) :
-#    - __RAMEND__ = $8B00 : le C (programme, variables, pile de 2 Ko) reste
-#      sous le moteur de son ($8B00-$8FCE) et sous le jeu de caractères du
-#      mode HIRES ($9800) ;
+#    - __RAMEND__ = $9000 : le C (programme, variables, pile de 2 Ko) reste
+#      sous le jeu de caractères du mode HIRES ($9800) ; la version de test
+#      range les tableaux de son pilote en $9000-$96FF ;
 #    - __AUTORUN__ = $C7 : le programme démarre tout seul après CLOAD"".
+# Modifié le 2026-11-26 by GliouCNR©70 : le moteur de son est en C (son.c,
+# musiques.c) ; le son.s du Serpent BASIC n'est plus réassemblé ici.
 set -e
 cd "$(dirname "$0")"
-SON_ADR=8B00
-TMP=$(mktemp -d)
-trap 'rm -rf "$TMP"' EXIT
-
-sed "s/^        \* = \$5300/        * = \$$SON_ADR/" ../../serpent/son.s > $TMP/son_c.s
-xa -o $TMP/son_c.bin -l $TMP/son_c.lab $TMP/son_c.s
-python3 - "$SON_ADR" "$TMP/son_c.bin" "$TMP/son_c.lab" <<'EOF'
-import sys
-b = open(sys.argv[2], 'rb').read()
-lab = dict((l.split(',')[0], l.split(',')[1].strip()) for l in open(sys.argv[3]))
-with open('son_bin.h', 'w', encoding='utf-8') as f:
-    f.write('/* son_bin.h - FABRIQUÉ par faire.sh (ne pas modifier) : le moteur de son\n')
-    f.write('** ../../serpent/son.s assemblé en $%s, %d octets. by GliouCNR©70 */\n' % (sys.argv[1], len(b)))
-    f.write('#define SON_ADR 0x%s\n' % sys.argv[1])
-    f.write('#define SON_TON %s      /* hauteur du tic-tac */\n' % lab['ton'])
-    f.write('static const unsigned char son_bin[%d] = {\n' % len(b))
-    for i in range(0, len(b), 16):
-        f.write('    ' + ', '.join('0x%02X' % x for x in b[i:i+16]) + ',\n')
-    f.write('};\n')
-print('moteur de son :', len(b), 'octets en $' + sys.argv[1])
-EOF
+RAMEND=9000
 
 # images HIRES du Serpent BASIC (titre, victoire) -> images_bin.h
 python3 - <<'EOF'
@@ -52,18 +33,18 @@ EOF
 
 # ./faire.sh test : version de test (serpent-c-test.tap) - pilote automatique,
 # porte ouverte après 1 pomme, victoire à 40 anneaux.
-# (pile du C réduite à 1,5 Ko pour la version de test, qui a le pilote en plus)
+# (pile du C réduite à 1 Ko pour la version de test, qui a le pilote en plus)
 SORTIE=serpent-c
 OPTIONS=
 PILE=0800
 if [ "$1" = test ]; then
     SORTIE=serpent-c-test
     OPTIONS="-DPILOTE -DPOMMES_PORTE=1 -DGAGNE_LONG=40"
-    PILE=0600
+    PILE=0400
 fi
 cl65 -t atmos -O $OPTIONS -o $SORTIE.tap -m $SORTIE.map \
-     --ld-args -D,__RAMEND__=\$$SON_ADR,-D,__AUTORUN__=\$C7,-D,__STACKSIZE__=\$$PILE \
-     main.c ecran.c son.c clavier.c niveau.c jeu.c hof.c images.c pilote.c
+     --ld-args -D,__RAMEND__=\$$RAMEND,-D,__AUTORUN__=\$C7,-D,__STACKSIZE__=\$$PILE \
+     main.c ecran.c son.c musiques.c disque.c clavier.c niveau.c jeu.c hof.c images.c pilote.c
 rm -f *.o
 ls -l $SORTIE.tap
 
@@ -73,4 +54,35 @@ BANDES="$HOME/Library/Application Support/Oricutron/tapes"
 if [ "$SORTIE" = serpent-c ] && [ -d "$BANDES" ]; then
     cp serpent-c.tap "$BANDES/serpent-c.tap"
     echo "copié dans $BANDES/serpent-c.tap"
+fi
+
+# Disquette Microdisc (ajoutée le 2026-11-26 by GliouCNR©70) : le programme de
+# la cassette, mis tel quel sur la disquette par oric_dsk.py ; elle démarre
+# toute seule et le jeu y sauvegarde son Hall of Fame (piste 0, secteur 18).
+python3 ../../outils/oric_dsk.py $SORTIE.tap $SORTIE.dsk
+
+# Copie dans le dossier des disquettes d'Oricutron, en gardant le Hall of Fame
+# déjà sauvegardé sur la copie précédente (secteur 18 de la piste 0).
+DISQUES="$HOME/Library/Application Support/Oricutron/disks"
+if [ "$SORTIE" = serpent-c ] && [ -d "$DISQUES" ]; then
+    PYTHONPATH=../../outils python3 - "$DISQUES/serpent-c.dsk" <<'PYEOF'
+import os, re, sys
+from oric_dsk import crc16
+cible = sys.argv[1]
+def sec18(d):
+    """position des données du secteur 18 de la piste 0 (après A1 A1 A1 FB)"""
+    t = d[256:256 + 6400]
+    for m in re.finditer(rb'\xa1\xa1\xa1\xfe(.)(.)(.)(.)', t, re.S):
+        if m.group(3)[0] == 18:
+            return 256 + t.find(b'\xa1\xa1\xa1\xfb', m.end())
+neuf = bytearray(open('serpent-c.dsk', 'rb').read())
+if os.path.exists(cible):
+    ancien = open(cible, 'rb').read()
+    pa, pn = sec18(ancien), sec18(neuf)
+    neuf[pn + 4:pn + 260] = ancien[pa + 4:pa + 260]
+    neuf[pn + 260:pn + 262] = crc16(bytes(neuf[pn:pn + 260])).to_bytes(2, 'big')
+    print('Hall of Fame gardé :', bytes(ancien[pa + 4:pa + 14]))
+open(cible, 'wb').write(neuf)
+print('copié dans', cible)
+PYEOF
 fi

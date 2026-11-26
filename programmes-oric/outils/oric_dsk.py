@@ -8,10 +8,18 @@ plusieurs pistes avec image de présentation le 2026-11-22, 2e image (écran de
 victoire) le 2026-11-23 by GliouCNR©70, programme lu directement en $0501
 (plus de limite à 6 Ko) le 2026-11-24 by GliouCNR©70, binaire chargé au
 démarrage et lignes retirées (--binaire, --sans-lignes) le 2026-11-26 by
-GliouCNR©70
+GliouCNR©70, programme déjà compilé pris dans une cassette .tap (le Serpent
+en C, cc65) le 2026-11-26 by GliouCNR©70
 
   python3 oric_dsk.py  programme.bas  sortie.dsk  [image.hir [image2.hir]]
                        [--binaire fichier.bin@5000] [--sans-lignes 1070-1999]
+  python3 oric_dsk.py  programme.tap  sortie.dsk
+
+  programme.tap      un programme déjà en mémoire BASIC, chargé en $0501 : il
+                     est mis tel quel sur la disquette (pas de tokenisation).
+                     C'est le cas d'un programme C de cc65 (cible atmos) : une
+                     ligne BASIC « CALL » suivie du code machine ; le BASIC
+                     démarre et exécute la ligne, qui lance le programme C.
 
   --binaire f@HHHH   lit f en $HHHH (début de page) avant de lancer le BASIC
                      (le moteur de son du serpent, qui joue ainsi dès la 1re
@@ -107,6 +115,19 @@ def boot_sector():
     return code + bytes(256 - len(code))
 
 
+def programme_tap(nom):
+    """Contenu d'une cassette Oric : octets chargés en $0501 (en-tête : 16 ...
+    24, 2 octets, type, démarrage auto, fin (haut, bas), début (haut, bas),
+    1 octet, nom terminé par 0, puis les données)."""
+    t = open(nom, "rb").read()
+    k = t.index(0x24) + 1
+    fin, debut = t[k + 4] * 256 + t[k + 5], t[k + 6] * 256 + t[k + 7]
+    k = t.index(0, k + 9) + 1
+    if debut != BASIC_START:
+        sys.exit(f"{nom} : chargé en ${debut:04X}, pas en ${BASIC_START:04X}")
+    return t[k:k + fin - debut + 1]
+
+
 def position(n):
     """n-ième secteur à partir de la piste 1, secteur 1 -> (piste, secteur)."""
     return 1 + n // SECTORS, 1 + n % SECTORS
@@ -127,8 +148,12 @@ def main(argv):
     if len(argv) not in (3, 4, 5):
         print(__doc__); return 1
     src, dst = argv[1], argv[2]
-    texte = open(src, encoding="utf-8").read()
-    if sans:
+    if src.lower().endswith(".tap"):
+        prog = programme_tap(src)
+        texte = None
+    else:
+        texte = open(src, encoding="utf-8").read()
+    if sans and texte is not None:
         garde = []
         for l in texte.split("\n"):
             mot = l.split(" ", 1)[0]
@@ -136,7 +161,8 @@ def main(argv):
                 continue
             garde.append(l)
         texte = "\n".join(garde)
-    prog = basic_program(texte, compacter=True)   # sans espaces
+    if texte is not None:
+        prog = basic_program(texte, compacter=True)   # sans espaces
     nsect = (len(prog) + 255) // 256
     images = []
     for nom in argv[3:]:
@@ -194,7 +220,7 @@ def main(argv):
         for t in range(TRACKS):
             out += track(t, side, pistes.get(t, {}) if side == 0 else {})
     open(dst, "wb").write(out)
-    print(f"{dst} : programme BASIC de {len(prog)} octets ({nsect} secteurs, piste {ptrk})"
+    print(f"{dst} : programme {'BASIC' if texte is not None else 'en mémoire BASIC (.tap)'} de {len(prog)} octets ({nsect} secteurs, piste {ptrk})"
           + (f", image HIRES (piste {itrk} secteur {isec})" if image else "")
           + (f", 2e image (piste {jtrk} secteur {jsec})" if jsect else "")
           + (f", binaire de {len(binaire)} octets en ${binh:02X}00 (piste {ktrk} secteur {ksec})" if binaire else "")

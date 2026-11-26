@@ -1,13 +1,13 @@
 # Outils — cassettes et disquettes pour l'Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`) — modifié le 2026-11-24 : programme lu directement en `$0501` ; le 2026-11-26 : options `--binaire` et `--sans-lignes` (disquettes), `--ajoute` (cassettes)*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`) — modifié le 2026-11-24 : programme lu directement en `$0501` ; le 2026-11-26 : options `--binaire` et `--sans-lignes` (disquettes), `--ajoute` (cassettes) ; programme `.tap` déjà compilé sur disquette (Serpent en C)*
 
 Outils communs à tous les programmes de `programmes-oric/`.
 
 | Fichier | Rôle |
 |---|---|
 | `oric_tap.py` | fabrique une cassette `.tap` à partir d'un programme BASIC texte ou d'un binaire 6502 |
-| `oric_dsk.py` | fabrique une disquette `.dsk` (Microdisc) qui démarre toute seule sur un programme BASIC, avec une ou deux images HIRES facultatives |
+| `oric_dsk.py` | fabrique une disquette `.dsk` (Microdisc) qui démarre toute seule sur un programme BASIC (ou un programme C de cc65 en `.tap`), avec une ou deux images HIRES facultatives |
 | `boot_microdisc.s` | 1re étape du démarrage de la disquette (piste 0, secteur 2) |
 | `boot_etage2.s` | 2e étape : lit le programme et les images, lance le BASIC |
 
@@ -52,6 +52,19 @@ Options ajoutées le 2026-11-26 by GliouCNR©70 :
 - `--sans-lignes A-B` : retire les lignes A à B du programme mis sur la
   disquette (le serpent y retire les DATA du moteur, qui ne servent qu'à la
   version cassette) : programme plus court, démarrage plus rapide.
+
+Programme déjà compilé (ajouté le 2026-11-26 by GliouCNR©70) :
+
+```
+python3 oric_dsk.py programme.tap sortie.dsk
+```
+
+Si le programme est une cassette `.tap` chargée en `$0501` (un programme C de
+cc65, cible `atmos` : une ligne BASIC « CALL » suivie du code machine), son
+contenu est mis **tel quel** sur la disquette, sans tokenisation. Le même
+chargeur le lit en `$0501`, démarre le BASIC, qui exécute la ligne et lance le
+programme C. C'est ainsi qu'est faite la disquette du
+[Serpent en C](../c/serpent-hires/).
 
 Il faut l'assembleur `xa` (Homebrew : `brew install xa`). Le programme est
 tokenisé et compacté (espaces retirés). Pour lancer la disquette, il faut la
