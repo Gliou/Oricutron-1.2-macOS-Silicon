@@ -1,6 +1,6 @@
 # Outils — cassettes et disquettes pour l'Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`) — modifié le 2026-11-24 : programme lu directement en `$0501` ; le 2026-11-26 : options `--binaire` et `--sans-lignes`*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`) — modifié le 2026-11-24 : programme lu directement en `$0501` ; le 2026-11-26 : options `--binaire` et `--sans-lignes` (disquettes), `--ajoute` (cassettes)*
 
 Outils communs à tous les programmes de `programmes-oric/`.
 
@@ -23,6 +23,17 @@ python3 oric_tap.py bin programme.bin programme.tap 0x0800 NOM
   sont des commentaires, retirés à la conversion.
 - `bin` : transforme un binaire 6502 en cassette qui se charge à l'adresse
   donnée et se lance toute seule.
+- `--ajoute fichier@HHHH:NOM` (ajouté le 2026-11-26 by GliouCNR©70, autant de
+  fois qu'il faut) : met d'autres fichiers binaires à la suite sur la même
+  cassette, sans lancement automatique ; le programme les charge lui-même par
+  `CLOAD"NOM"`, qui les pose à leur adresse et continue le programme. Le
+  serpent y range son moteur de son et ses deux images HIRES :
+
+  ```
+  python3 oric_tap.py basic serpent.bas serpent.tap SERPENT \
+          --ajoute son.bin@5000:SON --ajoute serpent-titre-basic.hir@5800:TITRE \
+          --ajoute serpent-victoire.hir@7800:VICTOIRE
+  ```
 
 ## Disquettes : `oric_dsk.py`
 

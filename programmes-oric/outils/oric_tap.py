@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """
 oric_tap.py — fabrique des fichiers cassette .tap pour l'Oric Atmos.
-Créé le 2026-11-21 by GliouCNR©70 — compact() ajouté le 2026-11-22
+Créé le 2026-11-21 by GliouCNR©70 — compact() ajouté le 2026-11-22,
+fichiers ajoutés à la suite (--ajoute) le 2026-11-26 by GliouCNR©70
 
   python3 oric_tap.py basic  programme.bas  sortie.tap  [NOM]
       Programme BASIC texte (une ligne = numéro + instructions, mots-clés en
       MAJUSCULES) -> tokenisé comme le ferait la ROM Atmos, lancé
       automatiquement après CLOAD"".
+      --ajoute fichier@HHHH:NOM (autant de fois qu'il faut) met d'autres
+      fichiers binaires à la suite, sur la même cassette, sans lancement
+      automatique : le programme les charge lui-même par CLOAD"NOM" (le
+      serpent y range son moteur de son et ses deux images HIRES).
 
   python3 oric_tap.py bin  programme.bin  sortie.tap  ADRESSE  [NOM]
       Code machine chargé à ADRESSE (ex. 0x0600 ou '$600'), exécuté
@@ -125,6 +130,13 @@ def tap(data, start, name, basic, autorun):
 
 
 def main(argv):
+    argv = list(argv)
+    ajouts = []
+    while "--ajoute" in argv:
+        k = argv.index("--ajoute"); spec = argv[k + 1]; del argv[k:k + 2]
+        fichier, reste = spec.rsplit("@", 1)
+        adr, nom = reste.split(":", 1)
+        ajouts.append((fichier, int(adr.replace("$", ""), 16), nom))
     if len(argv) < 4 or argv[1] not in ("basic", "bin"):
         print(__doc__); return 1
     mode, src, dst = argv[1], argv[2], argv[3]
@@ -139,6 +151,10 @@ def main(argv):
         code = open(src, "rb").read()
         out = tap(code, start, name, basic=False, autorun=True)
         print(f"{dst} : {len(code)} octets de code à ${start:04X}")
+    for fichier, adr, nom in ajouts:
+        donnees = open(fichier, "rb").read()
+        out += tap(donnees, adr, nom, basic=False, autorun=False)
+        print(f"  + {nom} : {len(donnees)} octets en ${adr:04X} ({fichier})")
     open(dst, "wb").write(out)
     return 0
 

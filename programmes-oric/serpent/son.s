@@ -18,11 +18,11 @@
 ;
 ;   xa -o son.bin son.s
 ;   (sur la disquette, son.bin est lu en $5000 par le démarrage, avant le
-;    BASIC - oric_dsk.py --binaire son.bin@5000 ; sur la cassette, les octets
-;    sont dans les lignes DATA 1070+ de serpent.bas, posés en $5000 par la
-;    ligne 974. HIMEM est abaissé à $5000, juste SOUS l'image titre
-;    ($5800-$773F) - le BASIC range ses chaînes sous HIMEM, jamais dans
-;    l'image ni dans le moteur.
+;    BASIC - oric_dsk.py --binaire son.bin@5000 ; sur la cassette, c'est le
+;    fichier SON rangé après le programme (oric_tap.py --ajoute), chargé par
+;    CLOAD"SON" ligne 7. Plus de lignes DATA depuis le 2026-11-26. HIMEM est
+;    abaissé à $5000, juste SOUS l'image titre ($5800-$773F) - le BASIC range
+;    ses chaînes sous HIMEM, jamais dans l'image ni dans le moteur.
 ;    Avant le 2026-11-24 soir, le moteur était en $7600, dans la fin du tampon
 ;    de l'image - les noms du Hall of Fame lus avant l'image l'abîmaient.)
 ;   CALL #5000  INIT   installe le moteur sur l'interruption de l'horloge

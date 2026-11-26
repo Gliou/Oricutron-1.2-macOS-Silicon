@@ -1,6 +1,6 @@
 # Serpent — jeu pour Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre ; la Pastorale de Beethoven dès le chargement (2026-11-26)*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre ; la Pastorale de Beethoven dès le chargement ; cassette avec images et musique (2026-11-26)*
 
 Petit jeu en BASIC : on dirige un serpent avec les flèches, il mange les pommes
 et grandit ; perdu s'il touche le bord, un mur ou sa queue. Espace pour jouer.
@@ -15,7 +15,7 @@ sur la disquette, et un **robot** qui joue tout seul.
 | Fichier | Rôle |
 |---|---|
 | `serpent.bas` | le programme BASIC (source) |
-| `serpent.tap` | la cassette, prête à charger |
+| `serpent.tap` | la cassette, prête à charger : le programme, puis le moteur de son et les deux images (depuis le 2026-11-26) |
 | `serpent.dsk` | la disquette Microdisc, qui démarre toute seule (Hall of Fame sauvegardé) |
 | `serpent-commente.txt` | le programme commenté ligne par ligne |
 | `titre_serpent.py` → `serpent-titre.hir` | écran titre HIRES (commun avec la version en C) |
@@ -146,12 +146,12 @@ le bourdon de fa et le tutti jusqu'à l'accord de fa. Les tables sont faites
 dans le projet Musique Oric (branche `Musique-Oric`,
 `programmes-oric/musiques/pastorale-beethoven-6.s` et `pastorale_tables.py`)
 et recopiées dans `son.s`. Pour qu'elle joue **dès « CHARGEMENT EN COURS »**,
-le moteur n'est plus chargé par des lignes DATA sur la disquette : le
+le moteur n'est plus chargé par des lignes DATA : sur la disquette, le
 démarrage le lit directement en `$5000` (`oric_dsk.py --binaire`), et la ligne
-6 du programme le lance avant tout le reste. Les lignes DATA du moteur ne
-servent plus qu'à la cassette (elles sont retirées du programme mis sur la
-disquette, `--sans-lignes 1070-1999`) : l'écran noir est bien plus court et
-l'image titre arrive en une dizaine de secondes. Les tables sont lues avec une
+6 du programme le lance avant tout le reste ; sur la cassette, la ligne 7 le
+charge par `CLOAD"SON"` (voir « La cassette »). Le programme n'a plus les
+1 837 octets de DATA du moteur : l'écran noir est bien plus court et l'image
+titre arrive en une dizaine de secondes. Les tables sont lues avec une
 adresse sur 16 bits : un morceau n'est plus limité à 255 octets.
 
 ### Hall of Fame
@@ -245,8 +245,9 @@ morceau 2 du moteur de son, en boucle, seulement sur cette image), puis une
 touche l'arrête et mène au Hall of Fame, où la Pastorale reprend.
 L'image est chargée au démarrage avec l'image titre et attend en
 `$7800-$973F`, au-dessus de HIMEM (abaissé à `$7800`), que la partie soit
-gagnée ; la même routine de copie (`CALL #460`) sert aux deux images. Sur
-cassette, il n'y a que la pause sur « GAGNE ! ».
+gagnée ; la même routine de copie (`CALL #460`) sert aux deux images. Depuis
+le 2026-11-26, la cassette a aussi l'image titre et l'écran de victoire (voir
+plus bas, « La cassette »).
 
 ```
 python3 victoire_serpent.py
@@ -254,10 +255,25 @@ python3 victoire_serpent.py
 
 ![Écran de victoire dans Oricutron](captures/serpent-victoire-oricutron.jpg)
 
+## La cassette (refaite le 2026-11-26 by GliouCNR©70)
+
+Jusqu'au 26 novembre, la cassette n'avait que le programme BASIC : pas
+d'image titre, pas d'écran de victoire, et le moteur de son venait de lignes
+DATA (longues à lire, sans musique pendant ce temps). Maintenant,
+`serpent.tap` contient 4 fichiers à la suite : le programme `SERPENT` (lancé
+tout seul après `CLOAD""`), puis `SON` (le moteur, `$5000`), `TITRE`
+(`$5800`) et `VICTOIRE` (`$7800`), ajoutés par `oric_tap.py --ajoute`. Au
+démarrage, la ligne 4 passe l'écran en noir (fond noir, écran vidé, curseur
+et CAPS éteints, comme le fait le démarrage de la disquette), la ligne 6
+écrit « CHARGEMENT EN COURS », la ligne 7 charge les trois fichiers par
+`CLOAD"SON"`, `CLOAD"TITRE"`, `CLOAD"VICTOIRE"` et lance la Pastorale. La
+suite est la même que sur la disquette ; seul le Hall of Fame n'est pas
+sauvegardé (il n'y a pas de disque).
+
 ## Lancer le jeu
 
-Cassette :
-`/Applications/Oricutron.app/Contents/MacOS/Oricutron "$PWD/serpent.tap"`
+Cassette (Oricutron tape lui-même `CLOAD""` avec `-t`) :
+`/Applications/Oricutron.app/Contents/MacOS/Oricutron -t "$PWD/serpent.tap"`
 
 Disquette (il faut la ROM `microdis.rom` dans le dossier `roms` d'Oricutron) :
 `/Applications/Oricutron.app/Contents/MacOS/Oricutron -k m -d "$PWD/serpent.dsk"`
@@ -269,9 +285,11 @@ La cassette et la disquette sont aussi copiées dans
 
 ```
 xa -o son.bin son.s
-python3 ../outils/oric_tap.py basic serpent.bas serpent.tap SERPENT
+python3 ../outils/oric_tap.py basic serpent.bas serpent.tap SERPENT \
+        --ajoute son.bin@5000:SON --ajoute serpent-titre-basic.hir@5800:TITRE \
+        --ajoute serpent-victoire.hir@7800:VICTOIRE
 python3 ../outils/oric_dsk.py serpent.bas serpent.dsk serpent-titre-basic.hir serpent-victoire.hir \
-        --binaire son.bin@5000 --sans-lignes 1070-1999
+        --binaire son.bin@5000
 ```
 
 Refaire la disquette **efface le Hall of Fame** (secteur 18 vide) : pour garder
