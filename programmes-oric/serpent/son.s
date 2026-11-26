@@ -34,7 +34,8 @@
 ;   POKE #500F,v       le volume, 0 (muet) à 15 (le maximum de la puce)
 ;   POKE #5013,n       morceau - 0 Pastorale de Beethoven (chargement, titre,
 ;                      Hall of Fame), 1 « perdu » (Hall of Fame),
-;                      2 fanfare de victoire
+;                      2 Ode à la joie de Beethoven (écran de victoire,
+;                      depuis le 2026-11-26 ; c'était une fanfare)
 ;   CALL #5010  MUSIQUE le morceau choisi, en boucle (mélodie canal A, basse
 ;                      canal C), au volume choisi ;
 ;                      INIT l'arrête
@@ -64,6 +65,8 @@
 ; comptine (morceau 0, rangée dans ../musiques/comptine-serpent.s) ; tables
 ; lues sur 16 bits ; moteur en $5000, lu sur la disquette par le démarrage
 ; (oric_dsk.py --binaire) - la musique part dès « CHARGEMENT EN COURS ».
+; Modifié le 2026-11-26 by GliouCNR©70 - l'Ode à la joie de Beethoven remplace
+; la fanfare de victoire (morceau 2, rangée dans ../musiques/fanfare-serpent.s).
 ; Attention avec xa - un deux-points est un séparateur, même dans un commentaire.
 
 AY       = $F590      ; WriteToAY
@@ -542,11 +545,11 @@ cc      .byt 0                ; tops avant la prochaine baisse
 mt      .byt 0                ; tops restants de la note de musique (0 = pas de musique)
 mdeb    .word 0               ; début de la mélodie du morceau en cours
 
-; Adresses des tables de chaque morceau (0 Pastorale, 1 perdu, 2 fanfare)
-tmel    .byt <pastor, <perdu, <fanfare
-tmeh    .byt >pastor, >perdu, >fanfare
-tbal    .byt <pbas6, <pbasse, <fbasse
-tbah    .byt >pbas6, >pbasse, >fbasse
+; Adresses des tables de chaque morceau (0 Pastorale, 1 perdu, 2 Ode à la joie)
+tmel    .byt <pastor, <perdu, <joie
+tmeh    .byt >pastor, >perdu, >joie
+tbal    .byt <pbas6, <pbasse, <jbasse
+tbah    .byt >pbas6, >pbasse, >jbasse
 
 ; Format - mélodie - période AY sur 1 octet (1 MHz / 16 / fréquence), durée en
 ; centièmes de seconde, période 1 = silence, 0 = fin (reprise au début) ;
@@ -612,20 +615,27 @@ perdu   .byt 95,30, 106,30, 119,30, 127,30,  142,30, 127,30, 119,60
 pbasse  .byt $38,2,60, $F6,2,60,  $38,2,60, $DD,1,60
         .byt $7E,2,60, $F6,2,60,  $38,2,60, $38,2,60
         .byt 0
-; FANFARE (victoire) - originale, do majeur, appels de trompette ; 4 mesures de
-; 120 centièmes puis un silence de 60, ~5,4 s en boucle. la5 71, si5 63, do6 60.
-; sol do mi sol- mi sol-- | fa fa fa sol- la sol-- |
-; la la la si- la sol- mi | sol sol la si do6------ | (silence)
-fanfare .byt 159,10, 119,10, 95,10, 80,30, 95,10, 80,50
-        .byt 90,10,  90,10,  90,10, 80,30, 71,10, 80,50
-        .byt 71,10,  71,10,  71,10, 63,30, 71,10, 80,30, 95,20
-        .byt 80,10,  80,10,  71,10, 63,10, 60,80
-        .byt 1,60
-        .byt 0
-; basse - do sol / fa do / sol ré / sol do / silence (blanches de 60)
-fbasse  .byt $DD,1,60, $7E,2,60,  $CC,2,60, $DD,1,60
-        .byt $7E,2,60, $A9,1,60,  $7E,2,60, $DD,1,60
-        .byt 1,0,60
-        .byt 0
+; ODE À LA JOIE (écran de victoire) - Beethoven, Symphonie n° 9 en ré mineur,
+; op. 125, finale, le thème de l'« Ode à la joie », en ré majeur comme chez
+; Beethoven ; arrangée pour 2 voix le 2026-11-26 by GliouCNR©70. Noire = 30
+; centièmes, 16 mesures + une blanche de silence, ~20 s en boucle.
+; fa# fa# sol la | la sol fa# mi | ré ré mi fa# | fa#. mi mi (x2, fin ré)
+; mi mi fa# ré | mi fa#-sol fa# ré | mi fa#-sol fa# mi | ré mi la fa# (en
+; avance, la syncope de Beethoven) | fa# sol la | la sol fa# mi | ré ré mi fa#
+; | mi. ré ré. Basse - ré, sol et la (blanches). Copie de
+; ../musiques/ode-a-la-joie.s (branche Musique-Oric).
+joie    .byt 84,30,84,30,80,30,71,30,71,30,80,30,84,30,95,30,106,30,106,30
+        .byt 95,30,84,30,84,45,95,15,95,60,84,30,84,30,80,30,71,30,71,30
+        .byt 80,30,84,30,95,30,106,30,106,30,95,30,84,30,95,45,106,15,106,60
+        .byt 95,30,95,30,84,30,106,30,95,30,84,15,80,15,84,30,106,30,95,30
+        .byt 84,15,80,15,84,30,95,30,106,30,95,30,142,30,84,60,84,30,80,30
+        .byt 71,30,71,30,80,30,84,30,95,30,106,30,106,30,95,30,84,30,95,45
+        .byt 106,15,106,60,1,60,0
+jbasse  .byt 170,1,60,56,2,60,126,2,60,56,2,60,170,1,60,56,2,60,56,2,60
+        .byt 56,2,60,170,1,60,56,2,60,126,2,60,56,2,60,170,1,60,56,2,60
+        .byt 56,2,60,170,1,60,56,2,60,170,1,60,56,2,60,170,1,60,56,2,60
+        .byt 56,2,60,170,1,60,56,2,60,170,1,60,56,2,60,126,2,60,56,2,60
+        .byt 170,1,60,56,2,60,56,2,60,170,1,60,1,0,60,0
+
 bt      .byt 0                ; tops restants de la note de basse
 bdeb    .word 0               ; début de sa basse

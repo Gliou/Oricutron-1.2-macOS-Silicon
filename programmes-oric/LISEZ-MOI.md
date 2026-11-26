@@ -11,7 +11,7 @@ et ses captures d'écran (`captures/`) :
 | `demo-hires/` | BASIC | démo graphique HIRES : bandes de couleur, cercles, rayons, texte, son | [demo-hires/LISEZ-MOI.md](demo-hires/LISEZ-MOI.md) |
 | `titre/` | assembleur 6502 | écran titre animé : double hauteur, arc-en-ciel, texte défilant | [titre/LISEZ-MOI.md](titre/LISEZ-MOI.md) |
 | `c/` | C (cc65) | programmes en C : le serpent refait en HIRES (`c/serpent-hires/`) | [c/LISEZ-MOI.md](c/LISEZ-MOI.md) |
-| `musiques/` | 6502 (tables) | musiques mises de côté pour d'autres projets (format du moteur de son du serpent) | [la-mineur-2-voix.s](musiques/la-mineur-2-voix.s), [comptine-serpent.s](musiques/comptine-serpent.s) (ajoutée le 2026-11-26 by GliouCNR©70) ; la Pastorale de Beethoven du serpent est sur la branche `Musique-Oric` |
+| `musiques/` | 6502 (tables) | musiques mises de côté pour d'autres projets (format du moteur de son du serpent) | [la-mineur-2-voix.s](musiques/la-mineur-2-voix.s), [comptine-serpent.s](musiques/comptine-serpent.s), [fanfare-serpent.s](musiques/fanfare-serpent.s) (ajoutées le 2026-11-26 by GliouCNR©70) ; la Pastorale et l'Ode à la joie de Beethoven du serpent sont sur la branche `Musique-Oric` |
 | `outils/` | Python, 6502 | outils communs : cassettes (`oric_tap.py`), disquettes (`oric_dsk.py`) et leur démarrage Microdisc | [outils/LISEZ-MOI.md](outils/LISEZ-MOI.md) |
 
 Chaque programme existe en cassette `.tap` prête à charger ; le serpent aussi en

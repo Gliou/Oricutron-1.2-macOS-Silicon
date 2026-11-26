@@ -255,6 +255,8 @@
 # (morceau 2 du moteur de son), jouée SEULEMENT sur l'image de victoire
 # (ligne 340) : « GAGNE ! » n'a que le ZAP ; en quittant l'image, CALL SR
 # (ligne 350) coupe la fanfare, et la Pastorale (0) reprend au Hall of Fame.
+# Modifié le 2026-11-26 by GliouCNR©70 : le morceau 2 est maintenant l'Ode à la
+# joie de Beethoven (la fanfare est rangée dans ../musiques/fanfare-serpent.s).
 330 CALL ZP:PLOT 14,12,"  GAGNE !  ":WAIT 300:GOSUB 340
 335 POKE CH,0:GOTO 310
 340 PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#78:POKE #482,#97:CALL #460:POKE CH,2:CALL MU

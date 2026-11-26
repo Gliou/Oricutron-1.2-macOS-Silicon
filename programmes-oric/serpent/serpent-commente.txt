@@ -93,10 +93,10 @@ une comparaison vraie vaut -1.
                                                                  │
 79 IF K<>32 THEN 74                                              │ Pas l'espace : on attend la touche suivante.
                                                                  │
-80 CALL SR:IF D AND VU<>VS THEN VS=VU:QS=1:GOSUB 900:QS=0        │ Avant la partie : réinstalle le moteur de son (la fanfare de
-                                                                 │ victoire a pu changer la puce) ; sur disquette, si le volume
-                                                                 │ a changé, il est sauvé sans message (QS = 1) avec le Hall of
-                                                                 │ Fame.
+80 CALL SR:IF D AND VU<>VS THEN VS=VU:QS=1:GOSUB 900:QS=0        │ Avant la partie : réinstalle le moteur de son, ce qui arrête
+                                                                 │ la musique (Pastorale ou « perdu ») ; sur disquette, si le
+                                                                 │ volume a changé, il est sauvé sans message (QS = 1) avec le
+                                                                 │ Hall of Fame.
                                                                  │
 81 S=0:PM=0:L=1:N=4:EN=0:EY=13:FOR I=1 TO 5:CR(I)=0:OP(I)=0:     │ Nouvelle partie : score et pommes à 0, niveau 1, serpent de
       EL(I)=0:NEXT:GOSUB 400                                     │ 4 anneaux, entrée par la gauche ; oublie les 5 tableaux (ils
@@ -213,9 +213,9 @@ une comparaison vraie vaut -1.
 335 POKE CH,0:GOTO 310                                           │ Repasse sur la Pastorale (0), qui reprendra au Hall of Fame.
                                                                  │
 340 PAPER 0:INK 6:HIRES:POKE 618,10:POKE #461,#78:POKE #482,#97: │ Écran de victoire : HIRES, curseur caché, l'image rangée en
-      CALL #460:POKE CH,2:CALL MU                                │ $7800 recopiée à l'écran par la routine #460 ; la fanfare
-                                                                 │ (morceau 2) démarre avec l'image et joue en boucle tant
-                                                                 │ qu'elle est affichée.
+      CALL #460:POKE CH,2:CALL MU                                │ $7800 recopiée à l'écran par la routine #460 ; l'Ode à la
+                                                                 │ joie de Beethoven (morceau 2, depuis le 2026-11-26) démarre
+                                                                 │ avec l'image et joue en boucle tant qu'elle est affichée.
                                                                  │
 342 Q$=CHR$(27):                                                 │ Dans les lignes de texte sous l'image : ESC C = encre jaune
       PRINT Q$;"C   SCORE";S;Q$;"E";PM;"POMMES MANGEES"          │ pour le score, ESC E = magenta pour les pommes mangées.
@@ -223,8 +223,8 @@ une comparaison vraie vaut -1.
 348 PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:POKE 618,10:   │ Attend une touche (980), la touche d'avant est oubliée.
       POKE 735,0:GOSUB 980                                       │
                                                                  │
-350 CALL SR:TEXT:PAPER 0:INK 2:POKE 618,10:RETURN                │ CALL SR coupe la fanfare en quittant l'image ; retour en
-                                                                 │ mode texte, fond noir, encre verte, curseur caché.
+350 CALL SR:TEXT:PAPER 0:INK 2:POKE 618,10:RETURN                │ CALL SR coupe l'Ode à la joie en quittant l'image ; retour
+                                                                 │ en mode texte, fond noir, encre verte, curseur caché.
                                                                  │
 400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:CD=(L=5)OR(E>4):LY=13:     │ DESSIN D'UN TABLEAU. Efface l'écran ; le serpent repart d'un
       IF L>1 THEN LY=PD(L-1)+1                                   │ seul anneau, GR = anneaux qui sortiront du mur ; pommes déjà

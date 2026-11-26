@@ -1,6 +1,6 @@
 # Serpent — jeu pour Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre ; la Pastorale de Beethoven dès le chargement ; cassette avec images et musique (2026-11-26)*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre ; la Pastorale de Beethoven dès le chargement ; cassette avec images et musique ; l'Ode à la joie sur l'écran de victoire (2026-11-26)*
 
 Petit jeu en BASIC : on dirige un serpent avec les flèches, il mange les pommes
 et grandit ; perdu s'il touche le bord, un mur ou sa queue. Espace pour jouer.
@@ -129,13 +129,17 @@ morceaux (choix par `POKE #5013,n` puis `CALL #5010`) : 0 = la **Pastorale**
 de Beethoven (depuis le 2026-11-26, voir plus bas), de « CHARGEMENT EN COURS »
 jusqu'au début de la partie, et au Hall of Fame après une victoire ; 1 = « perdu »,
 un petit air lent et doux en la mineur, sur le Hall of Fame après une
-défaite. 2 = la fanfare de victoire (do majeur, appels de trompette jusqu'au
-do aigu, basse, ~5,4 s), seulement sur l'image de victoire (modifié le
-2026-11-24 by GliouCNR©70 : « GAGNE ! » n'a plus que le ZAP). Chaque musique tourne en boucle jusqu'au début de la partie suivante.
-La première musique du titre, en la mineur, et la comptine qui l'a remplacée
-du 24 au 26 novembre sont gardées pour d'autres projets dans
-[`../musiques/la-mineur-2-voix.s`](../musiques/la-mineur-2-voix.s) et
-[`../musiques/comptine-serpent.s`](../musiques/comptine-serpent.s).
+défaite. 2 = l'**Ode à la joie** de Beethoven (Symphonie n° 9, finale, en ré
+majeur, 2 voix, ~20 s ; depuis le 2026-11-26 by GliouCNR©70 - c'était une
+fanfare originale), seulement sur l'image de victoire (« GAGNE ! » n'a que le
+ZAP). Chaque musique tourne en boucle jusqu'au début de la partie suivante.
+La première musique du titre, en la mineur, la comptine qui l'a remplacée
+du 24 au 26 novembre et la fanfare de victoire sont gardées pour d'autres
+projets dans [`../musiques/la-mineur-2-voix.s`](../musiques/la-mineur-2-voix.s),
+[`../musiques/comptine-serpent.s`](../musiques/comptine-serpent.s) et
+[`../musiques/fanfare-serpent.s`](../musiques/fanfare-serpent.s). L'Ode à la
+joie est rangée dans le projet Musique Oric (branche `Musique-Oric`,
+`programmes-oric/musiques/ode-a-la-joie.s`) et recopiée dans `son.s`.
 
 **La Pastorale** (2026-11-26 by GliouCNR©70) : Beethoven, Symphonie n° 6 en
 fa majeur, op. 68, 1er mouvement (« Éveil d'impressions joyeuses en arrivant à
@@ -237,12 +241,12 @@ est dans l'image : rien à dessiner pendant que le BASIC tourne.
 ### Écran de victoire (2026-11-23)
 
 Quand le serpent atteint 256 anneaux, le jeu reste 3 secondes sur le tableau
-avec « GAGNE ! », puis, sur la disquette, affiche une image HIRES - GAGNÉ ! en
+avec « GAGNE ! », puis affiche une image HIRES - GAGNÉ ! en
 dégradé, une coupe « 256 », des pommes, le serpent complet. Dessous, dans les
-lignes de texte, le score (jaune) et les pommes mangées (magenta) ; une petite
-fanfare joue (depuis le 2026-11-24 : vraie fanfare originale à 2 voix,
-morceau 2 du moteur de son, en boucle, seulement sur cette image), puis une
-touche l'arrête et mène au Hall of Fame, où la Pastorale reprend.
+lignes de texte, le score (jaune) et les pommes mangées (magenta) ; l'Ode à
+la joie de Beethoven joue (depuis le 2026-11-26 ; morceau 2 du moteur de son,
+en boucle, seulement sur cette image), puis une touche l'arrête et mène au
+Hall of Fame, où la Pastorale reprend.
 L'image est chargée au démarrage avec l'image titre et attend en
 `$7800-$973F`, au-dessus de HIMEM (abaissé à `$7800`), que la partie soit
 gagnée ; la même routine de copie (`CALL #460`) sert aux deux images. Depuis
