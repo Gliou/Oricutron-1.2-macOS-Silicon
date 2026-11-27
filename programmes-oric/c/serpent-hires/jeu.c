@@ -28,16 +28,17 @@ static unsigned int hi;
 
 /* Pas du serpent en centièmes de seconde, selon la DIFFICULTÉ (1 à 5, réglée
 ** sur le Hall of Fame) et le niveau (1 à 5). Modifié le 2026-11-27 by
-** GliouCNR©70 : la difficulté 5 est l'ancienne vitesse (16 au niveau 1, 10 au
-** niveau 5) ; la 1 est deux fois plus lente au niveau 1 (32) ; à chaque
-** difficulté, les niveaux suivants vont plus vite (pause x 14, 12, 11, 10 / 16). */
+** GliouCNR©70 : à chaque difficulté, les niveaux suivants vont plus vite
+** (pause x 14, 12, 11, 10 / 16) ; la 1 est deux fois plus lente que la 5 au
+** niveau 1. Ralenti le 2026-11-27 by GliouCNR©70 : toute la table x 1,5
+** (la difficulté 5 faisait 16 centièmes au niveau 1, elle en fait 24). */
 unsigned char difficulte = 3;
 static const unsigned char delais[5][NIVEAUX + 1] = {
-    { 0, 32, 28, 24, 22, 20 },               /* difficulté 1 */
-    { 0, 27, 24, 20, 19, 17 },               /* difficulté 2 */
-    { 0, 23, 20, 17, 16, 14 },               /* difficulté 3 (au départ) */
-    { 0, 19, 17, 14, 13, 12 },               /* difficulté 4 */
-    { 0, 16, 14, 12, 11, 10 }                /* difficulté 5 */
+    { 0, 48, 42, 36, 33, 30 },               /* difficulté 1 */
+    { 0, 41, 36, 30, 29, 26 },               /* difficulté 2 */
+    { 0, 35, 30, 26, 24, 21 },               /* difficulté 3 (au départ) */
+    { 0, 29, 26, 21, 20, 18 },               /* difficulté 4 */
+    { 0, 24, 21, 18, 17, 15 }                /* difficulté 5 */
 };
 static const unsigned char* delai;           /* la ligne de la difficulté choisie */
 

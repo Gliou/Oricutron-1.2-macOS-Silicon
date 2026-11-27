@@ -27,16 +27,17 @@ queue ; **gagné à 256 anneaux**.
 - **Difficulté 1 à 5** (depuis le 2026-11-27, comme le Serpent BASIC), réglée
   sur l'écran du Hall of Fame avec les flèches **HAUT** (+1) et **BAS** (-1),
   sans son, 3 au départ. Elle fixe la pause d'un pas (centièmes de seconde) ;
-  la difficulté 5 est l'ancienne vitesse, la 1 est deux fois plus lente au
-  niveau 1, et à chaque difficulté les niveaux suivants vont plus vite :
+  la difficulté 1 est deux fois plus lente que la 5 au niveau 1, et à chaque
+  difficulté les niveaux suivants vont plus vite. Toute la table a été
+  ralentie de moitié (x 1,5) le 2026-11-27 :
 
   | Difficulté | Niv. 1 | 2 | 3 | 4 | 5 |
   |---|---|---|---|---|---|
-  | 1 | 32 | 28 | 24 | 22 | 20 |
-  | 2 | 27 | 24 | 20 | 19 | 17 |
-  | 3 | 23 | 20 | 17 | 16 | 14 |
-  | 4 | 19 | 17 | 14 | 13 | 12 |
-  | 5 | 16 | 14 | 12 | 11 | 10 |
+  | 1 | 48 | 42 | 36 | 33 | 30 |
+  | 2 | 41 | 36 | 30 | 29 | 26 |
+  | 3 | 35 | 30 | 26 | 24 | 21 |
+  | 4 | 29 | 26 | 21 | 20 | 18 |
+  | 5 | 24 | 21 | 18 | 17 | 15 |
 - Deux flèches peuvent être tapées d'avance (virage rapide).
 - Barres de statut dans les 3 lignes de texte sous l'image HIRES, centrées
   sous le terrain : `NIVEAU 1 - @=10 - RESTE 5` (puis `PORTE OUVERTE`, puis
