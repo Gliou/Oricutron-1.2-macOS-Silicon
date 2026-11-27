@@ -38,10 +38,12 @@ une comparaison vraie vaut -1.
                                                                  │ du pas ($5003).
                                                                  │
 11 PG=#5006:ZP=#5009:XP=#500C:SR=#5000:VO=#500F:MU=#5010:        │ Adresses du moteur de son ($5000) : PG = PING, ZP = ZAP, XP
-      CH=#5013:VU=32:VS=-1:ZA=#501E:ZR=#502C                     │ = EXPLODE, SR = installation, VO = volume, MU = musique, CH
+      CH=#5013:VU=32:VS=-1:ZA=#501E:ZR=#502C:DF=3:DS=-1:W1=12    │ = EXPLODE, SR = installation, VO = volume, MU = musique, CH
                                                                  │ = morceau ; VU = volume du joueur (0-64). ZA = routine POMME
-                                                                 │ (barre de statut), ZR = anneaux qui manquent pour 256 (tenu
-                                                                 │ par le moteur).
+                                                                 │ (barre de statut), ZR = anneaux qui manquent pour 256. DF =
+                                                                 │ difficulté (1-5, 3 par défaut), DS = celle sauvée sur la
+                                                                 │ disquette, W1 = pause d'un pas au niveau 1 (2026-11-27 by
+                                                                 │ GliouCNR©70).
                                                                  │
 12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT                       │ Lit les 44 octets de la routine titre_copie (DATA 990-995)
                                                                  │ et les pose en $0460.
@@ -75,27 +77,30 @@ une comparaison vraie vaut -1.
                                                                  │ porte, NW() nombre de murs, XA/YA-XB/YB extrémités de chaque
                                                                  │ mur (15 au plus).
                                                                  │
-70 GOSUB 700:PLOT 12,22,"ESPACE = JOUER"                         │ Affiche le Hall of Fame (700) et l'invitation à jouer.
+70 GOSUB 700:PLOT 12,24,"ESPACE = JOUER"                         │ Hall of Fame, puis « ESPACE = JOUER » en bas (ligne 24 de
+                                                                 │ l'écran depuis le 2026-11-27).
                                                                  │
-73 GOSUB 760                                                     │ Affiche la barre du volume (760).
+73 GOSUB 750:GOSUB 760                                           │ Écrit les barres de la difficulté et du volume.
                                                                  │
 74 K=PEEK(KB):IF K<128 THEN 74                                   │ Attend une touche (bit 7 de l'adresse 735 = nouvelle
                                                                  │ touche).
                                                                  │
-75 POKE KB,0:K=K-128:IF K=32 THEN 79                             │ Touche lue ; espace = on joue (79).
+75 POKE KB,0:K=K-128:IF K=10 AND DF>1 THEN DF=DF-1:GOSUB 750     │ Attend une touche. Flèche bas : difficulté - 1 (pas en
+                                                                 │ dessous de 1), sans son.
                                                                  │
-76 IF K=8 AND VU>0 THEN VU=VU-4                                  │ Flèche gauche : volume - 4 (pas en dessous de 0)...
+76 IF K=11 AND DF<5 THEN DF=DF+1:GOSUB 750                       │ Flèche haut : difficulté + 1 (pas au-dessus de 5), sans son.
                                                                  │
-77 IF K=9 AND VU<64 THEN VU=VU+4                                 │ ...flèche droite : volume + 4 (pas au-dessus de 64)...
+77 IF K=8 AND VU>0 THEN VU=VU-4:GOSUB 760:CALL PG                │ Flèche gauche : volume - 4, barre réécrite, PING au nouveau
+                                                                 │ volume.
                                                                  │
-78 IF K=8 OR K=9 THEN GOSUB 760:CALL PG                          │ ...et à chaque réglage, la barre est redessinée (le nouveau
-                                                                 │ volume passe au moteur) et un PING retentit à ce volume.
+78 IF K=9 AND VU<64 THEN VU=VU+4:GOSUB 760:CALL PG               │ Flèche droite : volume + 4, barre réécrite, PING au nouveau
+                                                                 │ volume.
                                                                  │
 79 IF K<>32 THEN 74                                              │ Pas l'espace : on attend la touche suivante.
                                                                  │
-80 CALL SR:IF D AND VU<>VS THEN VS=VU:QS=1:GOSUB 900:QS=0        │ Avant la partie : réinstalle le moteur de son, ce qui arrête
-                                                                 │ la musique (Pastorale ou « perdu ») ; sur disquette, si le
-                                                                 │ volume a changé, il est sauvé sans message (QS = 1) avec le
+80 CALL SR:IF D AND (VU<>VS OR DF<>DS) THEN VS=VU:DS=DF:QS=1:    │ Avant la partie : réinstalle le moteur de son, ce qui arrête
+      GOSUB 900:QS=0                                             │ la musique ; sur disquette, si le volume ou la difficulté
+                                                                 │ ont changé, ils sont sauvés sans message (QS = 1) avec le
                                                                  │ Hall of Fame.
                                                                  │
 81 S=0:PM=0:L=1:N=4:EN=0:EY=13:FOR I=1 TO 5:CR(I)=0:OP(I)=0:     │ Nouvelle partie : score et pommes à 0, niveau 1, serpent de
@@ -226,14 +231,11 @@ une comparaison vraie vaut -1.
 350 CALL SR:TEXT:PAPER 0:INK 2:POKE 618,10:RETURN                │ CALL SR coupe l'Ode à la joie en quittant l'image ; retour
                                                                  │ en mode texte, fond noir, encre verte, curseur caché.
                                                                  │
-400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:CD=(L=5)OR(E>4):LY=13:     │ DESSIN D'UN TABLEAU. Efface l'écran ; le serpent repart d'un
-      IF L>1 THEN LY=PD(L-1)+1                                   │ seul anneau, GR = anneaux qui sortiront du mur ; pommes déjà
-                                                                 │ mangées ici ; pause WT = 5-L (4 au niveau 1, 0 au niveau 5).
-                                                                 │ CD = décompte des anneaux dans la barre : au niveau 5, et en
-                                                                 │ revenant sur un tableau dont la porte est déjà ouverte (E>4)
-                                                                 │ - modifié le 2026-11-24 by GliouCNR©70. LY = hauteur
-                                                                 │ d'entrée : celle de la porte de droite du tableau précédent
-                                                                 │ (13 au niveau 1).
+400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=INT(W1*(6-L)/5):               │ Nouveau tableau : écran vidé, serpent remis à zéro,
+      CD=(L=5)OR(E>4):LY=13:IF L>1 THEN LY=PD(L-1)+1             │ croissance = longueur - 1 ; WT = pause de chaque pas, W1
+                                                                 │ (selon la difficulté) au niveau 1 puis de moins en moins (W1
+                                                                 │ x (6 - niveau) / 5) ; CD = décompte des anneaux ; LY = ligne
+                                                                 │ de la porte d'entrée.
                                                                  │
 405 FOR I=1 TO 24:PLOT 1,I,2:PLOT 2,I,B$:PLOT 37,I,B$:NEXT       │ Pour chaque ligne : encre verte (attribut 2 en colonne 1),
                                                                  │ donc serpent vert ; et les briques en inverse dans les
@@ -416,14 +418,21 @@ une comparaison vraie vaut -1.
                                                                  │
 725 NEXT:POKE 735,0:RETURN                                       │ Fin de la liste ; oublie les touches déjà tapées.
                                                                  │
-760 VL=INT(VU*15/64+.5):POKE VO,VL:B=VU/4:PLOT 4,19,"VOLUME"     │ BARRE DU VOLUME : VL = volume de la puce (0-15, 64 donne
-                                                                 │ 15), passé au moteur de son (POKE VO) ; B = nombre de cases
-                                                                 │ pleines (une par 4).
+750 W1=VAL(MID$("3020120704",DF*2-1,2)):PLOT 2,19,"DIFFICULTE"   │ DIFFICULTÉ (2026-11-27 by GliouCNR©70) : W1 = pause d'un pas
+                                                                 │ au niveau 1 selon DF (30, 20, 12, 7, 4 centièmes) ; titre à
+                                                                 │ la ligne 19 de l'écran.
                                                                  │
-762 PLOT 11,19,LEFT$(V1$,B)+LEFT$(V2$,16-B):                     │ Dessine la barre (cases pleines puis tirets) et la valeur
-      PLOT 28,19,RIGHT$("  "+STR$(VU),3)+"/64"                   │ sur 64.
+752 PLOT 13,19,LEFT$(V1$,DF*3)+LEFT$(V2$,15-DF*3):               │ Barre de la difficulté (3 cases par cran, 15 en tout) et «
+      PLOT 30,19,STR$(DF)+"/5":RETURN                            │ n/5 ».
                                                                  │
-764 PLOT 12,20,"(FLECHES <- ->)":RETURN                          │ Rappelle les touches.
+760 VL=INT(VU*15/64+.5):POKE VO,VL:B=VU/4:PLOT 6,20,"VOLUME"     │ Volume de la puce (0-15) calculé et envoyé au moteur ; titre
+                                                                 │ VOLUME ligne 20.
+                                                                 │
+762 PLOT 13,20,LEFT$(V1$,B)+LEFT$(V2$,16-B):                     │ Barre du volume (16 cases) et la valeur sur 64.
+      PLOT 30,20,RIGHT$("  "+STR$(VU),3)+"/64"                   │
+                                                                 │
+764 PLOT 3,22,"HAUT/BAS:DIFFICULTE  <- ->:VOLUME":RETURN         │ Aide - flèches haut/bas pour la difficulté, gauche/droite
+                                                                 │ pour le volume.
                                                                  │
 800 P=11:FOR I=10 TO 1 STEP -1                                   │ ENTRÉE AU HALL OF FAME : cherche la place P du nouveau score
                                                                  │ (du 10e vers le 1er)...
@@ -468,9 +477,8 @@ une comparaison vraie vaut -1.
                                                                  │
 910 POKE A+8,INT(SC(I)/256):POKE A+9,SC(I) AND 255               │ ...puis le score sur 2 octets (haut, bas)...
                                                                  │
-912 POKE #9863+I*2,INT(NP(I)/256):POKE #9864+I*2,NP(I) AND 255:  │ ...et les pommes (2 octets par joueur, à partir de $9865) ;
-      NEXT:POKE #98F0,VU+1                                       │ le volume du joueur + 1 est rangé en $98F0 (0 = pas de
-                                                                 │ volume sauvé).
+912 POKE #9863+I*2,INT(NP(I)/256):POKE #9864+I*2,NP(I) AND 255:  │ Pommes de chaque record, puis le volume (+1, $98F0) et la
+      NEXT:POKE #98F0,VU+1:POKE #98F1,DF                         │ difficulté ($98F1).
                                                                  │
 915 IF QS=0 THEN PRINT:PRINT "   SAUVEGARDE..."                  │ Message seulement pour une vraie entrée au Hall of Fame (pas
                                                                  │ quand on sauve juste le volume, QS = 1).
@@ -493,6 +501,9 @@ une comparaison vraie vaut -1.
                                                                  │
 965 B=PEEK(#98F0):IF B>0 AND B<66 THEN VU=B-1:VS=VU              │ Volume sauvé ($98F0 = volume + 1) : on le reprend ; une
                                                                  │ disquette d'avant le réglage a 0 ici, le volume reste à 32.
+                                                                 │
+966 B=PEEK(#98F1):IF B>0 AND B<6 THEN DF=B:DS=DF                 │ Difficulté gardée sur la disquette (1 à 5 ; 0 = disquette
+                                                                 │ d'avant, on garde 3).
                                                                  │
 967 RETURN                                                       │
                                                                  │

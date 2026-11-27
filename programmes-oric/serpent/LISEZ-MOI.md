@@ -1,6 +1,6 @@
 # Serpent — jeu pour Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre ; la Pastorale de Beethoven dès le chargement ; cassette avec images et musique ; l'Ode à la joie sur l'écran de victoire (2026-11-26)*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre ; la Pastorale de Beethoven dès le chargement ; cassette avec images et musique ; l'Ode à la joie sur l'écran de victoire (2026-11-26) ; difficulté réglable (2026-11-27)*
 
 Petit jeu en BASIC : on dirige un serpent avec les flèches, il mange les pommes
 et grandit ; perdu s'il touche le bord, un mur ou sa queue. Espace pour jouer.
@@ -118,6 +118,16 @@ et les musiques) les remplace : il se
 branche sur l'interruption de l'horloge de l'Oric (100 fois par seconde) et
 fait lui-même baisser le volume, en partant du **volume choisi**. Le jeu ne
 l'attend jamais ; le tic-tac coûte moins de 2 % de vitesse.
+
+**Difficulté** (ajoutée le 2026-11-27 by GliouCNR©70) : sur l'écran du Hall of
+Fame, au-dessus du volume, une barre de 1 à 5 se règle avec les flèches ↑ ↓
+(sans son). Elle fixe la vitesse du niveau 1 : à chaque pas, le serpent
+attend 30, 20, 12, 7 ou 4 centièmes de seconde de plus que le temps du BASIC
+(environ 0,5 s par pas en difficulté 1, 0,2 s en difficulté 5, qui était la
+seule vitesse avant). Les niveaux suivants vont de plus en plus vite : la
+pause est multipliée par (6 - niveau) / 5, jusqu'à un cinquième au niveau 5.
+Difficulté 3 par défaut ; sur la disquette, elle est gardée avec le Hall of
+Fame (octet `$98F1`), comme le volume.
 
 Sur l'écran du Hall of Fame, une **barre de volume** de 0 à 64 se règle avec
 les flèches ← → (par pas de 4 ; 64 = 15, le maximum de la puce). À chaque

@@ -126,7 +126,10 @@
 # que quand elle avance (TM), et les nombres répétés sont dans des variables
 # (M = 255, KB = 735, SP = 32 : le BASIC de l'Oric relit et convertit chaque
 # nombre écrit en clair à chaque passage). Pause WT = 5-L centièmes de
-# seconde (ligne 400) : 4 au niveau 1, 0 au niveau 5.
+# seconde (ligne 400) : 4 au niveau 1, 0 au niveau 5. Modifié le 2026-11-27 by
+# GliouCNR©70 : WT = W1 x (6-L) / 5, W1 dépendant de la DIFFICULTÉ choisie
+# sur le Hall of Fame (lignes 750-752) : 30, 20, 12, 7 ou 4 centièmes au
+# niveau 1, de moins en moins aux niveaux suivants.
 # Modifié le 2026-11-23 by GliouCNR©70 : WAIT 0 ne veut pas dire « pas de
 # pause » - le compteur part de 0, repasse à 65535 et le jeu se fige 655 s
 # (près de 11 minutes) au niveau 5. La ligne 182 ne fait donc WAIT que si WT>0.
@@ -161,7 +164,7 @@
 6 M$=CHR$(6)+CHR$(12)+"CHARGEMENT EN COURS":FOR I=1 TO 21:POKE #BD90+I,ASC(MID$(M$,I,1)):NEXT:IF PEEK(#4FF)=68 THEN CALL #5000:POKE #500F,8:POKE #5013,0:CALL #5010
 7 IF PEEK(#4FF)<>68 THEN CLOAD"SON":CLOAD"TITRE":CLOAD"VICTOIRE":CALL #5000:POKE #500F,8:POKE #5013,0:CALL #5010
 10 NX=0:NY=0:C=0:H=0:T=0:DX=0:DY=0:HC=123:K=0:GR=0:TM=0:TC=0:M=255:SP=32:KB=735:I=0:SN=#5003
-11 PG=#5006:ZP=#5009:XP=#500C:SR=#5000:VO=#500F:MU=#5010:CH=#5013:VU=32:VS=-1:ZA=#501E:ZR=#502C
+11 PG=#5006:ZP=#5009:XP=#500C:SR=#5000:VO=#500F:MU=#5010:CH=#5013:VU=32:VS=-1:ZA=#501E:ZR=#502C:DF=3:DS=-1:W1=12
 # Modifié le 2026-11-24 by GliouCNR©70 : X() et Y() sont dimensionnés en premier -
 # le BASIC les trouve plus vite dans la boucle du jeu.
 13 DIM X(255),Y(255),N$(10),SC(10),NP(10),PZ(12)
@@ -197,15 +200,15 @@
 # l'interruption de l'horloge (CALL SR). Le volume du joueur lui est donné
 # ligne 975. V1$/V2$ = cases pleines/vides
 # de la barre du volume.
-70 GOSUB 700:PLOT 12,22,"ESPACE = JOUER"
-73 GOSUB 760
+70 GOSUB 700:PLOT 12,24,"ESPACE = JOUER"
+73 GOSUB 750:GOSUB 760
 74 K=PEEK(KB):IF K<128 THEN 74
-75 POKE KB,0:K=K-128:IF K=32 THEN 79
-76 IF K=8 AND VU>0 THEN VU=VU-4
-77 IF K=9 AND VU<64 THEN VU=VU+4
-78 IF K=8 OR K=9 THEN GOSUB 760:CALL PG
+75 POKE KB,0:K=K-128:IF K=10 AND DF>1 THEN DF=DF-1:GOSUB 750
+76 IF K=11 AND DF<5 THEN DF=DF+1:GOSUB 750
+77 IF K=8 AND VU>0 THEN VU=VU-4:GOSUB 760:CALL PG
+78 IF K=9 AND VU<64 THEN VU=VU+4:GOSUB 760:CALL PG
 79 IF K<>32 THEN 74
-80 CALL SR:IF D AND VU<>VS THEN VS=VU:QS=1:GOSUB 900:QS=0
+80 CALL SR:IF D AND (VU<>VS OR DF<>DS) THEN VS=VU:DS=DF:QS=1:GOSUB 900:QS=0
 81 S=0:PM=0:L=1:N=4:EN=0:EY=13:FOR I=1 TO 5:CR(I)=0:OP(I)=0:EL(I)=0:NEXT:GOSUB 400
 100 K=PEEK(KB):IF K<128 THEN 150
 105 POKE KB,0:K=K-128
@@ -263,7 +266,7 @@
 342 Q$=CHR$(27):PRINT Q$;"C   SCORE";S;Q$;"E";PM;"POMMES MANGEES"
 348 PRINT:PRINT "         APPUIE SUR UNE TOUCHE";:POKE 618,10:POKE 735,0:GOSUB 980
 350 CALL SR:TEXT:PAPER 0:INK 2:POKE 618,10:RETURN
-400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=5-L:CD=(L=5)OR(E>4):LY=13:IF L>1 THEN LY=PD(L-1)+1
+400 CLS:H=0:T=0:GR=N-1:E=EL(L):WT=INT(W1*(6-L)/5):CD=(L=5)OR(E>4):LY=13:IF L>1 THEN LY=PD(L-1)+1
 405 FOR I=1 TO 24:PLOT 1,I,2:PLOT 2,I,B$:PLOT 37,I,B$:NEXT
 410 FOR I=3 TO 36:PLOT I,1,B$:PLOT I,24,B$:NEXT
 # Modifié le 2026-11-24 by GliouCNR©70 : en bas, la tête du serpent (caractère
@@ -341,9 +344,16 @@
 723 IF NP(I)=0 THEN PLOT 29,R,"-":PLOT 35,R,"-"
 725 NEXT:POKE 735,0:RETURN
 # Barre du volume : VU de 0 à 64 (pas de 4) ; VL = volume de la puce (0-15)
-760 VL=INT(VU*15/64+.5):POKE VO,VL:B=VU/4:PLOT 4,19,"VOLUME"
-762 PLOT 11,19,LEFT$(V1$,B)+LEFT$(V2$,16-B):PLOT 28,19,RIGHT$("  "+STR$(VU),3)+"/64"
-764 PLOT 12,20,"(FLECHES <- ->)":RETURN
+# Difficulté (2026-11-27 by GliouCNR©70) : DF de 1 (facile) à 5 (rapide), réglée
+# avec les flèches haut / bas sur le Hall of Fame. W1 = pause de chaque pas au
+# niveau 1, en centièmes (30, 20, 12, 7, 4) ; les niveaux suivants accélèrent
+# en proportion (WT = W1 x (6 - niveau) / 5, ligne 400). DF = 5 est la vitesse
+# d'avant le 2026-11-27 ; DF = 3 par défaut. Gardée sur la disquette ($98F1).
+750 W1=VAL(MID$("3020120704",DF*2-1,2)):PLOT 2,19,"DIFFICULTE"
+752 PLOT 13,19,LEFT$(V1$,DF*3)+LEFT$(V2$,15-DF*3):PLOT 30,19,STR$(DF)+"/5":RETURN
+760 VL=INT(VU*15/64+.5):POKE VO,VL:B=VU/4:PLOT 6,20,"VOLUME"
+762 PLOT 13,20,LEFT$(V1$,B)+LEFT$(V2$,16-B):PLOT 30,20,RIGHT$("  "+STR$(VU),3)+"/64"
+764 PLOT 3,22,"HAUT/BAS:DIFFICULTE  <- ->:VOLUME":RETURN
 800 P=11:FOR I=10 TO 1 STEP -1
 805 IF S>SC(I) THEN P=I
 810 NEXT
@@ -361,7 +371,7 @@
 900 POKE #9800,72:FOR I=1 TO 10:A=#9800+I*10-9
 905 FOR J=0 TO 7:POKE A+J,ASC(MID$(N$(I),J+1,1)):NEXT
 910 POKE A+8,INT(SC(I)/256):POKE A+9,SC(I) AND 255
-912 POKE #9863+I*2,INT(NP(I)/256):POKE #9864+I*2,NP(I) AND 255:NEXT:POKE #98F0,VU+1
+912 POKE #9863+I*2,INT(NP(I)/256):POKE #9864+I*2,NP(I) AND 255:NEXT:POKE #98F0,VU+1:POKE #98F1,DF
 915 IF QS=0 THEN PRINT:PRINT "   SAUVEGARDE..."
 917 CALL #403
 920 IF PEEK(#4FE) THEN PRINT "   ERREUR DISQUE";PEEK(#4FE):WAIT 300
@@ -370,6 +380,7 @@
 955 FOR J=0 TO 7:N$(I)=N$(I)+CHR$(PEEK(A+J)):NEXT
 960 SC(I)=PEEK(A+8)*256+PEEK(A+9):NP(I)=PEEK(#9863+I*2)*256+PEEK(#9864+I*2):NEXT
 965 B=PEEK(#98F0):IF B>0 AND B<66 THEN VU=B-1:VS=VU
+966 B=PEEK(#98F1):IF B>0 AND B<6 THEN DF=B:DS=DF
 967 RETURN
 # Attente d'une touche sans GET (GET rallume le curseur) : bit 7 de PEEK(735)
 # CHARGEMENT des DATA, dans leur ordre, tout avant l'image (970-978) : dessins de la
