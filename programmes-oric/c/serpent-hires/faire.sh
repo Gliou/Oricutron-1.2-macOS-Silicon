@@ -24,15 +24,20 @@ with open('images_bin.h', 'w', encoding='utf-8') as f:
     f.write('** ../../serpent/serpent-titre.hir et serpent-victoire.hir. by GliouCNR©70 */\n')
     for nom, fichier in (('titre_bin', 'serpent-titre.hir'), ('victoire_bin', 'serpent-victoire.hir')):
         b = open('../../serpent/' + fichier, 'rb').read()
+        if nom == 'titre_bin':           # pas dans la version de test (mémoire)
+            f.write('#ifndef PILOTE\n')
         f.write('static const unsigned char %s[%d] = {\n' % (nom, len(b)))
         for i in range(0, len(b), 20):
             f.write('    ' + ','.join(str(x) for x in b[i:i+20]) + ',\n')
         f.write('};\n')
+        if nom == 'titre_bin':
+            f.write('#endif\n')
 print('images : titre et victoire, 2 x 8000 octets')
 EOF
 
 # ./faire.sh test : version de test (serpent-c-test.tap) - pilote automatique,
-# porte ouverte après 1 pomme, victoire à 40 anneaux.
+# porte ouverte après 1 pomme, victoire à 40 anneaux ; sans l'image titre (elle
+# ne tiendrait plus en mémoire, 2026-11-27 by GliouCNR©70).
 # (pile du C réduite à 1 Ko pour la version de test, qui a le pilote en plus)
 SORTIE=serpent-c
 OPTIONS=

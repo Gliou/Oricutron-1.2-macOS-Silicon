@@ -1,6 +1,6 @@
 # Serpent en C et en HIRES
 
-*Créé le 2026-11-24 by GliouCNR©70 — modifié le 2026-11-24 : écran titre et écran de victoire en HIRES, barres de statut centrées ; le jeu s'appelle `serpent-c.tap` partout — modifié le 2026-11-26 : **disquette** (Hall of Fame sauvegardé), moteur de son et musiques **en C**, Pastorale et Ode à la joie*
+*Créé le 2026-11-24 by GliouCNR©70 — modifié le 2026-11-24 : écran titre et écran de victoire en HIRES, barres de statut centrées ; le jeu s'appelle `serpent-c.tap` partout — modifié le 2026-11-26 : **disquette** (Hall of Fame sauvegardé), moteur de son et musiques **en C**, Pastorale et Ode à la joie — modifié le 2026-11-27 by GliouCNR©70 : **difficulté** 1 à 5, difficulté de chaque record (colonne DIF), plus de PING au réglage du volume*
 
 Le jeu du [Serpent BASIC](../../serpent/) refait en **C** (cc65) et dessiné en
 **HIRES** (240 x 200 points). Mêmes règles : on dirige le serpent avec les
@@ -23,8 +23,20 @@ queue ; **gagné à 256 anneaux**.
   cases, les attributs sont enlevés et la pomme devient verte (jamais de
   blanc).
 - Le C est **bien plus rapide** que le BASIC : la vitesse du serpent est réglée
-  par l'horloge de l'Oric (16 centièmes de seconde par pas au niveau 1,
-  10 au niveau 5), sans pause quand il mange.
+  par l'horloge de l'Oric, sans pause quand il mange.
+- **Difficulté 1 à 5** (depuis le 2026-11-27, comme le Serpent BASIC), réglée
+  sur l'écran du Hall of Fame avec les flèches **HAUT** (+1) et **BAS** (-1),
+  sans son, 3 au départ. Elle fixe la pause d'un pas (centièmes de seconde) ;
+  la difficulté 5 est l'ancienne vitesse, la 1 est deux fois plus lente au
+  niveau 1, et à chaque difficulté les niveaux suivants vont plus vite :
+
+  | Difficulté | Niv. 1 | 2 | 3 | 4 | 5 |
+  |---|---|---|---|---|---|
+  | 1 | 32 | 28 | 24 | 22 | 20 |
+  | 2 | 27 | 24 | 20 | 19 | 17 |
+  | 3 | 23 | 20 | 17 | 16 | 14 |
+  | 4 | 19 | 17 | 14 | 13 | 12 |
+  | 5 | 16 | 14 | 12 | 11 | 10 |
 - Deux flèches peuvent être tapées d'avance (virage rapide).
 - Barres de statut dans les 3 lignes de texte sous l'image HIRES, centrées
   sous le terrain : `NIVEAU 1 - @=10 - RESTE 5` (puis `PORTE OUVERTE`, puis
@@ -36,10 +48,16 @@ queue ; **gagné à 256 anneaux**.
   SUR ESPACE » ; « Version C » y est écrit en petit, en cyan, centré sous la
   barre cyan du titre ; l'image de victoire avec l'Ode à la joie (seulement
   sur elle), le score et les pommes mangées dessous.
-- Hall of Fame et réglage du volume comme dans le Serpent BASIC (avec la
-  longueur atteinte), en mode texte. Sur la **disquette**, ils sont
-  **sauvegardés** (piste 0, secteur 18, même format que le Serpent BASIC) :
-  relus au démarrage, réécrits après chaque record et quand le volume change.
+- Hall of Fame comme dans le Serpent BASIC, en mode texte, sous une ligne
+  d'en-tête `NOM DIF SCORE LONG POMMES` : rang, nom, **difficulté** du record
+  (« - » si elle est inconnue, comme pour les records livrés), score, longueur
+  atteinte suivie de la tête, pommes mangées suivies de la pomme. Dessous, les
+  barres `DIFFICULTE` (3 cases par cran, `n/5`) et `VOLUME` (flèches gauche
+  et droite, sans PING depuis le 2026-11-27 : on l'entend sur la musique).
+  Sur la **disquette**, tout est **sauvegardé** (piste 0, secteur 18, même
+  format que le Serpent BASIC ; octets 129 à 138 = difficulté de chaque
+  record, 240 = volume + 1, 241 = difficulté) : relu au démarrage, réécrit
+  après chaque record et quand le volume ou la difficulté changent.
   En cassette, le Hall of Fame repart du classement livré à chaque chargement.
 - **Sons et musiques en C** (`son.c`, `musiques.c`, depuis le 2026-11-26) :
   une fonction C branchée sur l'interruption de l'horloge (100 fois par
@@ -111,13 +129,14 @@ lit en `$0501`, démarre le BASIC, qui exécute la ligne et lance le C.
 
 `./faire.sh test` construit `serpent-c-test.tap` et `serpent-c-test.dsk` : un pilote automatique joue
 seul, la porte s'ouvre après 1 pomme et la partie est gagnée à 40 anneaux. Il
-sert à vérifier les portes, les niveaux et la victoire sans jouer.
+sert à vérifier les portes, les niveaux et la victoire sans jouer. Il n'a pas
+l'image titre : avec le pilote, elle ne tiendrait plus en mémoire.
 
 ## Mémoire
 
 | Adresses | Contenu |
 |---|---|
-| `$0501-$83DB` | programme C (dont les 2 images, 16 000 octets) et ses variables |
+| `$0501-$864B` | programme C (dont les 2 images, 16 000 octets) et ses variables |
 | `$8800-$8FFF` | pile du C (2 Ko) |
 | `$9000-$96FF` | tableaux du pilote (version de test seulement) |
 | `$9800-$9FFF` | jeu de caractères du mode HIRES |

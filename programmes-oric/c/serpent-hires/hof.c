@@ -3,8 +3,7 @@
 **
 ** Même écran que le Serpent BASIC (lignes 700-764 et 800-855) : rang, nom,
 ** score, longueur atteinte (pommes + 4) suivie de la tête, pommes mangées
-** suivies de la pomme ; barre du volume réglée avec les flèches, un PING à
-** chaque réglage. Le Hall of Fame livré est fait d'« ORIC » aux scores
+** suivies de la pomme ; barre du volume réglée avec les flèches. Le Hall of Fame livré est fait d'« ORIC » aux scores
 ** minimum des portes. L'écran de victoire est passé dans images.c (image
 ** HIRES, 2026-11-24).
 ** Modifié le 2026-11-26 by GliouCNR©70 : sur la disquette, le Hall of Fame et
@@ -15,6 +14,15 @@
 **   octet 240 : volume + 1 (0 = pas encore réglé).
 ** Le secteur est relu au démarrage, réécrit après chaque record, et quand le
 ** volume a changé (au début de la partie, sans rien afficher).
+** Modifié le 2026-11-27 by GliouCNR©70, comme le Serpent BASIC :
+**   - DIFFICULTÉ 1 à 5 réglée avec les flèches HAUT et BAS (ligne au-dessus
+**     du volume, sans son), 3 au départ ; elle règle la vitesse (jeu.c) ;
+**   - le volume (flèches gauche et droite) ne fait plus de PING : on
+**     l'entend sur la musique ;
+**   - la difficulté de chaque record est gardée et affichée (colonne DIF,
+**     « - » si inconnue), sous une ligne d'en-tête ;
+**   - sur la disquette : octets 129 à 138 = difficulté de chaque record
+**     (0 ou plus de 5 = inconnue), octet 241 = difficulté choisie.
 */
 #include <string.h>
 #include "config.h"
@@ -23,13 +31,16 @@
 #include "son.h"
 #include "hof.h"
 #include "disque.h"
+#include "jeu.h"                    /* difficulte */
 
 unsigned char volume = 32;
 static unsigned char volume_sauve = 255;   /* volume déjà sur la disquette */
+static unsigned char dif_sauve = 255;      /* difficulté déjà sur la disquette */
 
 static char noms[10][9];
 static unsigned int scores[10];
 static unsigned int pommes[10];
+static unsigned char difs[10];             /* difficulté de chaque record (0 = inconnue) */
 
 static const unsigned int score_livre[10] = { 2500, 2000, 1500, 1250, 1000, 750, 500, 300, 150, 50 };
 static const unsigned int pommes_livre[10] = { 60, 50, 40, 35, 30, 25, 20, 15, 10, 5 };
@@ -41,6 +52,7 @@ void hof_raz(void)
         strcpy(noms[i], "ORIC    ");
         scores[i] = score_livre[i];
         pommes[i] = pommes_livre[i];
+        difs[i] = 0;
     }
 }
 
@@ -55,10 +67,15 @@ void hof_charge(void)
         noms[i][8] = 0;
         scores[i] = secteur[k + 8] * 256 + secteur[k + 9];
         pommes[i] = secteur[0x65 + i * 2] * 256 + secteur[0x66 + i * 2];
+        difs[i] = secteur[0x81 + i];
+        if (difs[i] > 5) difs[i] = 0;
     }
     k = secteur[0xF0];
     if (k > 0 && k < 66) volume = k - 1;
     volume_sauve = volume;
+    k = secteur[0xF1];
+    if (k > 0 && k < 6) difficulte = k;
+    dif_sauve = difficulte;
 }
 
 static void sauve(void)
@@ -74,9 +91,12 @@ static void sauve(void)
         secteur[k + 9] = scores[i] & 255;
         secteur[0x65 + i * 2] = pommes[i] >> 8;
         secteur[0x66 + i * 2] = pommes[i] & 255;
+        secteur[0x81 + i] = difs[i];
     }
     secteur[0xF0] = volume + 1;
+    secteur[0xF1] = difficulte;
     volume_sauve = volume;
+    dif_sauve = difficulte;
     if (disque_ecrit()) {
         texte_ecrit(3, 25, "ERREUR DISQUE");
         attend(250);
@@ -88,15 +108,24 @@ unsigned int hof_meilleur(void)
     return scores[0];
 }
 
+/* Barres de réglage, lignes 20 et 21 (cases pleines = espace inverse) */
+static void barre_difficulte(void)
+{
+    unsigned char i, b = difficulte * 3;
+    texte_ecrit(2, 20, "DIFFICULTE");
+    for (i = 0; i < 15; ++i) texte_octet(13 + i, 20, i < b ? 160 : '-');
+    texte_ecrit(31, 20, nombre(difficulte, 1));
+    texte_ecrit(32, 20, "/5");
+}
+
 static void barre_volume(void)
 {
     unsigned char i, b = volume / 4;
     son_volume(volume);
-    texte_ecrit(4, 20, "VOLUME");
-    for (i = 0; i < 16; ++i) texte_octet(11 + i, 20, i < b ? 160 : '-');
-    texte_ecrit(28, 20, nombre(volume, 3));
-    texte_ecrit(31, 20, "/64");
-    texte_ecrit(12, 21, "(FLECHES <- ->)");
+    texte_ecrit(6, 21, "VOLUME");
+    for (i = 0; i < 16; ++i) texte_octet(13 + i, 21, i < b ? 160 : '-');
+    texte_ecrit(30, 21, nombre(volume, 3));
+    texte_ecrit(33, 21, "/64");
 }
 
 void hof_ecran(void)
@@ -107,40 +136,47 @@ void hof_ecran(void)
     texte_ecrit(13, 3, "S E R P E N T");
     texte_octet(11, 6, 3);
     texte_ecrit(13, 6, "HALL OF FAME");
+    texte_octet(2, 8, 6);                    /* en-tête des colonnes, en cyan */
+    texte_ecrit(3, 8, "     NOM     DIF  SCORE LONG POMMES");
     for (i = 0; i < 10; ++i) {
-        r = 8 + i;
-        texte_octet(3, r, 7);
-        texte_ecrit(4, r, nombre(i + 1, 3));
-        texte_ecrit(7, r, ". ");
-        texte_ecrit(9, r, noms[i]);
-        texte_octet(18, r, 3);
-        texte_ecrit(19, r, nombre(scores[i], 6));
-        texte_octet(25, r, 2);
+        r = 9 + i;
+        texte_octet(2, r, 7);
+        texte_ecrit(3, r, nombre(i + 1, 3));
+        texte_ecrit(6, r, ". ");
+        texte_ecrit(8, r, noms[i]);
+        texte_octet(16, r, 6);               /* difficulté, en cyan */
+        if (difs[i]) texte_ecrit(17, r, nombre(difs[i], 2));
+        else texte_ecrit(17, r, " -");
+        texte_octet(19, r, 3);
+        texte_ecrit(20, r, nombre(scores[i], 6));
+        texte_octet(26, r, 2);
         if (pommes[i]) {
-            texte_ecrit(26, r, nombre(pommes[i] + 4, 4));
-            texte_octet(31, r, 123);
-            texte_ecrit(32, r, nombre(pommes[i], 4));
-            texte_octet(36, r, 3);           /* pomme jaune */
-            texte_octet(37, r, '@');
+            texte_ecrit(27, r, nombre(pommes[i] + 4, 3));
+            texte_octet(30, r, 123);         /* tête du serpent */
+            texte_ecrit(31, r, nombre(pommes[i], 4));
+            texte_octet(35, r, 3);           /* pomme jaune */
+            texte_octet(36, r, '@');
         } else {
             texte_ecrit(29, r, "-");
-            texte_ecrit(35, r, "-");
+            texte_ecrit(34, r, "-");
         }
     }
+    barre_difficulte();
     barre_volume();
-    texte_ecrit(12, 23, "ESPACE = JOUER");
+    texte_ecrit(3, 23, "HAUT/BAS:DIFFICULTE  <- ->:VOLUME");
+    texte_ecrit(12, 25, "ESPACE = JOUER");
     POKE(TOUCHE, 0);
     for (;;) {
         k = attend_touche();
         if (k == T_ESPACE) {
-            if (volume != volume_sauve) sauve();   /* volume gardé sur la disquette */
+            /* volume et difficulté gardés sur la disquette */
+            if (volume != volume_sauve || difficulte != dif_sauve) sauve();
             return;
         }
-        if (k == T_GAUCHE && volume > 0) volume -= 4;
-        else if (k == T_DROITE && volume < 64) volume += 4;
-        else continue;
-        barre_volume();
-        son_ping();
+        if (k == T_BAS && difficulte > 1) { --difficulte; barre_difficulte(); }
+        else if (k == T_HAUT && difficulte < 5) { ++difficulte; barre_difficulte(); }
+        else if (k == T_GAUCHE && volume > 0) { volume -= 4; barre_volume(); }
+        else if (k == T_DROITE && volume < 64) { volume += 4; barre_volume(); }
     }
 }
 
@@ -181,10 +217,12 @@ void hof_record(unsigned int score, unsigned int nb_pommes)
         strcpy(noms[i], noms[i - 1]);
         scores[i] = scores[i - 1];
         pommes[i] = pommes[i - 1];
+        difs[i] = difs[i - 1];
     }
     strcpy(noms[p], nom);
     scores[p] = score;
     pommes[p] = nb_pommes;
+    difs[p] = difficulte;
     if (disque_present()) {
         texte_ecrit(3, 9, "SAUVEGARDE...");
         sauve();

@@ -26,8 +26,20 @@ static signed char dx, dy;
 static unsigned char niv, compte;            /* niveau, compte à rebours actif */
 static unsigned int hi;
 
-/* Pas du serpent en centièmes de seconde, par niveau */
-static const unsigned char delai[NIVEAUX + 1] = { 0, 16, 14, 12, 11, 10 };
+/* Pas du serpent en centièmes de seconde, selon la DIFFICULTÉ (1 à 5, réglée
+** sur le Hall of Fame) et le niveau (1 à 5). Modifié le 2026-11-27 by
+** GliouCNR©70 : la difficulté 5 est l'ancienne vitesse (16 au niveau 1, 10 au
+** niveau 5) ; la 1 est deux fois plus lente au niveau 1 (32) ; à chaque
+** difficulté, les niveaux suivants vont plus vite (pause x 14, 12, 11, 10 / 16). */
+unsigned char difficulte = 3;
+static const unsigned char delais[5][NIVEAUX + 1] = {
+    { 0, 32, 28, 24, 22, 20 },               /* difficulté 1 */
+    { 0, 27, 24, 20, 19, 17 },               /* difficulté 2 */
+    { 0, 23, 20, 17, 16, 14 },               /* difficulté 3 (au départ) */
+    { 0, 19, 17, 14, 13, 12 },               /* difficulté 4 */
+    { 0, 16, 14, 12, 11, 10 }                /* difficulté 5 */
+};
+static const unsigned char* delai;           /* la ligne de la difficulté choisie */
 
 /* Flèches tapées d'avance (2 au plus) : un virage rapide n'est pas perdu */
 static unsigned char file[2], nfile;
@@ -171,6 +183,7 @@ unsigned char partie(unsigned int meilleur)
     unsigned int t0;
 
     hi = meilleur;
+    delai = delais[difficulte - 1];
     score = 0;
     pommes_mangees = 0;
     niveaux_raz();

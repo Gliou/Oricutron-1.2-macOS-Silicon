@@ -1,5 +1,6 @@
 /* images.c - écran titre et écran de victoire en HIRES.
-** Créé le 2026-11-24 by GliouCNR©70
+** Créé le 2026-11-24 by GliouCNR©70 - modifié le 2026-11-27 by GliouCNR©70 :
+** la version de test (pilote) n'a pas l'image titre, faute de mémoire.
 **
 ** Comme dans le Serpent BASIC : l'image titre s'affiche avec la comptine et
 ** « APPUIE SUR ESPACE » (effacé à l'appui) ; l'image de victoire avec la
@@ -39,7 +40,11 @@ static void ecrit_image(unsigned char col, unsigned char ligne, const char* s,
 
 void ecran_titre(void)
 {
+#ifdef PILOTE
+    ecran_hires();                  /* version de test : pas d'image titre */
+#else
     affiche(titre_bin);
+#endif
     /* « Version C » centré sous la barre cyan du titre (lignes 55-56, octets
     ** 4 à 37) : lignes 59 à 66, octets 16 à 24, en cyan ; ces lignes
     ** reprennent ensuite l'encre verte de l'image. 2026-11-24 by GliouCNR©70 */

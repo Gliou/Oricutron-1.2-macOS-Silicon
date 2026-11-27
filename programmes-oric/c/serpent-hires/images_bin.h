@@ -1,5 +1,6 @@
 /* images_bin.h - FABRIQUÉ par faire.sh (ne pas modifier) : les images HIRES
 ** ../../serpent/serpent-titre.hir et serpent-victoire.hir. by GliouCNR©70 */
+#ifndef PILOTE
 static const unsigned char titre_bin[8000] = {
     64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
     64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
@@ -402,6 +403,7 @@ static const unsigned char titre_bin[8000] = {
     64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
     64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
 };
+#endif
 static const unsigned char victoire_bin[8000] = {
     64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
     64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
