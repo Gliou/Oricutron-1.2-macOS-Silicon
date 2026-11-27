@@ -13,6 +13,12 @@ Couches macOS et iOS réécrites en Swift.
 
 Page de présentation : https://gliou.github.io/Oricutron-1.2-macOS-Silicon/
 
+Ce dépôt ne contient que les émulateurs (Mac et iPhone / iPad). Les programmes
+pour l'Oric Atmos testés avec eux (jeu du serpent en BASIC et en C, démo HIRES,
+écran titre 6502, musiques, outils .tap / .dsk) sont dans un dépôt séparé :
+https://github.com/Gliou/Programmes-Oric
+<!-- Modifié le 2026-11-27 by GliouCNR©70 : programmes Oric déplacés dans leur propre dépôt -->
+
 ![Oricutron sur Mac : écran de l'Oric Atmos et clavier virtuel](docs/screenshot-mac.jpg)
 
 
