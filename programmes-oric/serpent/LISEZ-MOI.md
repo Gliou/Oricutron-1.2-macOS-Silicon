@@ -1,6 +1,6 @@
 # Serpent — jeu pour Oric Atmos
 
-*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre ; la Pastorale de Beethoven dès le chargement ; cassette avec images et musique ; l'Ode à la joie sur l'écran de victoire (2026-11-26) ; difficulté réglable (2026-11-27)*
+*Créé le 2026-11-24 by GliouCNR©70 (repris du LISEZ-MOI commun de `programmes-oric/`, où le jeu était décrit depuis le 2026-11-21) — modifié le 2026-11-24 : la pomme dessinée remplace le `@` ; Hall of Fame livré en ORIC ; sons au volume réglable ; barre de statut sans pause, tête et taille du serpent en bas ; longueur au Hall of Fame ; fanfare seulement sur l'image de victoire ; « Version BASIC » sur l'image titre ; la Pastorale de Beethoven dès le chargement ; cassette avec images et musique ; l'Ode à la joie sur l'écran de victoire (2026-11-26) ; difficulté réglable et montrée au Hall of Fame (2026-11-27)*
 
 Petit jeu en BASIC : on dirige un serpent avec les flèches, il mange les pommes
 et grandit ; perdu s'il touche le bord, un mur ou sa queue. Espace pour jouer.
@@ -127,11 +127,13 @@ attend 30, 20, 12, 7 ou 4 centièmes de seconde de plus que le temps du BASIC
 seule vitesse avant). Les niveaux suivants vont de plus en plus vite : la
 pause est multipliée par (6 - niveau) / 5, jusqu'à un cinquième au niveau 5.
 Difficulté 3 par défaut ; sur la disquette, elle est gardée avec le Hall of
-Fame (octet `$98F1`), comme le volume.
+Fame (octet `$98F1`), comme le volume. Le Hall of Fame montre, pour chaque
+record, la difficulté avec laquelle il a été fait (colonne DIF, voir plus bas).
 
 Sur l'écran du Hall of Fame, une **barre de volume** de 0 à 64 se règle avec
-les flèches ← → (par pas de 4 ; 64 = 15, le maximum de la puce). À chaque
-réglage, un PING retentit au nouveau volume. Sur la disquette, le volume est
+les flèches ← → (par pas de 4 ; 64 = 15, le maximum de la puce). On entend
+le résultat sur la Pastorale qui joue (le PING de chaque réglage a été retiré
+le 2026-11-27 by GliouCNR©70). Sur la disquette, le volume est
 gardé avec le Hall of Fame (octet `$98F0`) et repris au démarrage suivant.
 
 **Musiques** (2026-11-24 by GliouCNR©70) : le moteur `son.s` joue plusieurs
@@ -170,12 +172,14 @@ adresse sur 16 bits : un morceau n'est plus limité à 255 octets.
 
 ### Hall of Fame
 
-Les 10 meilleurs scores, avec la **longueur** atteinte par le serpent (suivie
+Les 10 meilleurs scores, avec la **difficulté** utilisée (colonne DIF, de 1 à
+5, ajoutée le 2026-11-27 by GliouCNR©70 ; « - » pour les records d'avant et
+ceux livrés avec le jeu), la **longueur** atteinte par le serpent (suivie
 de sa tête, ajoutée le 2026-11-24 by GliouCNR©70), puis le nombre de pommes
 mangées et la pomme magenta du jeu. La longueur n'est pas rangée sur la
 disquette : le serpent part de 4 anneaux et en gagne un par pomme, donc
 longueur = pommes + 4 (256 pour une partie gagnée, 252 pommes). Sur la disquette, il est **sauvegardé** : quand un joueur entre au
-classement, son nom, son score et ses pommes sont écrits sur la piste 0,
+classement, son nom, son score, ses pommes et sa difficulté sont écrits sur la piste 0,
 secteur 18, et relus au démarrage suivant. Oricutron réécrit le fichier `.dsk`
 tout seul (`diskautosave = yes`). En cassette, le Hall of Fame marche aussi mais
 n'est gardé que jusqu'à l'extinction. Détails : `HALL-OF-FAME-routine.txt`.

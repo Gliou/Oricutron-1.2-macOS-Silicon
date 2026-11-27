@@ -88,6 +88,9 @@
 # compté ligne 185) gardées pour chaque record (NP()) et affichées à droite du
 # score ; sur la disquette, octets 101 à 120 (haut, bas pour chacun des 10),
 # libres jusque-là : un ancien record (0) affiche « - ».
+# Modifié le 2026-11-27 by GliouCNR©70 : la difficulté de chaque record (DI(),
+# 1 à 5) est gardée aux octets 129 à 138 ($9881-$988A) et affichée dans la
+# colonne DIF ; 0 (record d'avant, Hall of Fame livré) affiche « - ».
 # Modifié le 2026-11-24 by GliouCNR©70 : entre le score et les pommes, la
 # LONGUEUR atteinte par le serpent, suivie de sa tête (lignes 715-723). Elle
 # n'est pas rangée sur la disquette : le serpent part de 4 anneaux et en gagne
@@ -167,7 +170,7 @@
 11 PG=#5006:ZP=#5009:XP=#500C:SR=#5000:VO=#500F:MU=#5010:CH=#5013:VU=32:VS=-1:ZA=#501E:ZR=#502C:DF=3:DS=-1:W1=12
 # Modifié le 2026-11-24 by GliouCNR©70 : X() et Y() sont dimensionnés en premier -
 # le BASIC les trouve plus vite dans la boucle du jeu.
-13 DIM X(255),Y(255),N$(10),SC(10),NP(10),PZ(12)
+13 DIM X(255),Y(255),N$(10),SC(10),NP(10),PZ(12),DI(10)
 12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT
 # Modifié le 2026-11-23 by GliouCNR©70 : la disquette a maintenant 2 images ;
 # l'image titre est lue en $5800 (et non plus $6000) : on donne à la routine
@@ -205,8 +208,8 @@
 74 K=PEEK(KB):IF K<128 THEN 74
 75 POKE KB,0:K=K-128:IF K=10 AND DF>1 THEN DF=DF-1:GOSUB 750
 76 IF K=11 AND DF<5 THEN DF=DF+1:GOSUB 750
-77 IF K=8 AND VU>0 THEN VU=VU-4:GOSUB 760:CALL PG
-78 IF K=9 AND VU<64 THEN VU=VU+4:GOSUB 760:CALL PG
+77 IF K=8 AND VU>0 THEN VU=VU-4:GOSUB 760
+78 IF K=9 AND VU<64 THEN VU=VU+4:GOSUB 760
 79 IF K<>32 THEN 74
 80 CALL SR:IF D AND (VU<>VS OR DF<>DS) THEN VS=VU:DS=DF:QS=1:GOSUB 900:QS=0
 81 S=0:PM=0:L=1:N=4:EN=0:EY=13:FOR I=1 TO 5:CR(I)=0:OP(I)=0:EL(I)=0:NEXT:GOSUB 400
@@ -336,12 +339,12 @@
 695 GOSUB 692:R$=LEFT$(MID$(STR$(R),2)+"  ",3):RETURN
 697 POKE ZR,255-(((H-T) AND M)+GR):CALL #5024:RETURN
 700 CLS:GOSUB 670:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"
-705 PLOT 11,5,3:PLOT 13,5,"HALL OF FAME"
+705 PLOT 11,5,3:PLOT 13,5,"HALL OF FAME":PLOT 2,7,6:PLOT 3,7,"     NOM     DIF  SCORE LONG POMMES"
 710 FOR I=1 TO 10:R=7+I
-715 PLOT 3,R,7:PLOT 4,R,RIGHT$(" "+STR$(I),3)+". "+N$(I)
-720 PLOT 18,R,3:PLOT 19,R,RIGHT$("    "+STR$(SC(I)),6):PLOT 25,R,2
-722 IF NP(I) THEN PLOT 26,R,RIGHT$("   "+STR$(NP(I)+4),4)+" "+CHR$(123)+RIGHT$("   "+STR$(NP(I)),4)+" "+F$
-723 IF NP(I)=0 THEN PLOT 29,R,"-":PLOT 35,R,"-"
+715 PLOT 2,R,7:PLOT 3,R,RIGHT$(" "+STR$(I),3)+". "+N$(I):PLOT 16,R,6:PLOT 17,R," -":IF DI(I) THEN PLOT 17,R,STR$(DI(I))
+720 PLOT 19,R,3:PLOT 20,R,RIGHT$("    "+STR$(SC(I)),6):PLOT 26,R,2
+722 IF NP(I) THEN PLOT 27,R,RIGHT$("  "+STR$(NP(I)+4),3)+CHR$(123)+" "+RIGHT$("  "+STR$(NP(I)),3)+" "+F$
+723 IF NP(I)=0 THEN PLOT 29,R,"-":PLOT 34,R,"-"
 725 NEXT:POKE 735,0:RETURN
 # Barre du volume : VU de 0 à 64 (pas de 4) ; VL = volume de la puce (0-15)
 # Difficulté (2026-11-27 by GliouCNR©70) : DF de 1 (facile) à 5 (rapide), réglée
@@ -364,21 +367,22 @@
 833 U$="":FOR I=1 TO LEN(NM$):J=ASC(MID$(NM$,I,1)):IF J>96 AND J<123 THEN J=J-32
 834 U$=U$+CHR$(J):NEXT:NM$=U$
 835 NM$=LEFT$(NM$+"        ",8)
-840 IF P<10 THEN FOR I=10 TO P+1 STEP -1:N$(I)=N$(I-1):SC(I)=SC(I-1):NP(I)=NP(I-1):NEXT
-845 N$(P)=NM$:SC(P)=S:NP(P)=PM
+840 IF P<10 THEN FOR I=10 TO P+1 STEP -1:N$(I)=N$(I-1):SC(I)=SC(I-1):NP(I)=NP(I-1):DI(I)=DI(I-1):NEXT
+845 N$(P)=NM$:SC(P)=S:NP(P)=PM:DI(P)=DF
 850 IF D THEN GOSUB 900
 855 RETURN
 900 POKE #9800,72:FOR I=1 TO 10:A=#9800+I*10-9
 905 FOR J=0 TO 7:POKE A+J,ASC(MID$(N$(I),J+1,1)):NEXT
 910 POKE A+8,INT(SC(I)/256):POKE A+9,SC(I) AND 255
-912 POKE #9863+I*2,INT(NP(I)/256):POKE #9864+I*2,NP(I) AND 255:NEXT:POKE #98F0,VU+1:POKE #98F1,DF
+912 POKE #9863+I*2,INT(NP(I)/256):POKE #9864+I*2,NP(I) AND 255:POKE #9880+I,DI(I):NEXT:POKE #98F0,VU+1:POKE #98F1,DF
 915 IF QS=0 THEN PRINT:PRINT "   SAUVEGARDE..."
 917 CALL #403
 920 IF PEEK(#4FE) THEN PRINT "   ERREUR DISQUE";PEEK(#4FE):WAIT 300
 925 RETURN
 950 FOR I=1 TO 10:A=#9800+I*10-9:N$(I)=""
 955 FOR J=0 TO 7:N$(I)=N$(I)+CHR$(PEEK(A+J)):NEXT
-960 SC(I)=PEEK(A+8)*256+PEEK(A+9):NP(I)=PEEK(#9863+I*2)*256+PEEK(#9864+I*2):NEXT
+960 SC(I)=PEEK(A+8)*256+PEEK(A+9):NP(I)=PEEK(#9863+I*2)*256+PEEK(#9864+I*2):DI(I)=PEEK(#9880+I):IF DI(I)>5 THEN DI(I)=0
+962 NEXT
 965 B=PEEK(#98F0):IF B>0 AND B<66 THEN VU=B-1:VS=VU
 966 B=PEEK(#98F1):IF B>0 AND B<6 THEN DF=B:DS=DF
 967 RETURN

@@ -48,9 +48,10 @@ une comparaison vraie vaut -1.
 12 FOR I=0 TO 43:READ B:POKE #460+I,B:NEXT                       │ Lit les 44 octets de la routine titre_copie (DATA 990-995)
                                                                  │ et les pose en $0460.
                                                                  │
-13 DIM X(255),Y(255),N$(10),SC(10),NP(10),PZ(12)                 │ Dimensionne d'abord X() et Y() (la boucle du jeu les trouve
-                                                                 │ plus vite), puis le Hall of Fame (N$, SC, NP) et PZ() («
-                                                                 │ PORTE OUVERTE »).
+13 DIM X(255),Y(255),N$(10),SC(10),NP(10),PZ(12),DI(10)          │ Tableaux : positions du serpent (X, Y), Hall of Fame - noms
+                                                                 │ N$, scores SC, pommes NP, et DI, la difficulté de chaque
+                                                                 │ record (2026-11-27 by GliouCNR©70) ; PZ = « PORTE OUVERTE »
+                                                                 │ en codes.
                                                                  │
 14 D=(PEEK(#4FF)=68):GOSUB 970:IF D THEN CALL #400:              │ D = vrai si on a démarré de la disquette (marque 68 en
       IF PEEK(#4FE)=0 AND PEEK(#9800)=72 THEN GOSUB 950          │ $04FF). Charge les dessins, la routine disque et le Hall of
@@ -90,11 +91,10 @@ une comparaison vraie vaut -1.
                                                                  │
 76 IF K=11 AND DF<5 THEN DF=DF+1:GOSUB 750                       │ Flèche haut : difficulté + 1 (pas au-dessus de 5), sans son.
                                                                  │
-77 IF K=8 AND VU>0 THEN VU=VU-4:GOSUB 760:CALL PG                │ Flèche gauche : volume - 4, barre réécrite, PING au nouveau
-                                                                 │ volume.
+77 IF K=8 AND VU>0 THEN VU=VU-4:GOSUB 760                        │ Flèche gauche : volume - 4, barre réécrite (sans PING depuis
+                                                                 │ le 2026-11-27 - on l'entend sur la musique).
                                                                  │
-78 IF K=9 AND VU<64 THEN VU=VU+4:GOSUB 760:CALL PG               │ Flèche droite : volume + 4, barre réécrite, PING au nouveau
-                                                                 │ volume.
+78 IF K=9 AND VU<64 THEN VU=VU+4:GOSUB 760                       │ Flèche droite : volume + 4, barre réécrite.
                                                                  │
 79 IF K<>32 THEN 74                                              │ Pas l'espace : on attend la touche suivante.
                                                                  │
@@ -399,21 +399,23 @@ une comparaison vraie vaut -1.
 700 CLS:GOSUB 670:PLOT 11,2,6:PLOT 13,2,"S E R P E N T"          │ AFFICHAGE DU HALL OF FAME : barre de statut et écran
                                                                  │ effacés, titre en cyan (attribut 6)...
                                                                  │
-705 PLOT 11,5,3:PLOT 13,5,"HALL OF FAME"                         │ ...« HALL OF FAME » en jaune (3)...
+705 PLOT 11,5,3:PLOT 13,5,"HALL OF FAME":PLOT 2,7,6:             │ « HALL OF FAME » en jaune, puis la ligne d'en-tête des
+      PLOT 3,7,"     NOM     DIF  SCORE LONG POMMES"             │ colonnes en cyan - NOM, DIF (difficulté), SCORE, LONG
+                                                                 │ (longueur du serpent), POMMES.
                                                                  │
 710 FOR I=1 TO 10:R=7+I                                          │ ...puis les 10 lignes, à partir de la ligne 8 de l'écran :
                                                                  │
-715 PLOT 3,R,7:PLOT 4,R,RIGHT$(" "+STR$(I),3)+". "+N$(I)         │ Rang et nom en blanc (colonnes 4 à 16).
+715 PLOT 2,R,7:PLOT 3,R,RIGHT$(" "+STR$(I),3)+". "+N$(I):        │ Rang et nom en blanc (colonnes 3 à 15), puis la difficulté
+      PLOT 16,R,6:PLOT 17,R," -":                                │ du record en cyan (colonnes 17-18) - « - » si elle n'est pas
+      IF DI(I) THEN PLOT 17,R,STR$(DI(I))                        │ connue (records d'avant le 2026-11-27, Hall of Fame livré).
                                                                  │
-720 PLOT 18,R,3:PLOT 19,R,RIGHT$("    "+STR$(SC(I)),6):          │ Score en jaune (colonnes 19 à 24), puis encre verte pour la
-      PLOT 25,R,2                                                │ suite.
+720 PLOT 19,R,3:PLOT 20,R,RIGHT$("    "+STR$(SC(I)),6):          │ Score en jaune (colonnes 20 à 25), puis encre verte pour la
+      PLOT 26,R,2                                                │ suite.
                                                                  │
-722 IF NP(I) THEN PLOT 26,R,RIGHT$("   "+STR$(NP(I)+4),4)+" "+CH │ Longueur atteinte par le serpent (pommes + 4 : il part de 4
-      R$(123)+RIGHT$("   "+STR$(NP(I)),4)+" "+F$                 │ anneaux et en gagne un par pomme) suivie de sa tête, puis
-                                                                 │ les pommes mangées et la pomme magenta (inverse sur encre
-                                                                 │ verte). Ajouté le 2026-11-24 by GliouCNR©70.
+722 IF NP(I) THEN PLOT 27,R,RIGHT$("  "+STR$(NP(I)+4),3)+CHR$(12 │ Longueur atteinte (pommes + 4) suivie de la tête du serpent,
+      3)+" "+RIGHT$("  "+STR$(NP(I)),3)+" "+F$                   │ puis les pommes mangées et la pomme magenta.
                                                                  │
-723 IF NP(I)=0 THEN PLOT 29,R,"-":PLOT 35,R,"-"                  │ Ancien record sans pommes connues : « - » dans les deux
+723 IF NP(I)=0 THEN PLOT 29,R,"-":PLOT 34,R,"-"                  │ Ancien record sans pommes connues : « - » dans les deux
                                                                  │ colonnes.
                                                                  │
 725 NEXT:POKE 735,0:RETURN                                       │ Fin de la liste ; oublie les touches déjà tapées.
@@ -461,10 +463,11 @@ une comparaison vraie vaut -1.
                                                                  │
 835 NM$=LEFT$(NM$+"        ",8)                                  │ Complète le nom par des espaces pour qu'il fasse 8 lettres.
                                                                  │
-840 IF P<10 THEN FOR I=10 TO P+1 STEP -1:N$(I)=N$(I-1):          │ Décale vers le bas les scores moins bons (le 10e
-      SC(I)=SC(I-1):NP(I)=NP(I-1):NEXT                           │ disparaît)...
+840 IF P<10 THEN FOR I=10 TO P+1 STEP -1:N$(I)=N$(I-1):          │ Décale d'une place vers le bas les records moins bons (nom,
+      SC(I)=SC(I-1):NP(I)=NP(I-1):DI(I)=DI(I-1):NEXT             │ score, pommes, difficulté).
                                                                  │
-845 N$(P)=NM$:SC(P)=S:NP(P)=PM                                   │ ...et range le nouveau à sa place, avec ses pommes.
+845 N$(P)=NM$:SC(P)=S:NP(P)=PM:DI(P)=DF                          │ Range le nouveau record à sa place, avec la difficulté de la
+                                                                 │ partie (DF).
                                                                  │
 850 IF D THEN GOSUB 900                                          │ Sur disquette : sauvegarde (900).
                                                                  │
@@ -477,8 +480,8 @@ une comparaison vraie vaut -1.
                                                                  │
 910 POKE A+8,INT(SC(I)/256):POKE A+9,SC(I) AND 255               │ ...puis le score sur 2 octets (haut, bas)...
                                                                  │
-912 POKE #9863+I*2,INT(NP(I)/256):POKE #9864+I*2,NP(I) AND 255:  │ Pommes de chaque record, puis le volume (+1, $98F0) et la
-      NEXT:POKE #98F0,VU+1:POKE #98F1,DF                         │ difficulté ($98F1).
+912 POKE #9863+I*2,INT(NP(I)/256):POKE #9864+I*2,NP(I) AND 255:  │ Pommes de chaque record, sa difficulté ($9881-$988A), puis
+      POKE #9880+I,DI(I):NEXT:POKE #98F0,VU+1:POKE #98F1,DF      │ le volume (+1, $98F0) et la difficulté choisie ($98F1).
                                                                  │
 915 IF QS=0 THEN PRINT:PRINT "   SAUVEGARDE..."                  │ Message seulement pour une vraie entrée au Hall of Fame (pas
                                                                  │ quand on sauve juste le volume, QS = 1).
@@ -496,8 +499,11 @@ une comparaison vraie vaut -1.
                                                                  │
 955 FOR J=0 TO 7:N$(I)=N$(I)+CHR$(PEEK(A+J)):NEXT                │ ...lettre par lettre...
                                                                  │
-960 SC(I)=PEEK(A+8)*256+PEEK(A+9):                               │ ...et les 10 scores et les pommes.
-      NP(I)=PEEK(#9863+I*2)*256+PEEK(#9864+I*2):NEXT             │
+960 SC(I)=PEEK(A+8)*256+PEEK(A+9):                               │ Score, pommes et difficulté de chaque record (0 = inconnue ;
+      NP(I)=PEEK(#9863+I*2)*256+PEEK(#9864+I*2):                 │ une valeur impossible est remise à 0).
+      DI(I)=PEEK(#9880+I):IF DI(I)>5 THEN DI(I)=0                │
+                                                                 │
+962 NEXT                                                         │ Record suivant.
                                                                  │
 965 B=PEEK(#98F0):IF B>0 AND B<66 THEN VU=B-1:VS=VU              │ Volume sauvé ($98F0 = volume + 1) : on le reprend ; une
                                                                  │ disquette d'avant le réglage a 0 ici, le volume reste à 32.
