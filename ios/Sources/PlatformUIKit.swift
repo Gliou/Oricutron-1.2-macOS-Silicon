@@ -1,5 +1,6 @@
 //
 //  PlatformUIKit.swift — Couche native iOS d'Oricutron, en Swift
+//  Créé le 2026-11-06 by GliouCNR©70
 //
 //  Équivalent iOS de macos/Sources/PlatformCocoa.swift :
 //   • sélecteur de fichiers (filereq.h) et boîtes de dialogue (msgbox.h)

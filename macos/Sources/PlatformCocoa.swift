@@ -1,5 +1,6 @@
 //
 //  PlatformCocoa.swift — Couche native macOS d'Oricutron, en Swift
+//  Créé le 2026-11-04 by GliouCNR©70
 //
 //  Remplace filereq_osx.m, msgbox_osx.m et gui_osx.m. Chaque fonction est exportée
 //  avec son nom C exact (@_cdecl) pour être appelée directement par le cœur C.

@@ -1,6 +1,7 @@
 /*
 **  Prefix.h — options de compilation du cœur C d'Oricutron pour iOS
 **  (équivalent des -D… de macos/build_app.sh). Inclus avant chaque fichier C.
+**  Créé le 2026-11-06 by GliouCNR©70
 */
 #ifndef ORICUTRON_IOS_PREFIX_H
 #define ORICUTRON_IOS_PREFIX_H

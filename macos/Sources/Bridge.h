@@ -1,4 +1,5 @@
 // Bridge.h — fonctions C du cœur Oricutron visibles depuis Swift
+// Créé le 2026-11-04 by GliouCNR©70
 #ifndef ORICUTRON_SWIFT_BRIDGE_H
 #define ORICUTRON_SWIFT_BRIDGE_H
 

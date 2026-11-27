@@ -3,6 +3,7 @@
 # package_dmg.sh — fabrique un .dmg d'Oricutron à partager avec des testeurs
 #   - application universelle (Apple Silicon + Intel)
 #   - glisser l'app dans Applications + fichier LISEZ-MOI
+# Créé le 2026-11-04 by GliouCNR©70
 #
 set -euo pipefail
 

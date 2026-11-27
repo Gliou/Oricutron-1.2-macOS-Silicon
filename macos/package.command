@@ -1,5 +1,6 @@
 #!/bin/bash
 # Double-clique ce fichier dans le Finder pour fabriquer le .dmg de test
+# Créé le 2026-11-04 by GliouCNR©70
 cd "$(dirname "$0")/.."
 mkdir -p build/macos
 { bash macos/package_dmg.sh; echo "EXIT=$?"; } 2>&1 | tee build/macos/package.log

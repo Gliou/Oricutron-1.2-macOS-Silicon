@@ -1,4 +1,5 @@
 # project.yml — description du projet Xcode iOS d'Oricutron, pour XcodeGen.
+# Créé le 2026-11-06 by GliouCNR©70
 # Ne pas lancer à la main : ios/prepare_ios.command s'en charge (il définit
 # ORIC_IOS_DEPS, ORIC_BUNDLE_ID et ORIC_TEAM_ID puis génère Oricutron.xcodeproj).
 

@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # build_app.sh — compile Oricutron (cœur C + couche Swift) en Oricutron.app pour macOS
+# Créé le 2026-11-04 by GliouCNR©70
 #
 # Usage :  macos/build_app.sh            (architecture de ce Mac)
 #          UNIVERSAL=1 macos/build_app.sh  (Apple Silicon + Intel)

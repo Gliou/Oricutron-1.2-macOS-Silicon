@@ -86,7 +86,9 @@ static SDL_COMPAT_KEY keyMap[] =
   SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', SDLK_BACKSPACE,
   SDLK_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', SDLK_RETURN,
   SDLK_LSHIFT, 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', SDLK_RSHIFT,
-  SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, ' ', ' ', ' ', ' ', ' ', ' '
+  // FUNCT : SDLK_LALT = position FUNCT de la matrice Oric et modificateur « Funct »
+  // (SDLK_RALT tombait sur une position sans touche). Modifié le 2026-11-22 by GliouCNR©70
+  SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_LALT, ' ', ' ', ' ', ' ', ' ', ' '
 };
 
 static SDL_COMPAT_KEY keyMapPravetz[] =
@@ -293,6 +295,7 @@ static SDL_bool release_keys = SDL_FALSE;
 // A quick click/tap can press and release a virtual key within the same
 // emulated frame, before the Oric ROM scans the keyboard matrix: the key is
 // then never seen. Keep each clicked key down for a minimum number of frames.
+// Modifié le 2026-11-09 by GliouCNR©70
 #define MIN_KEY_HOLD_FRAMES 3
 static int key_press_frame = 0;
 static struct kbdkey * pending_release_key = NULL;

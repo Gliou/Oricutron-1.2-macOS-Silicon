@@ -1,5 +1,6 @@
 //
 //  RomCheckIOS.swift — Vérification et import des ROMs (iOS)
+//  Créé le 2026-11-06 by GliouCNR©70
 //
 //  Au démarrage (si une ROM manque) et via « Plus > Vérifier les ROMs ».
 //  Les ROMs peuvent être importées depuis l'app Fichiers (iCloud Drive, AirDrop…),

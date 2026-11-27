@@ -1,5 +1,6 @@
 //
 //  main.swift — Point d'entrée d'Oricutron pour iOS / iPadOS
+//  Créé le 2026-11-06 by GliouCNR©70
 //
 //  1. Recopie les données par défaut (images, symboles, oricutron.cfg…) dans le
 //     dossier Documents de l'app, visible dans l'app Fichiers :

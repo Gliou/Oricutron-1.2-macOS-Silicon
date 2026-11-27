@@ -1,5 +1,6 @@
 ORICUTRON pour macOS — version de test
 ======================================
+Créé le 2026-11-04 by GliouCNR©70
 
 Émulateur Oric-1 / Oric Atmos / Telestrat / Pravetz 8D.
 Cœur d'émulation : Oricutron (Peter Gordon, licence GPL v2).

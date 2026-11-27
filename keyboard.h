@@ -45,6 +45,7 @@ SDL_bool keyboard_event(SDL_Event *ev, struct machine *oric, SDL_bool *needrende
 
 void release_sticky_keys(void);
 
+// Modifié le 2026-11-09 by GliouCNR©70 : relâchement différé des touches cliquées
 void keyboard_frame(struct machine *oric);
 
 void add_to_keyboard_mapping(struct keyboard_mapping *map, SDL_COMPAT_KEY host_key, SDL_COMPAT_KEY oric_key);

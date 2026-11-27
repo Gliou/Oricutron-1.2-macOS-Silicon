@@ -1786,7 +1786,7 @@ void once_per_frame(struct machine *oric)
 {
   int i;
 
-  keyboard_frame(oric);
+  keyboard_frame(oric);   // Modifié le 2026-11-09 by GliouCNR©70
 
   if(oric->diskautosave)
   {

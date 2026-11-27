@@ -1,5 +1,6 @@
 #!/bin/bash
 # Double-clique ce fichier dans le Finder pour compiler Oricutron.app
+# Créé le 2026-11-04 by GliouCNR©70
 cd "$(dirname "$0")/.."
 mkdir -p build/macos
 { bash macos/build_app.sh; echo "EXIT=$?"; } 2>&1 | tee build/macos/build.log

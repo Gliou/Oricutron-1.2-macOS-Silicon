@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # prepare_ios.sh — prépare et ouvre le projet Xcode iOS d'Oricutron
+# Créé le 2026-11-06 by GliouCNR©70
 #
 #   1. vérifie Xcode et la plateforme iOS
 #   2. télécharge et compile SDL2 pour iPhone (une seule fois)

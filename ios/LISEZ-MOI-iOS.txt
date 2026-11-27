@@ -1,5 +1,6 @@
 ORICUTRON POUR iPHONE / iPAD — compilation et installation
 ==========================================================
+Créé le 2026-11-06 by GliouCNR©70
 
 Il faut : un Mac avec l'application Xcode, un iPhone (iOS 15 ou plus récent),
 un câble USB-C et ton identifiant Apple (gratuit).

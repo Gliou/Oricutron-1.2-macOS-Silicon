@@ -1,5 +1,6 @@
 #!/bin/bash
 # Double-clique : compile l'app iOS sans iPhone ni signature, pour vérifier qu'il n'y a pas d'erreur
+# Créé le 2026-11-06 by GliouCNR©70
 cd "$(dirname "$0")/.."
 mkdir -p build/ios
 { xcodebuild -project ios/Oricutron.xcodeproj -scheme Oricutron -configuration Debug \

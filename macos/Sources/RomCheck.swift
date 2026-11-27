@@ -1,5 +1,6 @@
 //
 //  RomCheck.swift — Vérification des ROMs et fenêtre d'information
+//  Créé le 2026-11-04 by GliouCNR©70
 //
 //  Affichée au démarrage si une ROM manque, et à tout moment via
 //  le menu Fichier > Vérifier les ROMs…

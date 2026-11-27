@@ -1,5 +1,6 @@
 //
 //  main.swift — Point d'entrée Swift d'Oricutron pour macOS
+//  Créé le 2026-11-04 by GliouCNR©70
 //
 //  1. Prépare le dossier de données utilisateur
 //     ~/Library/Application Support/Oricutron (roms, images, disks, tapes, oricutron.cfg…)

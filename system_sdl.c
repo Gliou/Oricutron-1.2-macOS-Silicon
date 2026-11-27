@@ -557,6 +557,7 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
 #if defined(__IPHONEOS__) && defined(ORICUTRON_SWIFT_HOST)
     // The renderer adds its Metal view on top of the window's content:
     // re-attach so the touch toolbar is put back above it.
+    // Modifié le 2026-11-09 by GliouCNR©70
     ios_attach_sdl_window(g_window);
 #endif
   }

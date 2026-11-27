@@ -1,6 +1,7 @@
 /*
 **  macos_glue.c — pont entre les commandes macOS (menu natif, glisser-déposer,
 **  « Ouvrir avec » du Finder) et les fonctions d'Oricutron.
+**  Créé le 2026-11-04 by GliouCNR©70
 **
 **  Principe : on « présélectionne » le fichier, puis on appelle les fonctions
 **  d'origine inserttape()/insertdisk(). Leur appel à filerequester() (Swift)

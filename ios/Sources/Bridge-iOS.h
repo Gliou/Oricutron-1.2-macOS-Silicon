@@ -1,4 +1,5 @@
 // Bridge-iOS.h — fonctions C visibles depuis Swift (version iOS)
+// Créé le 2026-11-06 by GliouCNR©70
 #ifndef ORICUTRON_IOS_BRIDGE_H
 #define ORICUTRON_IOS_BRIDGE_H
 

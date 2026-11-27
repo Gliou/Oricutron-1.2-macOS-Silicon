@@ -272,9 +272,19 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
   { "Back",                   "\x17", SDLK_BACKSPACE,setemumode, EM_RUNNING, 0 },
   { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
   { "About",                  NULL,   0,        gotomenu,        5, 0 },
+// Pas de « Quit » sur iOS : une app iOS ne doit pas se fermer elle-même (écran
+// noir) ; on quitte en revenant à l'écran d'accueil. Sans « Quit », la séparation
+// qui le précédait disparaît aussi, et MAINMENU_BACK (« Back », sélectionné à
+// l'ouverture du menu) est à 2 lignes de la fin au lieu de 4.
+// Modifié le 2026-11-25 by GliouCNR©70
+#ifdef ORICUTRON_IOS_PREFIX_H
+#define MAINMENU_BACK 2
+#else
+#define MAINMENU_BACK 4
   { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
 #ifndef WWW
   { "Quit",                   NULL,   0,        setemumode,      EM_PLEASEQUIT, 0 },
+#endif
 #endif
   { NULL, }
 };
@@ -406,7 +416,7 @@ struct osdmenuitem ovopitems[] = { { "  1mhz (None)", "1",    '1', setoverclock,
 
 #define LAST_ITEM(x) ((sizeof(x)/sizeof(struct osdmenuitem))-2)
 
-struct osdmenu menus[] = { { "Main Menu",        LAST_ITEM(mainitems)-4, mainitems },
+struct osdmenu menus[] = { { "Main Menu",        LAST_ITEM(mainitems)-MAINMENU_BACK, mainitems },
   { "Hardware options", LAST_ITEM(hwopitems),  hwopitems },
   { "Audio options",    LAST_ITEM(auopitems),  auopitems },
   { "Debug options",    LAST_ITEM(dbopitems),  dbopitems },

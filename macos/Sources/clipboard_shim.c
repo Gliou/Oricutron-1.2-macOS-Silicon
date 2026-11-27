@@ -1,5 +1,6 @@
 /*
 **  clipboard_shim.c — copie de l'écran texte Oric vers le presse-papiers macOS.
+**  Créé le 2026-11-04 by GliouCNR©70
 **  Seule partie qui doit lire la structure `machine` : le reste est en Swift.
 */
 
